@@ -13,7 +13,7 @@
 	<key>provisioningProfiles</key>
 	<dict>
 		<key>com.ailovekeyboard.app</key>
-		<string>match AppStore com.ailovekeyboard.app</string>
+		<string>AILoveKeyboard ios_app_store 1777471874</string>
 	</dict>
 </dict>
 </plist>
