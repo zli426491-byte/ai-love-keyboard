@@ -1,0 +1,5 @@
+package com.ailovekeyboard.ai_love_keyboard
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()
