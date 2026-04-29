@@ -24,6 +24,42 @@ enum ReplyStyle {
     emoji: '😎',
     description: '保持神祕感，用反差吸引對方注意',
     color: Color(0xFF6366F1),
+  ),
+  warm(
+    label: '暖男',
+    emoji: '🤗',
+    description: '溫柔體貼，讓對方感受到被在乎',
+    color: Color(0xFFF97316),
+  ),
+  intellectual(
+    label: '知性',
+    emoji: '🧠',
+    description: '聰明有深度，展現你的內涵',
+    color: Color(0xFF0EA5E9),
+  ),
+  naughty(
+    label: '壞壞的',
+    emoji: '😈',
+    description: '調皮挑逗，帶點小壞增加吸引力',
+    color: Color(0xFFA855F7),
+  ),
+  cute(
+    label: '可愛',
+    emoji: '🌸',
+    description: '軟萌撒嬌，讓對方覺得你超可愛',
+    color: Color(0xFFF472B6),
+  ),
+  mature(
+    label: '成熟',
+    emoji: '💼',
+    description: '穩重有安全感，展現大人的魅力',
+    color: Color(0xFF64748B),
+  ),
+  contrast(
+    label: '反差萌',
+    emoji: '🎭',
+    description: '正經中帶幽默，意想不到的可愛反差',
+    color: Color(0xFF14B8A6),
   );
 
   const ReplyStyle({

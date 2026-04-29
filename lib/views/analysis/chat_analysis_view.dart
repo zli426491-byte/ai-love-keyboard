@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +10,7 @@ import 'package:ai_love_keyboard/services/usage_service.dart';
 import 'package:ai_love_keyboard/utils/app_theme.dart';
 import 'package:ai_love_keyboard/utils/constants.dart';
 import 'package:ai_love_keyboard/views/paywall/paywall_view.dart';
+import 'package:ai_love_keyboard/views/components/particle_background.dart';
 
 class ChatAnalysisView extends StatefulWidget {
   final int initialTab;
@@ -23,7 +27,6 @@ class _ChatAnalysisViewState extends State<ChatAnalysisView>
   final _singleMsgController = TextEditingController();
   late TabController _tabController;
 
-  // Local state for message interpretation
   String? _interpretation;
   bool _isInterpreting = false;
 
@@ -108,19 +111,18 @@ class _ChatAnalysisViewState extends State<ChatAnalysisView>
   }
 
   Color _interestColor(int level) {
-    // Cold blue → warm orange → hot red
-    if (level <= 3) return const Color(0xFF3B82F6); // blue
-    if (level <= 5) return const Color(0xFFFBBF24); // amber
-    if (level <= 7) return const Color(0xFFF97316); // orange
-    return const Color(0xFFEF4444); // red
+    if (level <= 3) return const Color(0xFF3B82F6);
+    if (level <= 5) return const Color(0xFFFBBF24);
+    if (level <= 7) return const Color(0xFFF97316);
+    return const Color(0xFFEF4444);
   }
 
   String _interestLabel(int level) {
-    if (level <= 2) return '冰冷';
-    if (level <= 4) return '微溫';
-    if (level <= 6) return '溫暖';
-    if (level <= 8) return '火熱';
-    return '沸騰';
+    if (level <= 2) return '\u{1F9CA} 冰冷';
+    if (level <= 4) return '\u{2600}\u{FE0F} 微溫';
+    if (level <= 6) return '\u{1F525} 溫暖';
+    if (level <= 8) return '\u{1F525} 火熱';
+    return '\u{1F4A5} 沸騰';
   }
 
   @override
@@ -129,31 +131,44 @@ class _ChatAnalysisViewState extends State<ChatAnalysisView>
     final analysis = ai.chatAnalysis;
 
     return Scaffold(
+      backgroundColor: AppTheme.bgDark,
       appBar: AppBar(
-        title: const Text('📊 聊天分析'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text(
+          '\u{1F4CA} 聊天分析',
+          style: TextStyle(
+            color: AppTheme.textPrimary,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: AppTheme.textPrimary),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.pop(context),
         ),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: AppTheme.primary,
-          labelColor: AppTheme.primary,
-          unselectedLabelColor: Colors.grey,
+          indicatorColor: AppTheme.accent,
+          labelColor: AppTheme.accent,
+          unselectedLabelColor: AppTheme.textHint,
           tabs: const [
-            Tab(text: '🌡️ 聊天溫度計'),
-            Tab(text: '🤔 她到底什麼意思'),
+            Tab(text: '\u{1F321}\u{FE0F} 聊天溫度計'),
+            Tab(text: '\u{1F914} 她到底什麼意思'),
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Stack(
         children: [
-          // ── Tab 1: Chat Thermometer ─────────────────────────────
-          _buildThermometerTab(context, ai, analysis),
-
-          // ── Tab 2: Message Interpreter ──────────────────────────
-          _buildInterpreterTab(context, ai),
+          const ParticleBackground(particleCount: 12),
+          TabBarView(
+            controller: _tabController,
+            children: [
+              _buildThermometerTab(context, ai, analysis),
+              _buildInterpreterTab(context, ai),
+            ],
+          ),
         ],
       ),
     );
@@ -169,32 +184,88 @@ class _ChatAnalysisViewState extends State<ChatAnalysisView>
           Text('貼上聊天紀錄',
               style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: AppTheme.spacingSm),
-          TextField(
-            controller: _chatLogController,
-            maxLines: 8,
-            maxLength: AppConstants.maxInputLength,
-            decoration: const InputDecoration(
-              hintText:
-                  '把你們的聊天紀錄貼在這裡...\n\n例如：\n我：今天天氣真好\n她：對啊，好想出去走走',
+          // Glassmorphism text field
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.06),
+                  borderRadius:
+                      BorderRadius.circular(AppTheme.radiusLg),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                child: TextField(
+                  controller: _chatLogController,
+                  maxLines: 8,
+                  maxLength: AppConstants.maxInputLength,
+                  style:
+                      const TextStyle(color: AppTheme.textPrimary),
+                  decoration: InputDecoration(
+                    hintText:
+                        '把你們的聊天紀錄貼在這裡...\n\n例如：\n我：今天天氣真好\n她：對啊，好想出去走走',
+                    hintStyle:
+                        const TextStyle(color: AppTheme.textHint),
+                    filled: false,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: const EdgeInsets.all(16),
+                  ),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: AppTheme.spacingMd),
 
-          // ── Analyze Button ────────────────────────────────────
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton.icon(
-              onPressed: ai.isLoading ? null : _analyze,
-              icon: ai.isLoading
-                  ? const SizedBox(
+          // Analyze button
+          GestureDetector(
+            onTap: ai.isLoading ? null : _analyze,
+            child: Container(
+              width: double.infinity,
+              height: 48,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFEC4899), Color(0xFFAB47BC)],
+                ),
+                borderRadius:
+                    BorderRadius.circular(AppTheme.radiusLg),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFEC4899)
+                        .withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (ai.isLoading)
+                    const SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white),
                     )
-                  : const Icon(Icons.thermostat_rounded),
-              label: Text(ai.isLoading ? '分析中...' : '開始分析'),
+                  else
+                    const Icon(Icons.thermostat_rounded,
+                        color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    ai.isLoading ? '分析中...' : '開始分析',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
 
@@ -204,132 +275,247 @@ class _ChatAnalysisViewState extends State<ChatAnalysisView>
                 style: const TextStyle(color: AppTheme.error)),
           ],
 
-          // ── Analysis Results ──────────────────────────────────
+          // ── Analysis Results ────────────────────────────────
           if (analysis != null) ...[
             const SizedBox(height: AppTheme.spacingXl),
 
-            // Visual Thermometer
-            _buildVisualThermometer(context, analysis.interestLevel)
+            // Circular gauge
+            _buildCircularGauge(context, analysis.interestLevel)
                 .animate()
                 .fadeIn()
                 .scale(begin: const Offset(0.8, 0.8)),
 
             const SizedBox(height: AppTheme.spacingLg),
 
-            // Attitude
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppTheme.spacingMd),
-              decoration: BoxDecoration(
-                color: AppTheme.primary.withValues(alpha: 0.08),
-                borderRadius:
-                    BorderRadius.circular(AppTheme.radiusMd),
+            // Attitude card
+            ClipRRect(
+              borderRadius:
+                  BorderRadius.circular(AppTheme.radiusLg),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.all(AppTheme.spacingMd),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(
+                        AppTheme.radiusLg),
+                    border: Border.all(
+                      color:
+                          Colors.white.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+                      const Text('態度分析',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: AppTheme.textPrimary,
+                          )),
+                      const SizedBox(height: 4),
+                      Text(analysis.attitude,
+                          style: const TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 15,
+                            height: 1.5,
+                          )),
+                    ],
+                  ),
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('對方態度',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 14)),
-                  const SizedBox(height: 4),
-                  Text(analysis.attitude,
-                      style: Theme.of(context).textTheme.bodyLarge),
-                ],
-              ),
-            )
-                .animate()
-                .fadeIn(delay: const Duration(milliseconds: 200)),
+            ).animate().fadeIn(
+                delay: const Duration(milliseconds: 200)),
 
             const SizedBox(height: AppTheme.spacingMd),
 
             // Summary
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppTheme.spacingMd),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius:
-                    BorderRadius.circular(AppTheme.radiusMd),
+            ClipRRect(
+              borderRadius:
+                  BorderRadius.circular(AppTheme.radiusLg),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.all(AppTheme.spacingMd),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(
+                        AppTheme.radiusLg),
+                    border: Border.all(
+                      color:
+                          Colors.white.withValues(alpha: 0.06),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+                      const Text('分析摘要',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: AppTheme.textPrimary,
+                          )),
+                      const SizedBox(height: 4),
+                      Text(analysis.summary,
+                          style: const TextStyle(
+                            color: AppTheme.textSecondary,
+                            height: 1.6,
+                          )),
+                    ],
+                  ),
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('分析摘要',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 14)),
-                  const SizedBox(height: 4),
-                  Text(analysis.summary,
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyMedium
-                          ?.copyWith(height: 1.6)),
-                ],
-              ),
-            )
-                .animate()
-                .fadeIn(delay: const Duration(milliseconds: 300)),
+            ).animate().fadeIn(
+                delay: const Duration(milliseconds: 300)),
 
-            const SizedBox(height: AppTheme.spacingMd),
+            const SizedBox(height: AppTheme.spacingLg),
 
-            // Recommended Next Actions
-            Text('建議的下一步',
-                style: Theme.of(context).textTheme.titleMedium),
+            // Suggestions
+            const Text('建議的下一步',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textPrimary,
+                )),
             const SizedBox(height: AppTheme.spacingSm),
             ...analysis.suggestions.asMap().entries.map(
-                  (e) => Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppTheme.accent.withValues(alpha: 0.08),
-                      borderRadius:
-                          BorderRadius.circular(AppTheme.radiusMd),
-                      border: Border.all(
-                          color:
-                              AppTheme.accent.withValues(alpha: 0.2)),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: 24,
-                          height: 24,
-                          decoration: const BoxDecoration(
-                            color: AppTheme.accent,
-                            shape: BoxShape.circle,
+                  (e) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(
+                          AppTheme.radiusLg),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(
+                            sigmaX: 8, sigmaY: 8),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white
+                                .withValues(alpha: 0.06),
+                            borderRadius:
+                                BorderRadius.circular(
+                                    AppTheme.radiusLg),
+                            border: Border.all(
+                              color: AppTheme.accent
+                                  .withValues(alpha: 0.15),
+                            ),
                           ),
-                          child: Center(
-                            child: Text(
-                              '${e.key + 1}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
+                          child: Row(
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  gradient: AppTheme
+                                      .romanticGradient,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '${e.key + 1}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                      fontWeight:
+                                          FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  e.value,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    height: 1.5,
+                                    color:
+                                        AppTheme.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            e.value,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              height: 1.5,
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   )
                       .animate(
                           delay: Duration(
-                              milliseconds: 400 + (e.key as int) * 100))
+                              milliseconds:
+                                  400 + (e.key as int) * 100))
                       .fadeIn()
                       .slideX(begin: 0.15),
                 ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildCircularGauge(BuildContext context, int level) {
+    final color = _interestColor(level);
+    final label = _interestLabel(level);
+
+    return Center(
+      child: SizedBox(
+        width: 200,
+        height: 200,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Gauge ring
+            CustomPaint(
+              size: const Size(200, 200),
+              painter: _CircularGaugePainter(
+                level: level,
+                color: color,
+              ),
+            ),
+            // Center text
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '$level',
+                  style: TextStyle(
+                    fontSize: 56,
+                    fontWeight: FontWeight.w800,
+                    color: color,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.15),
+                    borderRadius:
+                        BorderRadius.circular(AppTheme.radiusFull),
+                  ),
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -340,38 +526,44 @@ class _ChatAnalysisViewState extends State<ChatAnalysisView>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header illustration
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(AppTheme.spacingLg),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF8B5CF6).withValues(alpha: 0.1),
-                  const Color(0xFFEC4899).withValues(alpha: 0.1),
-                ],
+          // Header
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppTheme.spacingLg),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.06),
+                  borderRadius:
+                      BorderRadius.circular(AppTheme.radiusLg),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(Icons.psychology_rounded,
+                        size: 48, color: Color(0xFF8B5CF6)),
+                    const SizedBox(height: 8),
+                    const Text(
+                      '她到底什麼意思？',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '貼上對方的曖昧訊息，AI 幫你解讀真實含義',
+                      style: TextStyle(
+                          color: AppTheme.textHint, fontSize: 14),
+                    ),
+                  ],
+                ),
               ),
-              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-            ),
-            child: Column(
-              children: [
-                const Icon(Icons.psychology_rounded,
-                    size: 48, color: Color(0xFF8B5CF6)),
-                const SizedBox(height: 8),
-                Text(
-                  '她到底什麼意思？',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '貼上對方的曖昧訊息，AI 幫你解讀真實含義',
-                  style: TextStyle(
-                      color: Colors.grey.shade600, fontSize: 14),
-                ),
-              ],
             ),
           ).animate().fadeIn(),
 
@@ -380,30 +572,88 @@ class _ChatAnalysisViewState extends State<ChatAnalysisView>
           Text('對方的訊息',
               style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: AppTheme.spacingSm),
-          TextField(
-            controller: _singleMsgController,
-            maxLines: 4,
-            maxLength: AppConstants.maxInputLength,
-            decoration: const InputDecoration(
-              hintText: '例如：「我最近都好忙喔」\n「你人很好耶」\n「改天再約吧」',
+
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.06),
+                  borderRadius:
+                      BorderRadius.circular(AppTheme.radiusLg),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                child: TextField(
+                  controller: _singleMsgController,
+                  maxLines: 4,
+                  maxLength: AppConstants.maxInputLength,
+                  style: const TextStyle(
+                      color: AppTheme.textPrimary),
+                  decoration: InputDecoration(
+                    hintText:
+                        '例如：「我最近都好忙喔」\n「你人很好耶」\n「改天再約吧」',
+                    hintStyle: const TextStyle(
+                        color: AppTheme.textHint),
+                    filled: false,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: const EdgeInsets.all(16),
+                  ),
+                ),
+              ),
             ),
           ),
+
           const SizedBox(height: AppTheme.spacingMd),
 
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton.icon(
-              onPressed: _isInterpreting ? null : _interpretMessage,
-              icon: _isInterpreting
-                  ? const SizedBox(
+          GestureDetector(
+            onTap: _isInterpreting ? null : _interpretMessage,
+            child: Container(
+              width: double.infinity,
+              height: 48,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF8B5CF6), Color(0xFFEC4899)],
+                ),
+                borderRadius:
+                    BorderRadius.circular(AppTheme.radiusLg),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF8B5CF6)
+                        .withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_isInterpreting)
+                    const SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white),
                     )
-                  : const Icon(Icons.psychology_rounded),
-              label: Text(_isInterpreting ? '解讀中...' : '解讀訊息'),
+                  else
+                    const Icon(Icons.psychology_rounded,
+                        color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    _isInterpreting ? '解讀中...' : '解讀訊息',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
 
@@ -413,278 +663,144 @@ class _ChatAnalysisViewState extends State<ChatAnalysisView>
                 style: const TextStyle(color: AppTheme.error)),
           ],
 
-          // ── Interpretation Result ──────────────────────────────
           if (_interpretation != null) ...[
             const SizedBox(height: AppTheme.spacingXl),
-
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppTheme.spacingMd),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    const Color(0xFF8B5CF6).withValues(alpha: 0.08),
-                    const Color(0xFFEC4899).withValues(alpha: 0.08),
-                  ],
-                ),
-                borderRadius:
-                    BorderRadius.circular(AppTheme.radiusLg),
-                border: Border.all(
-                  color: const Color(0xFF8B5CF6)
-                      .withValues(alpha: 0.2),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
+            ClipRRect(
+              borderRadius:
+                  BorderRadius.circular(AppTheme.radiusLg),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.all(AppTheme.spacingMd),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(
+                        AppTheme.radiusLg),
+                    border: Border.all(
+                      color: const Color(0xFF8B5CF6)
+                          .withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.lightbulb_rounded,
-                          color: Color(0xFF8B5CF6), size: 20),
-                      SizedBox(width: 8),
+                      const Row(
+                        children: [
+                          Icon(Icons.lightbulb_rounded,
+                              color: Color(0xFF8B5CF6),
+                              size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'AI 解讀',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                              color: Color(0xFF8B5CF6),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
                       Text(
-                        'AI 解讀',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                          color: Color(0xFF8B5CF6),
+                        _interpretation!,
+                        style: const TextStyle(
+                          color: AppTheme.textSecondary,
+                          height: 1.7,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _interpretation!,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(height: 1.7),
-                  ),
-                ],
+                ),
               ),
-            )
-                .animate()
-                .fadeIn()
-                .slideY(begin: 0.1),
+            ).animate().fadeIn().slideY(begin: 0.1),
           ],
         ],
       ),
-    );
-  }
-
-  Widget _buildVisualThermometer(BuildContext context, int level) {
-    final color = _interestColor(level);
-    final label = _interestLabel(level);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppTheme.spacingLg),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            color.withValues(alpha: 0.1),
-            color.withValues(alpha: 0.03),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        children: [
-          const Text('聊天溫度計',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 16),
-
-          // Thermometer visualization
-          SizedBox(
-            height: 180,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Thermometer bar
-                SizedBox(
-                  width: 40,
-                  height: 180,
-                  child: CustomPaint(
-                    painter: _ThermometerPainter(
-                      level: level,
-                      color: color,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 20),
-                // Level display
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$level',
-                      style: TextStyle(
-                        fontSize: 64,
-                        fontWeight: FontWeight.w800,
-                        color: color,
-                        height: 1,
-                      ),
-                    ),
-                    Text(
-                      '/10',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w500,
-                        color: color.withValues(alpha: 0.5),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.15),
-                        borderRadius:
-                            BorderRadius.circular(AppTheme.radiusFull),
-                      ),
-                      child: Text(
-                        label,
-                        style: TextStyle(
-                          color: color,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Color scale legend
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _legendDot(const Color(0xFF3B82F6), '冰冷'),
-              const SizedBox(width: 12),
-              _legendDot(const Color(0xFFFBBF24), '微溫'),
-              const SizedBox(width: 12),
-              _legendDot(const Color(0xFFF97316), '溫暖'),
-              const SizedBox(width: 12),
-              _legendDot(const Color(0xFFEF4444), '火熱'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _legendDot(Color color, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 4),
-        Text(label,
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
-      ],
     );
   }
 }
 
-// ── Thermometer Painter ─────────────────────────────────────────────────
-class _ThermometerPainter extends CustomPainter {
+// ── Circular Gauge Painter ────────────────────────────────────────────
+class _CircularGaugePainter extends CustomPainter {
   final int level;
   final Color color;
 
-  _ThermometerPainter({required this.level, required this.color});
+  _CircularGaugePainter({required this.level, required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 12;
+
+    // Background arc
     final bgPaint = Paint()
-      ..color = Colors.grey.shade200
-      ..style = PaintingStyle.fill;
+      ..color = Colors.white.withValues(alpha: 0.08)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 12
+      ..strokeCap = StrokeCap.round;
 
-    final fillPaint = Paint()
-      ..shader = LinearGradient(
-        colors: [
-          const Color(0xFF3B82F6),
-          const Color(0xFFFBBF24),
-          const Color(0xFFF97316),
-          const Color(0xFFEF4444),
-        ],
-        begin: Alignment.bottomCenter,
-        end: Alignment.topCenter,
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..style = PaintingStyle.fill;
-
-    final tubeWidth = size.width * 0.5;
-    final bulbRadius = size.width * 0.5;
-    final tubeLeft = (size.width - tubeWidth) / 2;
-    final tubeTop = 0.0;
-    final tubeBottom = size.height - bulbRadius;
-    final tubeHeight = tubeBottom - tubeTop;
-
-    // Background tube
-    final bgRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(tubeLeft, tubeTop, tubeWidth, tubeHeight),
-      Radius.circular(tubeWidth / 2),
-    );
-    canvas.drawRRect(bgRect, bgPaint);
-
-    // Background bulb
-    canvas.drawCircle(
-      Offset(size.width / 2, tubeBottom),
-      bulbRadius,
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      math.pi * 0.75,
+      math.pi * 1.5,
+      false,
       bgPaint,
     );
 
-    // Fill level
-    final fillHeight = (tubeHeight * level / 10).clamp(0.0, tubeHeight);
-    final fillTop = tubeBottom - fillHeight;
+    // Gradient arc
+    final sweepAngle = (math.pi * 1.5) * (level / 10.0);
 
-    // Fill tube
-    final fillRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(tubeLeft, fillTop, tubeWidth, fillHeight),
-      Radius.circular(tubeWidth / 2),
+    // Gradient: blue -> yellow -> orange -> red
+    final gradientShader = SweepGradient(
+      startAngle: math.pi * 0.75,
+      endAngle: math.pi * 2.25,
+      colors: const [
+        Color(0xFF3B82F6),
+        Color(0xFFFBBF24),
+        Color(0xFFF97316),
+        Color(0xFFEF4444),
+      ],
+      stops: const [0.0, 0.33, 0.66, 1.0],
+    ).createShader(
+      Rect.fromCircle(center: center, radius: radius),
     );
-    canvas.drawRRect(fillRect, fillPaint);
 
-    // Fill bulb (always filled)
-    canvas.drawCircle(
-      Offset(size.width / 2, tubeBottom),
-      bulbRadius,
+    final fillPaint = Paint()
+      ..shader = gradientShader
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 12
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      math.pi * 0.75,
+      sweepAngle,
+      false,
       fillPaint,
     );
 
-    // Level marks
-    final markPaint = Paint()
-      ..color = Colors.grey.shade400
-      ..strokeWidth = 1;
+    // Glow effect
+    final glowPaint = Paint()
+      ..color = color.withValues(alpha: 0.15)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 24
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
 
-    for (int i = 1; i <= 10; i++) {
-      final y = tubeBottom - (tubeHeight * i / 10);
-      final markLeft = tubeLeft - 4;
-      final markRight = tubeLeft;
-      canvas.drawLine(
-        Offset(markLeft, y),
-        Offset(markRight, y),
-        markPaint,
-      );
-    }
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      math.pi * 0.75,
+      sweepAngle,
+      false,
+      glowPaint,
+    );
   }
 
   @override
-  bool shouldRepaint(covariant _ThermometerPainter oldDelegate) {
+  bool shouldRepaint(covariant _CircularGaugePainter oldDelegate) {
     return oldDelegate.level != level || oldDelegate.color != color;
   }
 }

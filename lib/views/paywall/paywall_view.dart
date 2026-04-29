@@ -1,7 +1,10 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 
+import 'package:ai_love_keyboard/services/analytics_service.dart';
 import 'package:ai_love_keyboard/services/usage_service.dart';
 import 'package:ai_love_keyboard/utils/app_theme.dart';
 import 'package:ai_love_keyboard/utils/constants.dart';
@@ -14,7 +17,15 @@ class PaywallView extends StatefulWidget {
 }
 
 class _PaywallViewState extends State<PaywallView> {
-  int _selectedPlan = 0; // 0=weekly, 1=monthly, 2=lifetime
+  int _selectedPlan = 0;
+
+  static const _planNames = ['weekly', 'monthly', 'lifetime'];
+
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.trackPaywallShown();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +33,7 @@ class _PaywallViewState extends State<PaywallView> {
       decoration: const BoxDecoration(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         gradient: LinearGradient(
-          colors: [Color(0xFF1E1533), Color(0xFF2D1B4E)],
+          colors: [Color(0xFF0D0515), Color(0xFF1A0F2E), Color(0xFF0D0515)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
@@ -43,7 +54,7 @@ class _PaywallViewState extends State<PaywallView> {
             ),
             child: Column(
               children: [
-                // ── Handle ────────────────────────────────────────
+                // ── Handle ──────────────────────────────────────
                 Container(
                   width: 40,
                   height: 4,
@@ -54,53 +65,70 @@ class _PaywallViewState extends State<PaywallView> {
                 ),
                 const SizedBox(height: 4),
 
-                // ── Close Button ──────────────────────────────────
+                // ── Close Button ────────────────────────────────
                 Align(
                   alignment: Alignment.topRight,
                   child: IconButton(
                     icon: const Icon(Icons.close_rounded,
                         color: Colors.white54),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      AnalyticsService.instance.trackPaywallClosed();
+                      Navigator.pop(context);
+                    },
                   ),
                 ),
 
-                // ── Header Icon ──────────────────────────────────
+                // ── Shimmer Badge ───────────────────────────────
                 Container(
-                  width: 72,
-                  height: 72,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 6),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [AppTheme.primary, AppTheme.accent],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                      colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
                     ),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius:
+                        BorderRadius.circular(AppTheme.radiusFull),
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.primary.withValues(alpha: 0.4),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
+                        color: const Color(0xFFFFD700)
+                            .withValues(alpha: 0.3),
+                        blurRadius: 12,
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.workspace_premium_rounded,
-                      size: 36, color: Colors.white),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('\u{2728}',
+                          style: TextStyle(fontSize: 14)),
+                      SizedBox(width: 4),
+                      Text(
+                        '限時優惠',
+                        style: TextStyle(
+                          color: Colors.black87,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
                 )
                     .animate()
                     .fadeIn()
-                    .scale(
-                      begin: const Offset(0.5, 0.5),
-                      curve: Curves.easeOutBack,
+                    .shimmer(
+                      delay: const Duration(milliseconds: 800),
+                      duration: const Duration(milliseconds: 1500),
                     ),
+
                 const SizedBox(height: AppTheme.spacingMd),
 
-                // ── Title ────────────────────────────────────────
+                // ── Title ───────────────────────────────────────
                 ShaderMask(
                   shaderCallback: (bounds) => const LinearGradient(
                     colors: [AppTheme.primaryLight, AppTheme.accent],
                   ).createShader(bounds),
                   child: const Text(
-                    '升級 PRO',
+                    '解鎖所有功能',
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w800,
@@ -108,56 +136,12 @@ class _PaywallViewState extends State<PaywallView> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 4),
-                const Text(
-                  '解鎖所有 AI 戀愛超能力',
-                  style: TextStyle(fontSize: 16, color: Colors.white60),
-                ),
-                const SizedBox(height: 6),
-
-                // ── Urgency Badge ────────────────────────────────
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEF4444).withValues(alpha: 0.2),
-                    borderRadius:
-                        BorderRadius.circular(AppTheme.radiusFull),
-                    border: Border.all(
-                      color:
-                          const Color(0xFFEF4444).withValues(alpha: 0.4),
-                    ),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.local_fire_department_rounded,
-                          color: Color(0xFFEF4444), size: 16),
-                      SizedBox(width: 4),
-                      Text(
-                        '限時優惠',
-                        style: TextStyle(
-                          color: Color(0xFFEF4444),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-                    .animate()
-                    .fadeIn(delay: const Duration(milliseconds: 200))
-                    .shimmer(
-                      delay: const Duration(milliseconds: 1000),
-                      duration: const Duration(milliseconds: 1500),
-                    ),
 
                 const SizedBox(height: AppTheme.spacingLg),
 
-                // ── Feature List ──────────────────────────────────
+                // ── Feature List ────────────────────────────────
                 ..._features.asMap().entries.map((e) => _FeatureRow(
-                      icon: e.value.$1,
-                      text: e.value.$2,
+                      text: e.value,
                     )
                         .animate(
                             delay: Duration(milliseconds: e.key * 60))
@@ -166,44 +150,61 @@ class _PaywallViewState extends State<PaywallView> {
 
                 const SizedBox(height: AppTheme.spacingLg),
 
-                // ── Plan Options ──────────────────────────────────
-                _PlanOption(
-                  title: '每週方案',
+                // ── Plan Cards ──────────────────────────────────
+                // Weekly
+                _PlanCard(
+                  title: '週方案',
                   price: AppConstants.weeklyPriceDisplay,
-                  subtitle: '免費試用 ${AppConstants.freeTrialDays} 天',
-                  badge: '免費試用',
+                  subtitle: '每週自動續訂',
+                  badge: '免費試用7天',
+                  badgeColor: AppTheme.success,
                   isSelected: _selectedPlan == 0,
-                  onTap: () => setState(() => _selectedPlan = 0),
+                  onTap: () {
+                    setState(() => _selectedPlan = 0);
+                    AnalyticsService.instance
+                        .trackPlanSelected(planType: 'weekly');
+                  },
                 ).animate().fadeIn(
                     delay: const Duration(milliseconds: 250)),
 
                 const SizedBox(height: AppTheme.spacingSm),
 
-                _PlanOption(
-                  title: '每月方案',
+                // Monthly
+                _PlanCard(
+                  title: '月方案',
                   price: AppConstants.monthlyPriceDisplay,
-                  subtitle: '\$${AppConstants.monthlyPriceUsd}/month',
+                  subtitle: '每月自動續訂',
                   isSelected: _selectedPlan == 1,
-                  onTap: () => setState(() => _selectedPlan = 1),
+                  onTap: () {
+                    setState(() => _selectedPlan = 1);
+                    AnalyticsService.instance
+                        .trackPlanSelected(planType: 'monthly');
+                  },
                 ).animate().fadeIn(
                     delay: const Duration(milliseconds: 320)),
 
                 const SizedBox(height: AppTheme.spacingSm),
 
-                _PlanOption(
-                  title: '買斷方案',
+                // Lifetime
+                _PlanCard(
+                  title: '終身方案',
                   price: AppConstants.lifetimePriceDisplay,
                   subtitle: '一次付費，永久使用',
                   badge: '最超值',
                   badgeColor: AppTheme.accent,
+                  trailingEmoji: '\u{2764}\u{FE0F}',
                   isSelected: _selectedPlan == 2,
-                  onTap: () => setState(() => _selectedPlan = 2),
+                  onTap: () {
+                    setState(() => _selectedPlan = 2);
+                    AnalyticsService.instance
+                        .trackPlanSelected(planType: 'lifetime');
+                  },
                 ).animate().fadeIn(
                     delay: const Duration(milliseconds: 390)),
 
                 const SizedBox(height: AppTheme.spacingLg),
 
-                // ── Primary CTA ──────────────────────────────────
+                // ── CTA Button ──────────────────────────────────
                 GestureDetector(
                   onTap: () => _subscribe(context),
                   child: Container(
@@ -211,17 +212,17 @@ class _PaywallViewState extends State<PaywallView> {
                     height: 56,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [AppTheme.primary, AppTheme.accent],
+                        colors: [Color(0xFFEC4899), Color(0xFFAB47BC)],
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
                       ),
                       borderRadius:
-                          BorderRadius.circular(AppTheme.radiusMd),
+                          BorderRadius.circular(AppTheme.radiusLg),
                       boxShadow: [
                         BoxShadow(
-                          color:
-                              AppTheme.primary.withValues(alpha: 0.4),
-                          blurRadius: 16,
+                          color: const Color(0xFFEC4899)
+                              .withValues(alpha: 0.4),
+                          blurRadius: 20,
                           offset: const Offset(0, 6),
                         ),
                       ],
@@ -245,8 +246,9 @@ class _PaywallViewState extends State<PaywallView> {
                           if (_selectedPlan == 0)
                             Text(
                               '試用結束後 ${AppConstants.weeklyPriceDisplay}',
-                              style: const TextStyle(
-                                color: Colors.white70,
+                              style: TextStyle(
+                                color:
+                                    Colors.white.withValues(alpha: 0.7),
                                 fontSize: 11,
                               ),
                             ),
@@ -264,10 +266,9 @@ class _PaywallViewState extends State<PaywallView> {
 
                 const SizedBox(height: AppTheme.spacingMd),
 
-                // ── Restore Purchases ─────────────────────────────
+                // ── Restore Purchases ───────────────────────────
                 TextButton(
                   onPressed: () {
-                    // TODO: Implement restore
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('正在恢復購買...')),
                     );
@@ -279,7 +280,7 @@ class _PaywallViewState extends State<PaywallView> {
                   ),
                 ),
 
-                // ── Legal Text ────────────────────────────────────
+                // ── Legal ───────────────────────────────────────
                 const Text(
                   '訂閱會自動續約，可隨時在設定中取消',
                   style: TextStyle(color: Colors.white30, fontSize: 11),
@@ -296,7 +297,14 @@ class _PaywallViewState extends State<PaywallView> {
   }
 
   void _subscribe(BuildContext context) {
-    // Temporary mock for development
+    final planType = _planNames[_selectedPlan];
+
+    if (_selectedPlan == 0) {
+      AnalyticsService.instance.trackFreeTrialStarted();
+    }
+    AnalyticsService.instance
+        .trackSubscriptionStarted(planType: planType);
+
     context.read<UsageService>().setSubscribed(true);
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -308,21 +316,21 @@ class _PaywallViewState extends State<PaywallView> {
   }
 
   static const _features = [
-    (Icons.all_inclusive_rounded, '無限AI回覆'),
-    (Icons.style_rounded, '四種回覆風格'),
-    (Icons.thermostat_rounded, '聊天態度分析'),
-    (Icons.chat_bubble_outline_rounded, '破冰開場白'),
-    (Icons.lightbulb_outline, '話題建議'),
-    (Icons.speed_rounded, '優先速度'),
+    '無限AI回覆',
+    '10種回覆風格',
+    '聊天態度分析',
+    '破冰開場白',
+    '話題建議',
+    '跨國翻譯',
+    '優先速度',
   ];
 }
 
-// ── Feature Row ────────────────────────────────────────────────────────
+// ── Feature Row ──────────────────────────────────────────────────────
 class _FeatureRow extends StatelessWidget {
-  final IconData icon;
   final String text;
 
-  const _FeatureRow({required this.icon, required this.text});
+  const _FeatureRow({required this.text});
 
   @override
   Widget build(BuildContext context) {
@@ -331,15 +339,14 @@ class _FeatureRow extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: 24,
+            height: 24,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppTheme.primary, AppTheme.accent],
-              ),
-              borderRadius: BorderRadius.circular(8),
+              color: AppTheme.primary.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
             ),
-            child: Icon(icon, size: 18, color: Colors.white),
+            child: const Icon(Icons.check_rounded,
+                size: 14, color: AppTheme.primary),
           ),
           const SizedBox(width: 14),
           Text(
@@ -350,138 +357,164 @@ class _FeatureRow extends StatelessWidget {
               color: Colors.white,
             ),
           ),
-          const Spacer(),
-          const Icon(Icons.check_circle_rounded,
-              color: AppTheme.accent, size: 20),
         ],
       ),
     );
   }
 }
 
-// ── Plan Option ────────────────────────────────────────────────────────
-class _PlanOption extends StatelessWidget {
+// ── Plan Card (glassmorphism) ────────────────────────────────────────
+class _PlanCard extends StatelessWidget {
   final String title;
   final String price;
   final String subtitle;
   final String? badge;
   final Color? badgeColor;
+  final String? trailingEmoji;
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _PlanOption({
+  const _PlanCard({
     required this.title,
     required this.price,
     required this.subtitle,
     this.badge,
     this.badgeColor,
+    this.trailingEmoji,
     required this.isSelected,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = isSelected
-        ? AppTheme.accent
-        : Colors.white.withValues(alpha: 0.15);
-
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: double.infinity,
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppTheme.accent.withValues(alpha: 0.1)
-              : Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-          border: Border.all(color: borderColor, width: isSelected ? 2 : 1),
-        ),
-        child: Row(
-          children: [
-            // Radio indicator
-            Container(
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected ? AppTheme.accent : Colors.white30,
-                  width: 2,
-                ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? Colors.white.withValues(alpha: 0.1)
+                  : Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+              border: Border.all(
+                color: isSelected
+                    ? AppTheme.accent.withValues(alpha: 0.5)
+                    : Colors.white.withValues(alpha: 0.1),
+                width: isSelected ? 1.5 : 1,
               ),
-              child: isSelected
-                  ? Center(
-                      child: Container(
-                        width: 12,
-                        height: 12,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppTheme.accent,
-                        ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: AppTheme.accent.withValues(alpha: 0.15),
+                        blurRadius: 12,
                       ),
-                    )
+                    ]
                   : null,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: isSelected
-                              ? Colors.white
-                              : Colors.white70,
-                        ),
-                      ),
-                      if (badge != null) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: (badgeColor ?? AppTheme.primary)
-                                .withValues(alpha: 0.25),
-                            borderRadius: BorderRadius.circular(
-                                AppTheme.radiusFull),
-                          ),
-                          child: Text(
-                            badge!,
-                            style: TextStyle(
-                              color: badgeColor ?? AppTheme.primaryLight,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
+            child: Row(
+              children: [
+                // Radio
+                Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected
+                          ? AppTheme.accent
+                          : Colors.white30,
+                      width: 2,
+                    ),
+                  ),
+                  child: isSelected
+                      ? Center(
+                          child: Container(
+                            width: 12,
+                            height: 12,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppTheme.accent,
+                                  AppTheme.primary
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        )
+                      : null,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.white70,
+                            ),
+                          ),
+                          if (badge != null) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: (badgeColor ?? AppTheme.primary)
+                                    .withValues(alpha: 0.25),
+                                borderRadius: BorderRadius.circular(
+                                    AppTheme.radiusFull),
+                              ),
+                              child: Text(
+                                badge!,
+                                style: TextStyle(
+                                  color: badgeColor ??
+                                      AppTheme.primaryLight,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                            fontSize: 12, color: Colors.white38),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                        fontSize: 12, color: Colors.white38),
+                ),
+                if (trailingEmoji != null)
+                  Text(trailingEmoji!,
+                      style: const TextStyle(fontSize: 18)),
+                if (trailingEmoji != null) const SizedBox(width: 8),
+                Text(
+                  price,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: isSelected ? AppTheme.accent : Colors.white60,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            Text(
-              price,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: isSelected ? AppTheme.accent : Colors.white60,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

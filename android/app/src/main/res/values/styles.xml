@@ -15,4 +15,10 @@
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
+    <!-- Theme for the AI Love Keyboard IME -->
+    <style name="KeyboardTheme" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">#1A1128</item>
+        <item name="android:colorPrimary">#7C3AED</item>
+        <item name="android:colorAccent">#2DD4BF</item>
+    </style>
 </resources>
