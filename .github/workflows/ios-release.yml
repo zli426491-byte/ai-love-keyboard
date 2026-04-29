@@ -58,6 +58,18 @@ jobs:
             --release \
             --export-options-plist=ios/ExportOptions.plist
 
+      - name: Upload to TestFlight
+        env:
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+        run: |
+          export APP_STORE_CONNECT_PRIVATE_KEY=$(cat ~/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8)
+          app-store-connect publish \
+            --path build/ios/ipa/*.ipa \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --key-id "$APP_STORE_CONNECT_KEY_ID" \
+            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY"
+
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         if: always()
