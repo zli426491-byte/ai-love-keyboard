@@ -52,6 +52,19 @@ jobs:
           keychain add-certificates
           xcode-project use-profiles --project ios/Runner.xcodeproj
 
+      - name: Set build number
+        env:
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+        run: |
+          export APP_STORE_CONNECT_PRIVATE_KEY=$(cat ~/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8)
+          LATEST_BUILD=$(app-store-connect get-latest-testflight-build-number "6764681086" \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --key-id "$APP_STORE_CONNECT_KEY_ID" \
+            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY" || echo 0)
+          cd ios
+          agvtool new-version -all $((LATEST_BUILD + 1))
+
       - name: Build iOS
         run: |
           flutter build ipa \
