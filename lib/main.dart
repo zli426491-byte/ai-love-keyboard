@@ -50,60 +50,45 @@ void main() async {
     ),
   );
 
-  // Initialize analytics & attribution
-  await AnalyticsService.instance.init();
-  await AttributionService.instance.init();
-  await DeepLinkService.instance.init();
-
-  // Initialize usage service
+  // Initialize all services with error protection
   final usageService = UsageService();
-  await usageService.init();
-
-  // Initialize locale service
   final localeService = LocaleService();
-  await localeService.init();
-
-  // Initialize package manager
   final packageManager = PackageManager();
-  await packageManager.init();
-
-  // Initialize seasonal service
   final seasonalService = SeasonalService();
-  await seasonalService.init();
-
-  // Initialize achievement service
   final achievementService = AchievementService();
-  await achievementService.init();
-
-  // Initialize emergency service
   final emergencyService = EmergencyService();
-  await emergencyService.init();
-
-  // Initialize referral service
   final referralService = ReferralService();
-  await referralService.init();
-
-  // Initialize coin service
   final coinService = CoinService();
-  await coinService.init();
-
-  // Initialize privacy manager & content filter
   final privacyManager = PrivacyManager.instance;
-  await privacyManager.init();
 
-  // Sync content filter level from privacy manager
-  ContentFilter.instance.setLevel(
-    privacyManager.filterLevel == 'strict'
-        ? ContentFilterLevel.strict
-        : ContentFilterLevel.standard,
-  );
+  try { await AnalyticsService.instance.init(); } catch (_) {}
+  try { await AttributionService.instance.init(); } catch (_) {}
+  try { await DeepLinkService.instance.init(); } catch (_) {}
+  try { await usageService.init(); } catch (_) {}
+  try { await localeService.init(); } catch (_) {}
+  try { await packageManager.init(); } catch (_) {}
+  try { await seasonalService.init(); } catch (_) {}
+  try { await achievementService.init(); } catch (_) {}
+  try { await emergencyService.init(); } catch (_) {}
+  try { await referralService.init(); } catch (_) {}
+  try { await coinService.init(); } catch (_) {}
+  try { await privacyManager.init(); } catch (_) {}
 
-  // Inject culture context into prompt templates
-  PromptTemplates.cultureContext = localeService.currentLocale.culturePrompt;
-  localeService.addListener(() {
-    PromptTemplates.cultureContext =
-        localeService.currentLocale.culturePrompt;
-  });
+  try {
+    ContentFilter.instance.setLevel(
+      privacyManager.filterLevel == 'strict'
+          ? ContentFilterLevel.strict
+          : ContentFilterLevel.standard,
+    );
+  } catch (_) {}
+
+  try {
+    PromptTemplates.cultureContext = localeService.currentLocale.culturePrompt;
+    localeService.addListener(() {
+      PromptTemplates.cultureContext =
+          localeService.currentLocale.culturePrompt;
+    });
+  } catch (_) {}
 
   // Check onboarding and gender status
   final prefs = await SharedPreferences.getInstance();
@@ -113,8 +98,7 @@ void main() async {
       prefs.getString(AppConstants.prefUserGender) != null;
   final privacyAccepted = privacyManager.privacyAccepted;
 
-  // Track app open
-  AnalyticsService.instance.trackAppOpen();
+  try { AnalyticsService.instance.trackAppOpen(); } catch (_) {}
 
   runApp(AiLoveKeyboardApp(
     usageService: usageService,
@@ -175,7 +159,7 @@ class AiLoveKeyboardApp extends StatelessWidget {
 
   Widget _getPostPrivacyScreen() {
     if (!genderSelected) {
-      return GenderSelectionView(onSelected: () {});
+      return const _GenderGate();
     }
     if (!onboardingComplete) {
       return const OnboardingView();
@@ -275,6 +259,23 @@ class _PrivacyGateState extends State<_PrivacyGate> {
       body: const Center(
         child: CircularProgressIndicator(),
       ),
+    );
+  }
+}
+
+/// Gender selection gate - navigates to onboarding after gender is selected.
+class _GenderGate extends StatelessWidget {
+  const _GenderGate();
+
+  @override
+  Widget build(BuildContext context) {
+    return GenderSelectionView(
+      onSelected: () {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const OnboardingView()),
+          (route) => false,
+        );
+      },
     );
   }
 }
