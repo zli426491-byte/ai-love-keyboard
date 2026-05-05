@@ -8,11 +8,10 @@ import 'package:ai_love_keyboard/models/user_gender.dart';
 import 'package:ai_love_keyboard/utils/app_theme.dart';
 import 'package:ai_love_keyboard/utils/constants.dart';
 import 'package:ai_love_keyboard/views/components/particle_background.dart';
+import 'package:ai_love_keyboard/views/onboarding/onboarding_view.dart';
 
 class GenderSelectionView extends StatefulWidget {
-  final VoidCallback onSelected;
-
-  const GenderSelectionView({super.key, required this.onSelected});
+  const GenderSelectionView({super.key});
 
   @override
   State<GenderSelectionView> createState() => _GenderSelectionViewState();
@@ -28,7 +27,11 @@ class _GenderSelectionViewState extends State<GenderSelectionView> {
       AppConstants.prefUserGender,
       _selected == UserGender.male ? 'male' : 'female',
     );
-    widget.onSelected();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const OnboardingView()),
+      (route) => false,
+    );
   }
 
   @override

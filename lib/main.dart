@@ -159,7 +159,7 @@ class AiLoveKeyboardApp extends StatelessWidget {
 
   Widget _getPostPrivacyScreen() {
     if (!genderSelected) {
-      return const _GenderGate();
+      return const GenderSelectionView();
     }
     if (!onboardingComplete) {
       return const OnboardingView();
@@ -263,19 +263,3 @@ class _PrivacyGateState extends State<_PrivacyGate> {
   }
 }
 
-/// Gender selection gate - navigates to onboarding after gender is selected.
-class _GenderGate extends StatelessWidget {
-  const _GenderGate();
-
-  @override
-  Widget build(BuildContext context) {
-    return GenderSelectionView(
-      onSelected: () {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const OnboardingView()),
-          (route) => false,
-        );
-      },
-    );
-  }
-}
