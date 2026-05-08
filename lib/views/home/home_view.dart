@@ -205,7 +205,7 @@ class _HomeViewState extends State<HomeView> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        // PRO badge
+                        // Free build badge
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 2),
@@ -215,7 +215,7 @@ class _HomeViewState extends State<HomeView> {
                                 BorderRadius.circular(AppTheme.radiusFull),
                           ),
                           child: const Text(
-                            'PRO',
+                            'FREE',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 10,
@@ -431,7 +431,7 @@ class _HomeViewState extends State<HomeView> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            '${banner.name} 限時優惠！',
+                                            '${banner.name} 免費開放',
                                             style: const TextStyle(
                                               color: Colors.white,
                                               fontSize: 15,
@@ -440,7 +440,7 @@ class _HomeViewState extends State<HomeView> {
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
-                                            '剩餘 ${banner.daysRemaining} 天 | \$${banner.price.toStringAsFixed(2)}',
+                                            '剩餘 ${banner.daysRemaining} 天 | 免費使用',
                                             style: const TextStyle(
                                               color: Colors.white70,
                                               fontSize: 12,

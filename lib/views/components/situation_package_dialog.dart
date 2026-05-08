@@ -156,7 +156,7 @@ class SituationPackageDialog extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // Urgency text
+              // Availability text
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -165,7 +165,7 @@ class SituationPackageDialog extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Text(
-                  '90% 的人在這個情境下購買了此禮包',
+                  '目前版本免費開放此情境禮包',
                   style: TextStyle(
                     color: AppTheme.accent,
                     fontSize: 12,
@@ -175,17 +175,16 @@ class SituationPackageDialog extends StatelessWidget {
               ),
               const SizedBox(height: 20),
 
-              // Buy with money button
+              // Free unlock button
               GestureDetector(
                 onTap: () async {
-                  // TODO: Integrate with actual IAP
                   await packageManager.purchasePackage(package.type);
                   if (context.mounted) {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                            '${package.emoji} ${package.name} 購買成功！'),
+                            '${package.emoji} ${package.name} 已免費解鎖！'),
                       ),
                     );
                   }
@@ -206,7 +205,7 @@ class SituationPackageDialog extends StatelessWidget {
                   ),
                   child: Center(
                     child: Text(
-                      '立即購買 \$${package.price.toStringAsFixed(2)}',
+                      '免費解鎖此禮包',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
@@ -218,7 +217,7 @@ class SituationPackageDialog extends StatelessWidget {
               ),
               const SizedBox(height: 8),
 
-              // Buy with coins button
+              // Coin unlock button
               Builder(
                 builder: (ctx) {
                   final coinService = ctx.read<CoinService>();
@@ -236,7 +235,7 @@ class SituationPackageDialog extends StatelessWidget {
                             ScaffoldMessenger.of(ctx).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                    '${package.emoji} ${package.name} 購買成功！'),
+                                    '${package.emoji} ${package.name} 已解鎖！'),
                               ),
                             );
                           }
@@ -260,7 +259,7 @@ class SituationPackageDialog extends StatelessWidget {
                       child: Center(
                         child: Text(
                           hasCoins
-                              ? '使用 $coinCost \u{1FA99} 購買'
+                              ? '使用 $coinCost \u{1FA99} 解鎖'
                               : '$coinCost \u{1FA99}（餘額不足，前往商店）',
                           style: TextStyle(
                             color:

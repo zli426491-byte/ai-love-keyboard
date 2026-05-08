@@ -11,7 +11,6 @@ import 'package:ai_love_keyboard/services/privacy_manager.dart';
 import 'package:ai_love_keyboard/services/usage_service.dart';
 import 'package:ai_love_keyboard/utils/app_theme.dart';
 import 'package:ai_love_keyboard/utils/constants.dart';
-import 'package:ai_love_keyboard/views/paywall/paywall_view.dart';
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});
@@ -45,12 +44,8 @@ class SettingsView extends StatelessWidget {
             child: Row(
               children: [
                 Icon(
-                  usage.isSubscribed
-                      ? Icons.workspace_premium_rounded
-                      : Icons.lock_outline_rounded,
-                  color: usage.isSubscribed
-                      ? Colors.white
-                      : AppTheme.primary,
+                  Icons.lock_open_rounded,
+                  color: usage.isSubscribed ? Colors.white : AppTheme.primary,
                   size: 28,
                 ),
                 const SizedBox(width: 14),
@@ -59,7 +54,7 @@ class SettingsView extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        usage.isSubscribed ? 'PRO 會員' : '免費版',
+                        '免費版',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -72,7 +67,7 @@ class SettingsView extends StatelessWidget {
                       Text(
                         usage.isSubscribed
                             ? '享受無限 AI 功能'
-                            : '每日 ${AppConstants.freeDailyLimit} 次免費使用',
+                            : '目前版本所有功能免費開放',
                         style: TextStyle(
                           fontSize: 13,
                           color: usage.isSubscribed
@@ -83,16 +78,6 @@ class SettingsView extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (!usage.isSubscribed)
-                  ElevatedButton(
-                    onPressed: () => showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => const PaywallView(),
-                    ),
-                    child: const Text('升級'),
-                  ),
               ],
             ),
           ),
@@ -427,16 +412,6 @@ class SettingsView extends StatelessWidget {
 
           // ── General ─────────────────────────────────────────────
           _SectionHeader(title: '一般'),
-          _SettingsTile(
-            icon: Icons.restore_rounded,
-            title: '恢復購買',
-            onTap: () {
-              // TODO: Implement restore purchases
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('正在恢復購買...')),
-              );
-            },
-          ),
           _SettingsTile(
             icon: Icons.star_rounded,
             title: '為 App 評分',

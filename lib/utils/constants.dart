@@ -30,20 +30,25 @@ class AppConstants {
   static const String keyboardBundleId = 'com.ailovekeyboard.app.keyboard';
   static const String keyboardDisplayName = 'AI 戀愛鍵盤';
 
+  // Review build: all digital features are free. Paid subscriptions, coin
+  // packs, and non-IAP unlock flows must stay disabled until Apple IAP is
+  // implemented and submitted with the related products.
+  static const bool reviewFreeMode = true;
+
   // ── Free Tier ─────────────────────────────────────────────────────────
-  static const int freeDailyLimit = 3;
+  static const int freeDailyLimit = 999;
 
   // ── Subscription Product IDs ──────────────────────────────────────────
   static const String weeklyProductId = 'com.ailovekeyboard.pro.weekly';
   static const String monthlyProductId = 'com.ailovekeyboard.pro.monthly';
   static const String lifetimeProductId = 'com.ailovekeyboard.pro.lifetime';
   static const int freeTrialDays = 7;
-  static const String weeklyPriceDisplay = 'NT\$309/週';
-  static const String monthlyPriceDisplay = 'NT\$929/月';
-  static const String lifetimePriceDisplay = 'NT\$2,490 (一次買斷)';
-  static const double weeklyPriceUsd = 9.99;
-  static const double monthlyPriceUsd = 29.99;
-  static const double lifetimePriceUsd = 79.99;
+  static const String weeklyPriceDisplay = '免費';
+  static const String monthlyPriceDisplay = '免費';
+  static const String lifetimePriceDisplay = '免費';
+  static const double weeklyPriceUsd = 0;
+  static const double monthlyPriceUsd = 0;
+  static const double lifetimePriceUsd = 0;
 
   // ── SharedPreferences Keys ────────────────────────────────────────────
   static const String prefOnboardingComplete = 'onboarding_complete';

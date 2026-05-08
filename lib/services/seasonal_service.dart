@@ -97,7 +97,7 @@ class CategorizedPackage {
   String get statusLabel {
     switch (category) {
       case PackageCategory.active:
-        return '限時優惠中';
+        return '限時活動中';
       case PackageCategory.upcoming:
         return '即將推出';
       case PackageCategory.past:

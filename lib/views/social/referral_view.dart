@@ -160,7 +160,7 @@ class ReferralView extends StatelessWidget {
           _RewardTile(
             emoji: '\u{1F4F8}',
             title: '分享到 IG 限動',
-            subtitle: referral.hasSharedToIg ? '已完成' : '分享即得 1 天 PRO',
+            subtitle: referral.hasSharedToIg ? '已完成' : '分享即得免費功能體驗',
             isComplete: referral.hasSharedToIg,
           ),
 
@@ -407,4 +407,3 @@ class _RewardTile extends StatelessWidget {
     );
   }
 }
-

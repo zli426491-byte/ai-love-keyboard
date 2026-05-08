@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import 'package:ai_love_keyboard/services/usage_service.dart';
 import 'package:ai_love_keyboard/utils/app_theme.dart';
-import 'package:ai_love_keyboard/utils/constants.dart';
 
 class UsageIndicator extends StatelessWidget {
   const UsageIndicator({super.key});
@@ -12,6 +11,31 @@ class UsageIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<UsageService>(
       builder: (context, usage, _) {
+        if (usage.canUse) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              gradient: AppTheme.accentGradient,
+              borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.check_circle_rounded, size: 16, color: Colors.white),
+                SizedBox(width: 4),
+                Text(
+                  'FREE',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
         if (usage.isSubscribed) {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -38,7 +62,7 @@ class UsageIndicator extends StatelessWidget {
         }
 
         final remaining = usage.remainingFree;
-        final total = AppConstants.freeDailyLimit;
+        const total = 3;
         final ratio = remaining / total;
 
         Color barColor;

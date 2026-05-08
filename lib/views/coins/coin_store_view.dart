@@ -71,9 +71,9 @@ class CoinStoreView extends StatelessWidget {
 
           const SizedBox(height: AppTheme.spacingLg),
 
-          // Coin packages
+          // Free coin grants for this review build.
           Text(
-            '購買金幣',
+            '免費獲得金幣',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: AppTheme.spacingSm),
@@ -82,16 +82,15 @@ class CoinStoreView extends StatelessWidget {
             (pkg) => _CoinPackageCard(
               package: pkg,
               onPurchase: () async {
-                // TODO: Integrate with real IAP
                 await coinService.addCoins(
                   pkg.totalCoins,
-                  feature: '購買 ${pkg.coins} 金幣包',
+                  feature: '免費領取 ${pkg.coins} 金幣包',
                 );
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
-                          '購買成功！獲得 ${pkg.totalCoins} 金幣'),
+                          '已免費領取 ${pkg.totalCoins} 金幣'),
                     ),
                   );
                 }
@@ -136,9 +135,9 @@ class CoinStoreView extends StatelessWidget {
 
           const SizedBox(height: AppTheme.spacingLg),
 
-          // Free coins
+          // Other free coin sources
           Text(
-            '免費獲得金幣',
+            '其他免費來源',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: AppTheme.spacingSm),
@@ -343,7 +342,7 @@ class _CoinPackageCard extends StatelessWidget {
             ),
           ),
 
-          // Price button
+          // Free grant button
           GestureDetector(
             onTap: onPurchase,
             child: Container(
@@ -361,7 +360,7 @@ class _CoinPackageCard extends StatelessWidget {
                     BorderRadius.circular(AppTheme.radiusFull),
               ),
               child: Text(
-                '\$${package.price.toStringAsFixed(2)}',
+                '領取',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,

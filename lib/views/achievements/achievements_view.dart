@@ -365,7 +365,7 @@ class _AchievementDetailSheet extends StatelessWidget {
                 child: Text(
                   achievement.rewardType ==
                           AchievementRewardType.purchasable
-                      ? '購買獎勵 ${achievement.rewardDescription}'
+                      ? '解鎖獎勵 ${achievement.rewardDescription}'
                       : '領取獎勵',
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),

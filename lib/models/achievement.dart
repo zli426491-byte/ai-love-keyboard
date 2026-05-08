@@ -42,13 +42,13 @@ class Achievement {
   String get rewardDescription {
     switch (rewardType) {
       case AchievementRewardType.freePro:
-        return '免費 PRO 體驗';
+        return '免費功能體驗';
       case AchievementRewardType.freePackage:
         return '免費禮包';
       case AchievementRewardType.unlockFeature:
         return '解鎖隱藏功能';
       case AchievementRewardType.purchasable:
-        return rewardPrice != null ? '可購買 \$${rewardPrice!.toStringAsFixed(2)}' : '可購買';
+        return '可免費解鎖';
     }
   }
 
@@ -89,7 +89,7 @@ class Achievement {
           name: '百次達人',
           emoji: '\u{1F4AF}',
           description: '累計生成 100 次回覆',
-          requirement: '累計使用 100 次後可購買獎勵',
+          requirement: '累計使用 100 次後可解鎖獎勵',
           rewardType: AchievementRewardType.purchasable,
           rewardProductId: 'com.ailovekeyboard.achievement.charm_analysis',
           rewardPrice: 2.99,
@@ -100,7 +100,7 @@ class Achievement {
           name: '溫度計大師',
           emoji: '\u{1F321}\uFE0F',
           description: '使用聊天分析 10 次',
-          requirement: '使用聊天溫度計 10 次後可購買獎勵',
+          requirement: '使用聊天溫度計 10 次後可解鎖獎勵',
           rewardType: AchievementRewardType.purchasable,
           rewardProductId: 'com.ailovekeyboard.achievement.relationship_report',
           rewardPrice: 1.99,
@@ -111,7 +111,7 @@ class Achievement {
           name: '約會成功',
           emoji: '\u{1F495}',
           description: '使用約會邀請 5 次',
-          requirement: '使用約會邀請功能 5 次後可購買獎勵',
+          requirement: '使用約會邀請功能 5 次後可解鎖獎勵',
           rewardType: AchievementRewardType.purchasable,
           rewardProductId: 'com.ailovekeyboard.achievement.date_coach',
           rewardPrice: 3.99,
@@ -122,7 +122,7 @@ class Achievement {
           name: '國際戀人',
           emoji: '\u{1F30D}',
           description: '使用翻譯回覆 10 次',
-          requirement: '使用翻譯回覆功能 10 次後可購買獎勵',
+          requirement: '使用翻譯回覆功能 10 次後可解鎖獎勵',
           rewardType: AchievementRewardType.purchasable,
           rewardProductId: 'com.ailovekeyboard.achievement.cross_culture',
           rewardPrice: 2.99,
@@ -142,7 +142,7 @@ class Achievement {
           name: '戀愛大師',
           emoji: '\u{1F451}',
           description: '完成所有成就',
-          requirement: '完成所有其他成就即可獲得永久 PRO 徽章',
+          requirement: '完成所有其他成就即可獲得永久徽章',
           rewardType: AchievementRewardType.freePro,
           maxProgress: 7,
         ),

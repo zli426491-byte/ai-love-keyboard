@@ -52,7 +52,7 @@ class _SeasonalPackagesViewState extends State<SeasonalPackagesView> {
           // Active packages section
           if (SeasonalPackage.activePackages.isNotEmpty) ...[
             _SectionHeader(
-              title: '限時優惠中',
+              title: '限時活動中',
               icon: Icons.local_fire_department_rounded,
               color: AppTheme.error,
             ),
@@ -111,11 +111,10 @@ class _SeasonalPackagesViewState extends State<SeasonalPackagesView> {
   Future<void> _handlePurchase(
       BuildContext ctx, SeasonalPackage pkg) async {
     final seasonal = ctx.read<SeasonalService>();
-    // TODO: Integrate with real IAP
     await seasonal.purchasePackage(pkg.id);
     if (ctx.mounted) {
       ScaffoldMessenger.of(ctx).showSnackBar(
-        SnackBar(content: Text('已購買 ${pkg.emoji} ${pkg.name}！')),
+        SnackBar(content: Text('已免費領取 ${pkg.emoji} ${pkg.name}！')),
       );
     }
   }
@@ -315,7 +314,7 @@ class _SeasonalCard extends StatelessWidget {
                                     color: Colors.white, size: 16),
                                 SizedBox(width: 4),
                                 Text(
-                                  '已購買',
+                                  '已領取',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 13,
@@ -336,7 +335,7 @@ class _SeasonalCard extends StatelessWidget {
                                     AppTheme.radiusFull),
                               ),
                               child: Text(
-                                '\$${package.price.toStringAsFixed(2)}',
+                                '免費領取',
                                 style: TextStyle(
                                   color: package.primaryColor,
                                   fontSize: 15,

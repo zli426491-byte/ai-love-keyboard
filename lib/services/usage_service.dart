@@ -10,9 +10,10 @@ class UsageService extends ChangeNotifier {
   int get usedToday => _usedToday;
   int get remainingFree =>
       (AppConstants.freeDailyLimit - _usedToday).clamp(0, AppConstants.freeDailyLimit);
-  bool get canUseForFree => _usedToday < AppConstants.freeDailyLimit;
+  bool get canUseForFree => AppConstants.reviewFreeMode ||
+      _usedToday < AppConstants.freeDailyLimit;
   bool get isSubscribed => _isSubscribed;
-  bool get canUse => _isSubscribed || canUseForFree;
+  bool get canUse => AppConstants.reviewFreeMode || _isSubscribed || canUseForFree;
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
@@ -38,6 +39,7 @@ class UsageService extends ChangeNotifier {
 
   Future<bool> recordUsage() async {
     if (!canUse) return false;
+    if (AppConstants.reviewFreeMode) return true;
 
     if (!_isSubscribed) {
       _usedToday++;

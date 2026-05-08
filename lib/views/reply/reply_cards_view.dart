@@ -25,7 +25,7 @@ class ReplyCardsView extends StatelessWidget {
     final usage = context.read<UsageService>();
     if (!usage.canUse) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('今日免費次數已用完，請升級 PRO')),
+        const SnackBar(content: Text('暫時無法產生回覆，請稍後再試')),
       );
       return;
     }

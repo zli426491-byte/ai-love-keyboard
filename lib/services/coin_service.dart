@@ -80,7 +80,7 @@ class CoinService extends ChangeNotifier {
   }
 
   /// Add coins (e.g., from purchase or reward).
-  Future<void> addCoins(int amount, {String feature = '購買金幣'}) async {
+  Future<void> addCoins(int amount, {String feature = '免費金幣'}) async {
     await _creditCoins(amount, feature);
     notifyListeners();
   }

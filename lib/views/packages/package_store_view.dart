@@ -187,7 +187,7 @@ class PackageStoreView extends StatelessWidget {
                                         )
                                       else
                                         Text(
-                                          '\$${pkg.price.toStringAsFixed(2)}',
+                                          '免費',
                                           style: TextStyle(
                                             color: colors[0],
                                             fontSize: 16,
