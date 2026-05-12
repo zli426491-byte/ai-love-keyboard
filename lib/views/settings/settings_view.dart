@@ -34,12 +34,9 @@ class SettingsView extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppTheme.spacingMd),
             decoration: BoxDecoration(
-              gradient: usage.isSubscribed
-                  ? AppTheme.primaryGradient
-                  : null,
+              gradient: usage.isSubscribed ? AppTheme.primaryGradient : null,
               color: usage.isSubscribed ? null : Colors.grey.shade50,
-              borderRadius:
-                  BorderRadius.circular(AppTheme.radiusLg),
+              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
             ),
             child: Row(
               children: [
@@ -65,9 +62,7 @@ class SettingsView extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        usage.isSubscribed
-                            ? '享受無限 AI 功能'
-                            : '目前版本所有功能免費開放',
+                        usage.isSubscribed ? '享受無限 AI 功能' : '目前版本所有功能免費開放',
                         style: TextStyle(
                           fontSize: 13,
                           color: usage.isSubscribed
@@ -92,8 +87,7 @@ class SettingsView extends StatelessWidget {
                 padding: const EdgeInsets.all(AppTheme.spacingMd),
                 decoration: BoxDecoration(
                   color: Theme.of(context).cardTheme.color ?? Colors.white,
-                  borderRadius:
-                      BorderRadius.circular(AppTheme.radiusLg),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                   border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: Column(
@@ -101,13 +95,15 @@ class SettingsView extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.language_rounded,
-                            color: AppTheme.primary, size: 22),
+                        const Icon(
+                          Icons.language_rounded,
+                          color: AppTheme.primary,
+                          size: 22,
+                        ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
                                 '目前地區',
@@ -140,15 +136,13 @@ class SettingsView extends StatelessWidget {
                             locale.displayName,
                             style: TextStyle(
                               fontSize: 12,
-                              color:
-                                  isSelected ? Colors.white : null,
+                              color: isSelected ? Colors.white : null,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           selected: isSelected,
                           selectedColor: AppTheme.primary,
-                          onSelected: (_) =>
-                              localeService.setLocale(locale),
+                          onSelected: (_) => localeService.setLocale(locale),
                         );
                       }).toList(),
                     ),
@@ -167,17 +161,18 @@ class SettingsView extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppTheme.accent.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-              border: Border.all(
-                color: AppTheme.accent.withValues(alpha: 0.3),
-              ),
+              border: Border.all(color: AppTheme.accent.withValues(alpha: 0.3)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Icon(Icons.keyboard_rounded,
-                        color: AppTheme.accent, size: 24),
+                    Icon(
+                      Icons.keyboard_rounded,
+                      color: AppTheme.accent,
+                      size: 24,
+                    ),
                     const SizedBox(width: 10),
                     const Expanded(
                       child: Text(
@@ -192,7 +187,7 @@ class SettingsView extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  '啟用後可在任何聊天 App 中直接使用 AI 回覆功能，不需切換 App！',
+                  '啟用後可在聊天 App 中快速插入回覆模板，不需切換 App。',
                   style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
                 ),
                 const SizedBox(height: 14),
@@ -200,35 +195,22 @@ class SettingsView extends StatelessWidget {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius:
-                        BorderRadius.circular(AppTheme.radiusMd),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: const [
-                      _SetupStep(
-                        number: '1',
-                        text: '打開 iPhone「設定」',
-                      ),
+                      _SetupStep(number: '1', text: '打開 iPhone「設定」'),
                       SizedBox(height: 8),
-                      _SetupStep(
-                        number: '2',
-                        text: '前往「一般」→「鍵盤」',
-                      ),
+                      _SetupStep(number: '2', text: '前往「一般」→「鍵盤」'),
                       SizedBox(height: 8),
-                      _SetupStep(
-                        number: '3',
-                        text: '點選「新增鍵盤...」',
-                      ),
+                      _SetupStep(number: '3', text: '點選「新增鍵盤...」'),
                       SizedBox(height: 8),
-                      _SetupStep(
-                        number: '4',
-                        text: '選擇「AI 戀愛鍵盤」',
-                      ),
+                      _SetupStep(number: '4', text: '選擇「AI 戀愛鍵盤」'),
                       SizedBox(height: 8),
                       _SetupStep(
                         number: '5',
-                        text: '開啟「允許完整取用」（必要，用於 AI 連線）',
+                        text: '在聊天 App 長按地球圖示，切換到 AI 戀愛鍵盤',
                       ),
                     ],
                   ),
@@ -239,13 +221,13 @@ class SettingsView extends StatelessWidget {
                   child: OutlinedButton.icon(
                     onPressed: () async {
                       final uri = Uri.parse(
-                          'app-settings:com.ailovekeyboard.app');
+                        'app-settings:com.ailovekeyboard.app',
+                      );
                       if (await canLaunchUrl(uri)) {
                         await launchUrl(uri);
                       }
                     },
-                    icon: const Icon(Icons.open_in_new_rounded,
-                        size: 18),
+                    icon: const Icon(Icons.open_in_new_rounded, size: 18),
                     label: const Text('前往設定'),
                   ),
                 ),
@@ -263,19 +245,22 @@ class SettingsView extends StatelessWidget {
                 padding: const EdgeInsets.all(AppTheme.spacingMd),
                 decoration: BoxDecoration(
                   color: Theme.of(context).cardTheme.color ?? Colors.white,
-                  borderRadius:
-                      BorderRadius.circular(AppTheme.radiusLg),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                   border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: Column(
                   children: [
                     SwitchListTile(
-                      title: const Text('自動移除個人資訊',
-                          style: TextStyle(fontSize: 14)),
+                      title: const Text(
+                        '自動移除個人資訊',
+                        style: TextStyle(fontSize: 14),
+                      ),
                       subtitle: Text(
                         '傳送前自動移除電話、信箱等個資',
                         style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade500),
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
+                        ),
                       ),
                       value: privacy.autoStripPii,
                       onChanged: (v) => privacy.setAutoStripPii(v),
@@ -284,12 +269,16 @@ class SettingsView extends StatelessWidget {
                     ),
                     const Divider(height: 1),
                     SwitchListTile(
-                      title: const Text('24 小時自動刪除紀錄',
-                          style: TextStyle(fontSize: 14)),
+                      title: const Text(
+                        '24 小時自動刪除紀錄',
+                        style: TextStyle(fontSize: 14),
+                      ),
                       subtitle: Text(
                         '已傳送的資料紀錄 24 小時後自動清除',
                         style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade500),
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
+                        ),
                       ),
                       value: privacy.autoDeleteHistory,
                       onChanged: (v) => privacy.setAutoDeleteHistory(v),
@@ -298,33 +287,51 @@ class SettingsView extends StatelessWidget {
                     ),
                     const Divider(height: 1),
                     ListTile(
-                      leading: const Icon(Icons.history_rounded,
-                          color: AppTheme.primary, size: 22),
-                      title: const Text('查看已傳送資料',
-                          style: TextStyle(fontSize: 14)),
-                      trailing: Icon(Icons.chevron_right_rounded,
-                          color: Colors.grey.shade400),
+                      leading: const Icon(
+                        Icons.history_rounded,
+                        color: AppTheme.primary,
+                        size: 22,
+                      ),
+                      title: const Text(
+                        '查看已傳送資料',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                      trailing: Icon(
+                        Icons.chevron_right_rounded,
+                        color: Colors.grey.shade400,
+                      ),
                       contentPadding: EdgeInsets.zero,
                       onTap: () => _showDataSentHistory(context, privacy),
                     ),
                     const Divider(height: 1),
                     ListTile(
-                      leading: const Icon(Icons.delete_forever_rounded,
-                          color: AppTheme.error, size: 22),
-                      title: const Text('刪除所有資料',
-                          style: TextStyle(
-                              fontSize: 14, color: AppTheme.error)),
+                      leading: const Icon(
+                        Icons.delete_forever_rounded,
+                        color: AppTheme.error,
+                        size: 22,
+                      ),
+                      title: const Text(
+                        '刪除所有資料',
+                        style: TextStyle(fontSize: 14, color: AppTheme.error),
+                      ),
                       contentPadding: EdgeInsets.zero,
                       onTap: () => _confirmDeleteAllData(context, privacy),
                     ),
                     const Divider(height: 1),
                     ListTile(
-                      leading: const Icon(Icons.privacy_tip_outlined,
-                          color: AppTheme.primary, size: 22),
-                      title: const Text('隱私權政策',
-                          style: TextStyle(fontSize: 14)),
-                      trailing: Icon(Icons.chevron_right_rounded,
-                          color: Colors.grey.shade400),
+                      leading: const Icon(
+                        Icons.privacy_tip_outlined,
+                        color: AppTheme.primary,
+                        size: 22,
+                      ),
+                      title: const Text(
+                        '隱私權政策',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                      trailing: Icon(
+                        Icons.chevron_right_rounded,
+                        color: Colors.grey.shade400,
+                      ),
                       contentPadding: EdgeInsets.zero,
                       onTap: () =>
                           _launchUrl('https://ailovekeyboard.com/privacy'),
@@ -346,23 +353,25 @@ class SettingsView extends StatelessWidget {
                 padding: const EdgeInsets.all(AppTheme.spacingMd),
                 decoration: BoxDecoration(
                   color: Theme.of(context).cardTheme.color ?? Colors.white,
-                  borderRadius:
-                      BorderRadius.circular(AppTheme.radiusLg),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                   border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: Column(
                   children: [
                     ListTile(
-                      leading: const Icon(Icons.shield_outlined,
-                          color: AppTheme.primary, size: 22),
-                      title: const Text('內容過濾等級',
-                          style: TextStyle(fontSize: 14)),
+                      leading: const Icon(
+                        Icons.shield_outlined,
+                        color: AppTheme.primary,
+                        size: 22,
+                      ),
+                      title: const Text(
+                        '內容過濾等級',
+                        style: TextStyle(fontSize: 14),
+                      ),
                       trailing: SegmentedButton<String>(
                         segments: const [
-                          ButtonSegment(
-                              value: 'standard', label: Text('標準')),
-                          ButtonSegment(
-                              value: 'strict', label: Text('嚴格')),
+                          ButtonSegment(value: 'standard', label: Text('標準')),
+                          ButtonSegment(value: 'strict', label: Text('嚴格')),
                         ],
                         selected: {privacy.filterLevel},
                         onSelectionChanged: (v) {
@@ -376,7 +385,8 @@ class SettingsView extends StatelessWidget {
                         style: ButtonStyle(
                           visualDensity: VisualDensity.compact,
                           textStyle: WidgetStateProperty.all(
-                              const TextStyle(fontSize: 12)),
+                            const TextStyle(fontSize: 12),
+                          ),
                         ),
                       ),
                       contentPadding: EdgeInsets.zero,
@@ -387,20 +397,26 @@ class SettingsView extends StatelessWidget {
                         child: Text(
                           '嚴格模式：加強過濾可能具爭議的內容',
                           style: TextStyle(
-                              fontSize: 11, color: Colors.grey.shade500),
+                            fontSize: 11,
+                            color: Colors.grey.shade500,
+                          ),
                         ),
                       ),
                     const Divider(height: 16),
                     ListTile(
-                      leading: const Icon(Icons.gavel_rounded,
-                          color: AppTheme.primary, size: 22),
-                      title: const Text('社群準則',
-                          style: TextStyle(fontSize: 14)),
-                      trailing: Icon(Icons.chevron_right_rounded,
-                          color: Colors.grey.shade400),
+                      leading: const Icon(
+                        Icons.gavel_rounded,
+                        color: AppTheme.primary,
+                        size: 22,
+                      ),
+                      title: const Text('社群準則', style: TextStyle(fontSize: 14)),
+                      trailing: Icon(
+                        Icons.chevron_right_rounded,
+                        color: Colors.grey.shade400,
+                      ),
                       contentPadding: EdgeInsets.zero,
-                      onTap: () => _launchUrl(
-                          'https://ailovekeyboard.com/guidelines'),
+                      onTap: () =>
+                          _launchUrl('https://ailovekeyboard.com/guidelines'),
                     ),
                   ],
                 ),
@@ -454,10 +470,7 @@ class SettingsView extends StatelessWidget {
               return Center(
                 child: Text(
                   '${AppConstants.appName} v$version',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade400,
-                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
                 ),
               );
             },
@@ -477,7 +490,9 @@ class SettingsView extends StatelessWidget {
   }
 
   static void _showDataSentHistory(
-      BuildContext context, PrivacyManager privacy) {
+    BuildContext context,
+    PrivacyManager privacy,
+  ) {
     final history = privacy.dataSentHistory;
     showModalBottomSheet(
       context: context,
@@ -495,18 +510,12 @@ class SettingsView extends StatelessWidget {
               children: [
                 const Text(
                   '已傳送資料紀錄',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '共 ${history.length} 筆紀錄',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade500,
-                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
                 ),
                 const SizedBox(height: AppTheme.spacingMd),
                 Expanded(
@@ -515,13 +524,12 @@ class SettingsView extends StatelessWidget {
                       : ListView.separated(
                           controller: scrollController,
                           itemCount: history.length,
-                          separatorBuilder: (_, _) =>
-                              const Divider(height: 1),
+                          separatorBuilder: (_, _) => const Divider(height: 1),
                           itemBuilder: (_, i) {
-                            final record =
-                                history[history.length - 1 - i];
-                            final dateStr = DateFormat('MM/dd HH:mm')
-                                .format(record.timestamp);
+                            final record = history[history.length - 1 - i];
+                            final dateStr = DateFormat(
+                              'MM/dd HH:mm',
+                            ).format(record.timestamp);
                             return ListTile(
                               dense: true,
                               title: Text(
@@ -553,7 +561,9 @@ class SettingsView extends StatelessWidget {
   }
 
   static void _confirmDeleteAllData(
-      BuildContext context, PrivacyManager privacy) {
+    BuildContext context,
+    PrivacyManager privacy,
+  ) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -569,13 +579,12 @@ class SettingsView extends StatelessWidget {
               await privacy.deleteAllLocalData();
               if (ctx.mounted) {
                 Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('所有資料已刪除')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('所有資料已刪除')));
               }
             },
-            style:
-                ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
             child: const Text('確定刪除'),
           ),
         ],
@@ -592,7 +601,10 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(
-          left: 4, bottom: AppTheme.spacingSm, top: AppTheme.spacingSm),
+        left: 4,
+        bottom: AppTheme.spacingSm,
+        top: AppTheme.spacingSm,
+      ),
       child: Text(
         title,
         style: TextStyle(
@@ -635,12 +647,7 @@ class _SetupStep extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(fontSize: 14),
-          ),
-        ),
+        Expanded(child: Text(text, style: const TextStyle(fontSize: 14))),
       ],
     );
   }
@@ -662,14 +669,12 @@ class _SettingsTile extends StatelessWidget {
     return ListTile(
       leading: Icon(icon, color: AppTheme.primary, size: 22),
       title: Text(title),
-      trailing:
-          Icon(Icons.chevron_right_rounded, color: Colors.grey.shade400),
+      trailing: Icon(Icons.chevron_right_rounded, color: Colors.grey.shade400),
       onTap: onTap,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       ),
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
     );
   }
 }

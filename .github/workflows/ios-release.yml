@@ -48,9 +48,17 @@ jobs:
             --certificate-key "$CERTIFICATE_PRIVATE_KEY" \
             --create
 
+          app-store-connect fetch-signing-files "com.ailovekeyboard.app.keyboard" \
+            --type IOS_APP_STORE \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --key-id "$APP_STORE_CONNECT_KEY_ID" \
+            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
+            --certificate-key "$CERTIFICATE_PRIVATE_KEY" \
+            --create
+
           keychain initialize
           keychain add-certificates
-          xcode-project use-profiles --project ios/Runner.xcodeproj
+          xcode-project use-profiles --project ios/Runner.xcodeproj --export-options-plist ios/ExportOptions.generated.plist
 
       - name: Set build number
         env:
@@ -69,7 +77,7 @@ jobs:
         run: |
           flutter build ipa \
             --release \
-            --export-options-plist=ios/ExportOptions.plist
+            --export-options-plist=ios/ExportOptions.generated.plist
 
       - name: Upload to TestFlight
         env:

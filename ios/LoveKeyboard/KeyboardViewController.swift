@@ -1,451 +1,207 @@
 import UIKit
 
-// MARK: - Keyboard View Controller
-class KeyboardViewController: UIInputViewController {
-
-    // MARK: - Constants
-    private enum Colors {
-        static let primary = UIColor(red: 124/255, green: 58/255, blue: 237/255, alpha: 1)     // #7C3AED
-        static let primaryLight = UIColor(red: 159/255, green: 103/255, blue: 255/255, alpha: 1)
-        static let accent = UIColor(red: 45/255, green: 212/255, blue: 191/255, alpha: 1)       // #2DD4BF
-        static let bgColor = UIColor(red: 248/255, green: 247/255, blue: 255/255, alpha: 1)
-        static let cardBg = UIColor.white
-        static let textPrimary = UIColor(red: 30/255, green: 27/255, blue: 75/255, alpha: 1)
-        static let textSecondary = UIColor(red: 107/255, green: 114/255, blue: 128/255, alpha: 1)
-    }
-
-    private enum API {
-        static let url = "https://api.openai.com/v1/chat/completions"
-        static let model = "gpt-4o"
-        // API key is loaded from App Group shared UserDefaults
-        static let appGroupId = "group.com.ailovekeyboard.app"
-        static let apiKeyKey = "openai_api_key"
-    }
-
+final class KeyboardViewController: UIInputViewController {
     private enum Style: String, CaseIterable {
-        case humorous = "幽默"
-        case romantic = "浪漫"
-        case flirty = "撩人"
-        case cool = "高冷"
+        case gentle = "溫柔"
+        case funny = "幽默"
+        case flirty = "曖昧"
+        case apology = "道歉"
     }
 
-    // MARK: - Properties
-    private var selectedStyle: Style = .humorous
-    private var generatedReplies: [String] = []
-    private var isLoading = false
+    private enum Palette {
+        static let background = UIColor(red: 250 / 255, green: 247 / 255, blue: 255 / 255, alpha: 1)
+        static let card = UIColor.white
+        static let primary = UIColor(red: 126 / 255, green: 87 / 255, blue: 255 / 255, alpha: 1)
+        static let accent = UIColor(red: 22 / 255, green: 178 / 255, blue: 160 / 255, alpha: 1)
+        static let text = UIColor(red: 35 / 255, green: 30 / 255, blue: 48 / 255, alpha: 1)
+        static let secondary = UIColor(red: 112 / 255, green: 103 / 255, blue: 125 / 255, alpha: 1)
+        static let border = UIColor(red: 226 / 255, green: 216 / 255, blue: 238 / 255, alpha: 1)
+    }
 
-    // MARK: - UI Elements
-    private let containerView = UIView()
+    private let rootStack = UIStackView()
     private let inputField = UITextField()
-    private var styleButtons: [UIButton] = []
+    private let replyStack = UIStackView()
     private let generateButton = UIButton(type: .system)
-    private let switchKeyboardButton = UIButton(type: .system)
-    private let repliesStackView = UIStackView()
-    private let scrollView = UIScrollView()
-    private let contentStackView = UIStackView()
-    private let loadingIndicator = UIActivityIndicatorView(style: .medium)
+    private let nextKeyboardButton = UIButton(type: .system)
+    private var styleButtons: [UIButton] = []
+    private var selectedStyle: Style = .gentle
+    private var currentReplies: [String] = []
 
-    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        setupUI()
+        setupKeyboard()
+        generateReplies()
     }
 
-    override func viewWillLayoutSubviews() {
-        super.viewWillLayoutSubviews()
-    }
+    private func setupKeyboard() {
+        view.backgroundColor = Palette.background
+        view.heightAnchor.constraint(greaterThanOrEqualToConstant: 292).isActive = true
 
-    // MARK: - UI Setup
-    private func setupUI() {
-        guard let inputView = self.inputView else { return }
-        inputView.allowsSelfSizing = true
-
-        // Container
-        containerView.backgroundColor = Colors.bgColor
-        containerView.translatesAutoresizingMaskIntoConstraints = false
-        inputView.addSubview(containerView)
+        rootStack.axis = .vertical
+        rootStack.spacing = 8
+        rootStack.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(rootStack)
 
         NSLayoutConstraint.activate([
-            containerView.leadingAnchor.constraint(equalTo: inputView.leadingAnchor),
-            containerView.trailingAnchor.constraint(equalTo: inputView.trailingAnchor),
-            containerView.topAnchor.constraint(equalTo: inputView.topAnchor),
-            containerView.bottomAnchor.constraint(equalTo: inputView.bottomAnchor),
-            containerView.heightAnchor.constraint(greaterThanOrEqualToConstant: 280),
+            rootStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
+            rootStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10),
+            rootStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 8),
+            rootStack.bottomAnchor.constraint(lessThanOrEqualTo: view.bottomAnchor, constant: -8),
         ])
 
-        // ScrollView for the entire keyboard content
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
-        scrollView.showsVerticalScrollIndicator = false
-        containerView.addSubview(scrollView)
-
-        NSLayoutConstraint.activate([
-            scrollView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
-            scrollView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
-            scrollView.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 6),
-            scrollView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -6),
-        ])
-
-        // Main vertical stack
-        contentStackView.axis = .vertical
-        contentStackView.spacing = 8
-        contentStackView.alignment = .fill
-        contentStackView.translatesAutoresizingMaskIntoConstraints = false
-        scrollView.addSubview(contentStackView)
-
-        NSLayoutConstraint.activate([
-            contentStackView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor, constant: 10),
-            contentStackView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor, constant: -10),
-            contentStackView.topAnchor.constraint(equalTo: scrollView.topAnchor),
-            contentStackView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
-            contentStackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -20),
-        ])
-
-        // --- Header row: title + switch keyboard button ---
-        let headerStack = UIStackView()
-        headerStack.axis = .horizontal
-        headerStack.alignment = .center
-        headerStack.distribution = .fill
+        let header = UIStackView()
+        header.axis = .horizontal
+        header.alignment = .center
 
         let titleLabel = UILabel()
-        titleLabel.text = "💜 AI 戀愛鍵盤"
-        titleLabel.font = UIFont.systemFont(ofSize: 14, weight: .bold)
-        titleLabel.textColor = Colors.primary
-        headerStack.addArrangedSubview(titleLabel)
+        titleLabel.text = "AI 戀愛鍵盤"
+        titleLabel.font = .systemFont(ofSize: 15, weight: .bold)
+        titleLabel.textColor = Palette.primary
+        header.addArrangedSubview(titleLabel)
 
         let spacer = UIView()
         spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        headerStack.addArrangedSubview(spacer)
+        header.addArrangedSubview(spacer)
 
-        switchKeyboardButton.setTitle("切換鍵盤 ⌨️", for: .normal)
-        switchKeyboardButton.titleLabel?.font = UIFont.systemFont(ofSize: 12, weight: .medium)
-        switchKeyboardButton.setTitleColor(Colors.textSecondary, for: .normal)
-        switchKeyboardButton.addTarget(self, action: #selector(handleSwitchKeyboard), for: .touchUpInside)
-        headerStack.addArrangedSubview(switchKeyboardButton)
+        nextKeyboardButton.setTitle("切換鍵盤", for: .normal)
+        nextKeyboardButton.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
+        nextKeyboardButton.setTitleColor(Palette.secondary, for: .normal)
+        nextKeyboardButton.addTarget(self, action: #selector(handleNextKeyboard), for: .touchUpInside)
+        header.addArrangedSubview(nextKeyboardButton)
+        rootStack.addArrangedSubview(header)
 
-        contentStackView.addArrangedSubview(headerStack)
-
-        // --- Input field ---
-        inputField.placeholder = "貼上對方的訊息..."
-        inputField.font = UIFont.systemFont(ofSize: 14)
-        inputField.borderStyle = .none
-        inputField.backgroundColor = Colors.cardBg
-        inputField.layer.cornerRadius = 10
+        inputField.placeholder = "貼上對方訊息，產生回覆"
+        inputField.font = .systemFont(ofSize: 14)
+        inputField.textColor = Palette.text
+        inputField.backgroundColor = Palette.card
+        inputField.layer.cornerRadius = 12
         inputField.layer.borderWidth = 1
-        inputField.layer.borderColor = UIColor.systemGray4.cgColor
-        inputField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 0))
+        inputField.layer.borderColor = Palette.border.cgColor
+        inputField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 1))
         inputField.leftViewMode = .always
-        inputField.rightView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 0))
+        inputField.rightView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 1))
         inputField.rightViewMode = .always
-        inputField.heightAnchor.constraint(equalToConstant: 38).isActive = true
-        inputField.textColor = Colors.textPrimary
-        contentStackView.addArrangedSubview(inputField)
+        inputField.heightAnchor.constraint(equalToConstant: 40).isActive = true
+        rootStack.addArrangedSubview(inputField)
 
-        // --- Style buttons row ---
         let styleStack = UIStackView()
         styleStack.axis = .horizontal
         styleStack.spacing = 8
         styleStack.distribution = .fillEqually
-
         for style in Style.allCases {
             let button = UIButton(type: .system)
             button.setTitle(style.rawValue, for: .normal)
-            button.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .semibold)
-            button.layer.cornerRadius = 16
+            button.titleLabel?.font = .systemFont(ofSize: 13, weight: .bold)
+            button.layer.cornerRadius = 15
             button.heightAnchor.constraint(equalToConstant: 32).isActive = true
-            button.tag = Style.allCases.firstIndex(of: style) ?? 0
-            button.addTarget(self, action: #selector(styleButtonTapped(_:)), for: .touchUpInside)
+            button.tag = styleButtons.count
+            button.addTarget(self, action: #selector(styleTapped(_:)), for: .touchUpInside)
             styleButtons.append(button)
             styleStack.addArrangedSubview(button)
         }
+        rootStack.addArrangedSubview(styleStack)
         updateStyleButtons()
-        contentStackView.addArrangedSubview(styleStack)
 
-        // --- Generate button ---
-        generateButton.setTitle("生成回覆 ✨", for: .normal)
-        generateButton.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .bold)
+        generateButton.setTitle("產生回覆", for: .normal)
+        generateButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .bold)
         generateButton.setTitleColor(.white, for: .normal)
-        generateButton.backgroundColor = Colors.primary
-        generateButton.layer.cornerRadius = 12
+        generateButton.backgroundColor = Palette.accent
+        generateButton.layer.cornerRadius = 13
         generateButton.heightAnchor.constraint(equalToConstant: 42).isActive = true
-        generateButton.addTarget(self, action: #selector(generateTapped), for: .touchUpInside)
-        contentStackView.addArrangedSubview(generateButton)
+        generateButton.addTarget(self, action: #selector(generateReplies), for: .touchUpInside)
+        rootStack.addArrangedSubview(generateButton)
 
-        // --- Loading indicator ---
-        loadingIndicator.color = Colors.primary
-        loadingIndicator.hidesWhenStopped = true
-        contentStackView.addArrangedSubview(loadingIndicator)
-
-        // --- Replies stack ---
-        repliesStackView.axis = .vertical
-        repliesStackView.spacing = 6
-        repliesStackView.alignment = .fill
-        contentStackView.addArrangedSubview(repliesStackView)
+        replyStack.axis = .vertical
+        replyStack.spacing = 7
+        rootStack.addArrangedSubview(replyStack)
     }
 
-    // MARK: - Style Selection
-    @objc private func styleButtonTapped(_ sender: UIButton) {
-        let index = sender.tag
-        if index < Style.allCases.count {
-            selectedStyle = Style.allCases[index]
-            updateStyleButtons()
-        }
+    @objc private func styleTapped(_ sender: UIButton) {
+        selectedStyle = Style.allCases[sender.tag]
+        updateStyleButtons()
+        generateReplies()
     }
 
     private func updateStyleButtons() {
         for (index, button) in styleButtons.enumerated() {
-            let style = Style.allCases[index]
-            if style == selectedStyle {
-                button.backgroundColor = Colors.primary
-                button.setTitleColor(.white, for: .normal)
-            } else {
-                button.backgroundColor = Colors.primary.withAlphaComponent(0.1)
-                button.setTitleColor(Colors.primary, for: .normal)
-            }
+            let isSelected = Style.allCases[index] == selectedStyle
+            button.backgroundColor = isSelected ? Palette.primary : UIColor.white
+            button.setTitleColor(isSelected ? .white : Palette.primary, for: .normal)
+            button.layer.borderColor = Palette.border.cgColor
+            button.layer.borderWidth = isSelected ? 0 : 1
         }
     }
 
-    // MARK: - Generate Replies
-    @objc private func generateTapped() {
-        guard let message = inputField.text, !message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            showTemporaryMessage("請先輸入對方的訊息")
-            return
-        }
+    @objc private func generateReplies() {
+        replyStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        currentReplies = replies(for: inputField.text ?? "", style: selectedStyle)
 
-        guard !isLoading else { return }
-        isLoading = true
-        loadingIndicator.startAnimating()
-        generateButton.isEnabled = false
-        generateButton.alpha = 0.6
-
-        // Clear previous replies
-        repliesStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-
-        // Get API key from App Group
-        let apiKey = getApiKey()
-        guard !apiKey.isEmpty else {
-            showTemporaryMessage("請先在 App 中設定 API Key")
-            isLoading = false
-            loadingIndicator.stopAnimating()
-            generateButton.isEnabled = true
-            generateButton.alpha = 1.0
-            return
-        }
-
-        // Call OpenAI API
-        callOpenAI(message: message, style: selectedStyle.rawValue, apiKey: apiKey) { [weak self] result in
-            DispatchQueue.main.async {
-                self?.isLoading = false
-                self?.loadingIndicator.stopAnimating()
-                self?.generateButton.isEnabled = true
-                self?.generateButton.alpha = 1.0
-
-                switch result {
-                case .success(let replies):
-                    self?.generatedReplies = replies
-                    self?.displayReplies(replies)
-                case .failure(let error):
-                    self?.showTemporaryMessage("生成失敗：\(error.localizedDescription)")
-                }
-            }
+        for (index, reply) in currentReplies.enumerated() {
+            replyStack.addArrangedSubview(replyCard(reply, index: index))
         }
     }
 
-    // MARK: - API Call
-    private func getApiKey() -> String {
-        let defaults = UserDefaults(suiteName: API.appGroupId)
-        return defaults?.string(forKey: API.apiKeyKey) ?? ""
-    }
-
-    private func callOpenAI(message: String, style: String, apiKey: String, completion: @escaping (Result<[String], Error>) -> Void) {
-        guard let url = URL(string: API.url) else {
-            completion(.failure(NSError(domain: "Invalid URL", code: -1)))
-            return
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        request.timeoutInterval = 30
-
-        let systemPrompt = """
-        你是一位頂尖的戀愛溝通專家，專精於交友軟體和通訊軟體的對話技巧。
-        你的任務是根據對方傳來的訊息，用「\(style)」的風格生成 3 個回覆建議。
-
-        規則：
-        1. 每個回覆必須自然、口語化，像真人在聊天
-        2. 不要太長，控制在 1-3 句話
-        3. 要能延續話題或引導新話題
-        4. 用繁體中文回覆
-        5. 適合台灣/香港用戶的用語習慣
-
-        請以下列 JSON 格式回傳，不要包含其他文字：
-        {"replies": [{"id": "1", "text": "回覆內容1"}, {"id": "2", "text": "回覆內容2"}, {"id": "3", "text": "回覆內容3"}]}
-        """
-
-        let body: [String: Any] = [
-            "model": API.model,
-            "messages": [
-                ["role": "system", "content": systemPrompt],
-                ["role": "user", "content": "對方的訊息：「\(message)」"]
-            ],
-            "max_tokens": 512,
-            "temperature": 0.8
-        ]
-
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        } catch {
-            completion(.failure(error))
-            return
-        }
-
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                completion(.failure(error))
-                return
-            }
-
-            guard let data = data else {
-                completion(.failure(NSError(domain: "No data", code: -2)))
-                return
-            }
-
-            do {
-                guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                      let choices = json["choices"] as? [[String: Any]],
-                      let firstChoice = choices.first,
-                      let message = firstChoice["message"] as? [String: Any],
-                      let content = message["content"] as? String else {
-
-                    // Check for API error
-                    if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                       let errorObj = json["error"] as? [String: Any],
-                       let errorMessage = errorObj["message"] as? String {
-                        completion(.failure(NSError(domain: errorMessage, code: -3)))
-                        return
-                    }
-                    completion(.failure(NSError(domain: "Invalid response format", code: -4)))
-                    return
-                }
-
-                // Parse the reply JSON
-                var jsonStr = content.trimmingCharacters(in: .whitespacesAndNewlines)
-                // Strip markdown code block if present
-                if jsonStr.hasPrefix("```") {
-                    jsonStr = jsonStr.replacingOccurrences(of: "```json", with: "")
-                    jsonStr = jsonStr.replacingOccurrences(of: "```", with: "")
-                    jsonStr = jsonStr.trimmingCharacters(in: .whitespacesAndNewlines)
-                }
-
-                guard let replyData = jsonStr.data(using: .utf8),
-                      let replyJson = try JSONSerialization.jsonObject(with: replyData) as? [String: Any],
-                      let replies = replyJson["replies"] as? [[String: Any]] else {
-                    completion(.failure(NSError(domain: "Cannot parse replies", code: -5)))
-                    return
-                }
-
-                let replyTexts = replies.compactMap { $0["text"] as? String }
-                completion(.success(replyTexts))
-
-            } catch {
-                completion(.failure(error))
-            }
-        }.resume()
-    }
-
-    // MARK: - Display Replies
-    private func displayReplies(_ replies: [String]) {
-        repliesStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-
-        for (index, reply) in replies.enumerated() {
-            let card = createReplyCard(text: reply, index: index)
-            repliesStackView.addArrangedSubview(card)
+    private func replies(for message: String, style: Style) -> [String] {
+        let hasMessage = !message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        switch style {
+        case .gentle:
+            return hasMessage
+                ? ["我懂你的意思，先不用急著回我。等你比較有心情時，我再慢慢聽你說。", "辛苦了，你先照顧好自己。晚點想聊的話，我都在。"]
+                : ["你先好好休息，不用急著回我。", "我懂，等你想聊時我都在。"]
+        case .funny:
+            return ["那我先把聊天頻道調成低打擾模式，等你回來再重新開播。", "收到，我先安靜一下，但你不能偷偷忘記我。"]
+        case .flirty:
+            return ["好，那我先不吵你。只是你休息好之後，要記得回來找我。", "那你先休息，我會乖乖等你回覆。"]
+        case .apology:
+            return ["剛剛如果讓你有壓力，我先跟你說抱歉。我會注意語氣，也給你一點空間。", "我不是想逼你回覆，只是有點在意。抱歉，我會放慢一點。"]
         }
     }
 
-    private func createReplyCard(text: String, index: Int) -> UIView {
+    private func replyCard(_ reply: String, index: Int) -> UIView {
         let card = UIView()
-        card.backgroundColor = Colors.cardBg
-        card.layer.cornerRadius = 10
+        card.backgroundColor = Palette.card
+        card.layer.cornerRadius = 12
         card.layer.borderWidth = 1
-        card.layer.borderColor = Colors.primary.withAlphaComponent(0.2).cgColor
+        card.layer.borderColor = Palette.border.cgColor
+        card.tag = index
 
         let label = UILabel()
-        label.text = text
-        label.font = UIFont.systemFont(ofSize: 14)
-        label.textColor = Colors.textPrimary
-        label.numberOfLines = 0
+        label.text = reply
+        label.font = .systemFont(ofSize: 13)
+        label.textColor = Palette.text
+        label.numberOfLines = 2
         label.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(label)
 
-        let insertIcon = UILabel()
-        insertIcon.text = "📋"
-        insertIcon.font = UIFont.systemFont(ofSize: 16)
-        insertIcon.translatesAutoresizingMaskIntoConstraints = false
-        card.addSubview(insertIcon)
+        let action = UILabel()
+        action.text = "插入"
+        action.font = .systemFont(ofSize: 12, weight: .bold)
+        action.textColor = Palette.accent
+        action.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(action)
 
         NSLayoutConstraint.activate([
+            card.heightAnchor.constraint(greaterThanOrEqualToConstant: 54),
             label.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 12),
-            label.trailingAnchor.constraint(equalTo: insertIcon.leadingAnchor, constant: -8),
-            label.topAnchor.constraint(equalTo: card.topAnchor, constant: 10),
-            label.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -10),
-
-            insertIcon.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -12),
-            insertIcon.centerYAnchor.constraint(equalTo: card.centerYAnchor),
-            insertIcon.widthAnchor.constraint(equalToConstant: 24),
+            label.trailingAnchor.constraint(equalTo: action.leadingAnchor, constant: -10),
+            label.topAnchor.constraint(equalTo: card.topAnchor, constant: 8),
+            label.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -8),
+            action.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -12),
+            action.centerYAnchor.constraint(equalTo: card.centerYAnchor),
         ])
 
-        // Tap gesture to insert text
-        let tap = UITapGestureRecognizer(target: self, action: #selector(replyCardTapped(_:)))
-        card.isUserInteractionEnabled = true
+        let tap = UITapGestureRecognizer(target: self, action: #selector(replyTapped(_:)))
         card.addGestureRecognizer(tap)
-        card.tag = index
-
+        card.isUserInteractionEnabled = true
         return card
     }
 
-    @objc private func replyCardTapped(_ gesture: UITapGestureRecognizer) {
-        guard let card = gesture.view else { return }
-        let index = card.tag
-        guard index < generatedReplies.count else { return }
-
-        let reply = generatedReplies[index]
-        // Insert the reply text into the current text field
-        textDocumentProxy.insertText(reply)
-
-        // Visual feedback
-        UIView.animate(withDuration: 0.1, animations: {
-            card.transform = CGAffineTransform(scaleX: 0.96, y: 0.96)
-            card.backgroundColor = Colors.accent.withAlphaComponent(0.15)
-        }) { _ in
-            UIView.animate(withDuration: 0.1) {
-                card.transform = .identity
-                card.backgroundColor = Colors.cardBg
-            }
-        }
+    @objc private func replyTapped(_ recognizer: UITapGestureRecognizer) {
+        guard let card = recognizer.view, card.tag < currentReplies.count else { return }
+        textDocumentProxy.insertText(currentReplies[card.tag])
     }
 
-    // MARK: - Switch Keyboard
-    @objc private func handleSwitchKeyboard() {
+    @objc private func handleNextKeyboard() {
         advanceToNextInputMode()
-    }
-
-    // MARK: - Helpers
-    private func showTemporaryMessage(_ message: String) {
-        let label = UILabel()
-        label.text = message
-        label.font = UIFont.systemFont(ofSize: 12, weight: .medium)
-        label.textColor = UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1)
-        label.textAlignment = .center
-        repliesStackView.addArrangedSubview(label)
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-            UIView.animate(withDuration: 0.3, animations: {
-                label.alpha = 0
-            }) { _ in
-                label.removeFromSuperview()
-            }
-        }
     }
 }
