@@ -187,7 +187,7 @@ class SettingsView extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  '啟用後可在聊天 App 中快速插入回覆模板。若鍵盤清單沒有出現，請先刪除舊版 App 後重新安裝。',
+                  '啟用後可在聊天 App 中快速插入回覆模板。若要使用貼上剪貼簿功能，請開啟「允許完整取用」。',
                   style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
                 ),
                 const SizedBox(height: 14),
@@ -210,6 +210,11 @@ class SettingsView extends StatelessWidget {
                       SizedBox(height: 8),
                       _SetupStep(
                         number: '5',
+                        text: '開啟「允許完整取用」（貼上剪貼簿需要）',
+                      ),
+                      SizedBox(height: 8),
+                      _SetupStep(
+                        number: '6',
                         text: '在聊天 App 長按地球圖示，切換到 AI 戀愛鍵盤',
                       ),
                     ],

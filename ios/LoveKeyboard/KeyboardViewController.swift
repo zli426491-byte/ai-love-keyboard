@@ -19,13 +19,16 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private let rootStack = UIStackView()
-    private let inputField = UITextField()
+    private let contextLabel = UILabel()
+    private let statusLabel = UILabel()
+    private let pasteButton = UIButton(type: .system)
     private let replyStack = UIStackView()
     private let generateButton = UIButton(type: .system)
     private let nextKeyboardButton = UIButton(type: .system)
     private var styleButtons: [UIButton] = []
     private var selectedStyle: Style = .gentle
     private var currentReplies: [String] = []
+    private var pastedMessage = ""
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -70,19 +73,17 @@ final class KeyboardViewController: UIInputViewController {
         header.addArrangedSubview(nextKeyboardButton)
         rootStack.addArrangedSubview(header)
 
-        inputField.placeholder = "貼上對方訊息，產生回覆"
-        inputField.font = .systemFont(ofSize: 14)
-        inputField.textColor = Palette.text
-        inputField.backgroundColor = Palette.card
-        inputField.layer.cornerRadius = 12
-        inputField.layer.borderWidth = 1
-        inputField.layer.borderColor = Palette.border.cgColor
-        inputField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 1))
-        inputField.leftViewMode = .always
-        inputField.rightView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 1))
-        inputField.rightViewMode = .always
-        inputField.heightAnchor.constraint(equalToConstant: 40).isActive = true
-        rootStack.addArrangedSubview(inputField)
+        contextLabel.text = sourcePreview()
+        contextLabel.font = .systemFont(ofSize: 13)
+        contextLabel.textColor = Palette.secondary
+        contextLabel.backgroundColor = Palette.card
+        contextLabel.layer.cornerRadius = 12
+        contextLabel.layer.borderWidth = 1
+        contextLabel.layer.borderColor = Palette.border.cgColor
+        contextLabel.layer.masksToBounds = true
+        contextLabel.numberOfLines = 2
+        contextLabel.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+        rootStack.addArrangedSubview(contextLabel)
 
         let styleStack = UIStackView()
         styleStack.axis = .horizontal
@@ -102,6 +103,22 @@ final class KeyboardViewController: UIInputViewController {
         rootStack.addArrangedSubview(styleStack)
         updateStyleButtons()
 
+        let actionStack = UIStackView()
+        actionStack.axis = .horizontal
+        actionStack.spacing = 8
+        actionStack.distribution = .fillEqually
+
+        pasteButton.setTitle("貼上訊息", for: .normal)
+        pasteButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .bold)
+        pasteButton.setTitleColor(Palette.primary, for: .normal)
+        pasteButton.backgroundColor = .white
+        pasteButton.layer.cornerRadius = 13
+        pasteButton.layer.borderWidth = 1
+        pasteButton.layer.borderColor = Palette.border.cgColor
+        pasteButton.heightAnchor.constraint(equalToConstant: 42).isActive = true
+        pasteButton.addTarget(self, action: #selector(pasteFromClipboard), for: .touchUpInside)
+        actionStack.addArrangedSubview(pasteButton)
+
         generateButton.setTitle("產生回覆", for: .normal)
         generateButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .bold)
         generateButton.setTitleColor(.white, for: .normal)
@@ -109,7 +126,14 @@ final class KeyboardViewController: UIInputViewController {
         generateButton.layer.cornerRadius = 13
         generateButton.heightAnchor.constraint(equalToConstant: 42).isActive = true
         generateButton.addTarget(self, action: #selector(generateReplies), for: .touchUpInside)
-        rootStack.addArrangedSubview(generateButton)
+        actionStack.addArrangedSubview(generateButton)
+        rootStack.addArrangedSubview(actionStack)
+
+        statusLabel.text = hasFullAccess ? "點回覆卡片即可插入目前輸入框" : "若要貼上剪貼簿，請到鍵盤設定開啟完整取用"
+        statusLabel.font = .systemFont(ofSize: 11)
+        statusLabel.textColor = Palette.secondary
+        statusLabel.numberOfLines = 2
+        rootStack.addArrangedSubview(statusLabel)
 
         replyStack.axis = .vertical
         replyStack.spacing = 7
@@ -133,12 +157,47 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     @objc private func generateReplies() {
+        contextLabel.text = sourcePreview()
         replyStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        currentReplies = replies(for: inputField.text ?? "", style: selectedStyle)
+        currentReplies = replies(for: sourceMessage(), style: selectedStyle)
 
         for (index, reply) in currentReplies.enumerated() {
             replyStack.addArrangedSubview(replyCard(reply, index: index))
         }
+    }
+
+    @objc private func pasteFromClipboard() {
+        guard hasFullAccess else {
+            statusLabel.text = "請到 iOS 設定 > AI 戀愛鍵盤 > 鍵盤，開啟「允許完整取用」後再貼上。"
+            return
+        }
+
+        guard let text = UIPasteboard.general.string?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !text.isEmpty
+        else {
+            statusLabel.text = "剪貼簿沒有可貼上的文字。"
+            return
+        }
+
+        pastedMessage = String(text.prefix(240))
+        statusLabel.text = "已貼上訊息，點「產生回覆」或直接選一張回覆卡片。"
+        generateReplies()
+    }
+
+    private func sourceMessage() -> String {
+        if !pastedMessage.isEmpty {
+            return pastedMessage
+        }
+        let before = textDocumentProxy.documentContextBeforeInput ?? ""
+        return before.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func sourcePreview() -> String {
+        let message = sourceMessage()
+        if message.isEmpty {
+            return "先複製對方訊息後按「貼上訊息」，或直接選下方回覆插入。"
+        }
+        return "參考訊息：" + message
     }
 
     private func replies(for message: String, style: Style) -> [String] {
@@ -199,6 +258,7 @@ final class KeyboardViewController: UIInputViewController {
     @objc private func replyTapped(_ recognizer: UITapGestureRecognizer) {
         guard let card = recognizer.view, card.tag < currentReplies.count else { return }
         textDocumentProxy.insertText(currentReplies[card.tag])
+        statusLabel.text = "已插入到目前輸入框。"
     }
 
     @objc private func handleNextKeyboard() {
