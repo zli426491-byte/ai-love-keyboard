@@ -51,6 +51,13 @@ final class KeyboardViewController: UIInputViewController {
         renderReplies()
     }
 
+    override func textDidChange(_ textInput: UITextInput?) {
+        super.textDidChange(textInput)
+        if pastedMessage.isEmpty {
+            refreshStatus("可用輸入框文字生成，點回覆直接填入")
+        }
+    }
+
     private func setupView() {
         view.backgroundColor = Palette.background
         view.heightAnchor.constraint(greaterThanOrEqualToConstant: 348).isActive = true
@@ -77,7 +84,7 @@ final class KeyboardViewController: UIInputViewController {
         keyboardStack.spacing = 6
         rootStack.addArrangedSubview(keyboardStack)
         renderTypingKeys()
-        refreshStatus("可直接打字，或貼上對話後產生回覆")
+        refreshStatus("複製對話後點貼上，點回覆會直接填入")
     }
 
     private func makeHeader() -> UIView {
@@ -135,12 +142,12 @@ final class KeyboardViewController: UIInputViewController {
         row.spacing = 7
         row.distribution = .fillEqually
 
-        pasteButton.setTitle("貼上對話", for: .normal)
+        pasteButton.setTitle("貼上並生成", for: .normal)
         styleSecondaryButton(pasteButton)
         pasteButton.addTarget(self, action: #selector(pasteFromClipboard), for: .touchUpInside)
         row.addArrangedSubview(pasteButton)
 
-        refreshButton.setTitle("更新回覆", for: .normal)
+        refreshButton.setTitle("用輸入框生成", for: .normal)
         refreshButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .bold)
         refreshButton.setTitleColor(.white, for: .normal)
         refreshButton.backgroundColor = Palette.accent
@@ -153,23 +160,23 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func makeReplyList() -> UIView {
-        replyScrollView.showsHorizontalScrollIndicator = false
-        replyScrollView.heightAnchor.constraint(equalToConstant: 58).isActive = true
+        let container = UIView()
+        container.heightAnchor.constraint(equalToConstant: 106).isActive = true
 
-        replyStack.axis = .horizontal
-        replyStack.spacing = 8
+        replyStack.axis = .vertical
+        replyStack.spacing = 7
+        replyStack.distribution = .fillEqually
         replyStack.translatesAutoresizingMaskIntoConstraints = false
-        replyScrollView.addSubview(replyStack)
+        container.addSubview(replyStack)
 
         NSLayoutConstraint.activate([
-            replyStack.leadingAnchor.constraint(equalTo: replyScrollView.leadingAnchor),
-            replyStack.trailingAnchor.constraint(equalTo: replyScrollView.trailingAnchor),
-            replyStack.topAnchor.constraint(equalTo: replyScrollView.topAnchor),
-            replyStack.bottomAnchor.constraint(equalTo: replyScrollView.bottomAnchor),
-            replyStack.heightAnchor.constraint(equalTo: replyScrollView.heightAnchor)
+            replyStack.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            replyStack.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            replyStack.topAnchor.constraint(equalTo: container.topAnchor),
+            replyStack.bottomAnchor.constraint(equalTo: container.bottomAnchor)
         ])
 
-        return replyScrollView
+        return container
     }
 
     private func makeQuickTextRow() -> UIView {
@@ -290,21 +297,20 @@ final class KeyboardViewController: UIInputViewController {
 
     private func replyButton(_ title: String, index: Int) -> UIButton {
         let button = UIButton(type: .system)
-        button.setTitle(title, for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
+        button.setTitle("填入  " + title, for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 12, weight: .semibold)
         button.titleLabel?.numberOfLines = 2
         button.contentHorizontalAlignment = .left
-        button.contentEdgeInsets = UIEdgeInsets(top: 8, left: 10, bottom: 8, right: 10)
+        button.contentEdgeInsets = UIEdgeInsets(top: 7, left: 10, bottom: 7, right: 10)
         button.setTitleColor(Palette.text, for: .normal)
         button.backgroundColor = Palette.card
-        button.layer.cornerRadius = 14
+        button.layer.cornerRadius = 12
         button.layer.borderWidth = 1
         button.layer.borderColor = Palette.border.cgColor
         button.layer.shadowColor = UIColor.black.cgColor
         button.layer.shadowOpacity = 0.08
         button.layer.shadowRadius = 6
         button.layer.shadowOffset = CGSize(width: 0, height: 3)
-        button.widthAnchor.constraint(equalToConstant: 210).isActive = true
         button.tag = index
         button.addTarget(self, action: #selector(replyTapped(_:)), for: .touchUpInside)
         return button
@@ -326,15 +332,35 @@ final class KeyboardViewController: UIInputViewController {
             view.removeFromSuperview()
         }
 
-        currentReplies = makeReplies(for: selectedStyle, message: pastedMessage)
-        for (index, reply) in currentReplies.enumerated() {
-            replyStack.addArrangedSubview(replyButton(reply, index: index))
+        currentReplies = makeReplies(for: selectedStyle, message: sourceMessage())
+        var index = 0
+        while index < currentReplies.count {
+            let row = UIStackView()
+            row.axis = .horizontal
+            row.spacing = 7
+            row.distribution = .fillEqually
+
+            for _ in 0..<2 {
+                if index < currentReplies.count {
+                    row.addArrangedSubview(replyButton(currentReplies[index], index: index))
+                    index += 1
+                } else {
+                    let spacer = UIView()
+                    row.addArrangedSubview(spacer)
+                }
+            }
+
+            replyStack.addArrangedSubview(row)
         }
     }
 
     @objc private func refreshRepliesTapped() {
+        let inputText = textDocumentProxy.documentContextBeforeInput?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !inputText.isEmpty {
+            pastedMessage = inputText
+        }
         renderReplies()
-        refreshStatus(pastedMessage.isEmpty ? "已更新預設回覆" : "已根據貼上的內容更新")
+        refreshStatus(sourceMessage().isEmpty ? "沒有讀到文字，請先複製對話或在輸入框貼上" : "已生成候選，點回覆直接填入")
     }
 
     @objc private func styleTapped(_ sender: UIButton) {
@@ -357,13 +383,13 @@ final class KeyboardViewController: UIInputViewController {
         pastedMessage = text
         renderReplies()
         let preview = text.count > 12 ? String(text.prefix(12)) + "..." : text
-        refreshStatus("已貼上：\(preview)")
+        refreshStatus("已讀取：\(preview)，點回覆直接填入")
     }
 
     @objc private func replyTapped(_ sender: UIButton) {
         guard sender.tag >= 0 && sender.tag < currentReplies.count else { return }
         textDocumentProxy.insertText(currentReplies[sender.tag])
-        refreshStatus("已插入回覆")
+        refreshStatus("已填入輸入框，確認後按送出")
     }
 
     @objc private func quickTextTapped(_ sender: UIButton) {
@@ -413,6 +439,13 @@ final class KeyboardViewController: UIInputViewController {
 
     @objc private func handleNextKeyboard() {
         advanceToNextInputMode()
+    }
+
+    private func sourceMessage() -> String {
+        if !pastedMessage.isEmpty {
+            return pastedMessage
+        }
+        return textDocumentProxy.documentContextBeforeInput?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     }
 
     private func makeReplies(for style: ReplyStyle, message: String) -> [String] {
