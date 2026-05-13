@@ -18,14 +18,16 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private enum Palette {
-        static let background = UIColor(red: 248 / 255, green: 245 / 255, blue: 251 / 255, alpha: 1)
-        static let card = UIColor.white
-        static let primary = UIColor(red: 88 / 255, green: 58 / 255, blue: 168 / 255, alpha: 1)
-        static let accent = UIColor(red: 24 / 255, green: 168 / 255, blue: 145 / 255, alpha: 1)
-        static let text = UIColor(red: 34 / 255, green: 30 / 255, blue: 44 / 255, alpha: 1)
-        static let secondary = UIColor(red: 105 / 255, green: 98 / 255, blue: 116 / 255, alpha: 1)
-        static let border = UIColor(red: 224 / 255, green: 216 / 255, blue: 235 / 255, alpha: 1)
-        static let key = UIColor(red: 238 / 255, green: 233 / 255, blue: 244 / 255, alpha: 1)
+        static let background = UIColor(red: 250 / 255, green: 247 / 255, blue: 242 / 255, alpha: 1)
+        static let card = UIColor(red: 255 / 255, green: 253 / 255, blue: 249 / 255, alpha: 1)
+        static let primary = UIColor(red: 31 / 255, green: 58 / 255, blue: 46 / 255, alpha: 1)
+        static let accent = UIColor(red: 139 / 255, green: 111 / 255, blue: 71 / 255, alpha: 1)
+        static let blush = UIColor(red: 184 / 255, green: 67 / 255, blue: 92 / 255, alpha: 1)
+        static let text = UIColor(red: 28 / 255, green: 28 / 255, blue: 28 / 255, alpha: 1)
+        static let secondary = UIColor(red: 105 / 255, green: 96 / 255, blue: 88 / 255, alpha: 1)
+        static let border = UIColor(red: 226 / 255, green: 217 / 255, blue: 204 / 255, alpha: 1)
+        static let key = UIColor(red: 239 / 255, green: 232 / 255, blue: 222 / 255, alpha: 1)
+        static let selectedSoft = UIColor(red: 231 / 255, green: 239 / 255, blue: 232 / 255, alpha: 1)
     }
 
     private let rootStack = UIStackView()
@@ -50,7 +52,7 @@ final class KeyboardViewController: UIInputViewController {
         view.heightAnchor.constraint(greaterThanOrEqualToConstant: 306).isActive = true
 
         rootStack.axis = .vertical
-        rootStack.spacing = 8
+        rootStack.spacing = 7
         rootStack.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(rootStack)
 
@@ -68,7 +70,7 @@ final class KeyboardViewController: UIInputViewController {
         rootStack.addArrangedSubview(makeReplyList())
         rootStack.addArrangedSubview(makeUtilityRow())
 
-        statusLabel.text = "先複製對方訊息，再按讀取剪貼簿"
+        statusLabel.text = "複製訊息後讀取"
     }
 
     private func makeHeader() -> UIView {
@@ -79,12 +81,12 @@ final class KeyboardViewController: UIInputViewController {
 
         let title = UILabel()
         title.text = "AI 回覆"
-        title.font = .systemFont(ofSize: 15, weight: .bold)
+        title.font = .systemFont(ofSize: 16, weight: .heavy)
         title.textColor = Palette.primary
         row.addArrangedSubview(title)
 
         statusLabel.font = .systemFont(ofSize: 11, weight: .medium)
-        statusLabel.textColor = Palette.secondary
+        statusLabel.textColor = Palette.accent
         statusLabel.textAlignment = .right
         statusLabel.numberOfLines = 1
         row.addArrangedSubview(statusLabel)
@@ -94,15 +96,15 @@ final class KeyboardViewController: UIInputViewController {
 
     private func makeContextCard() -> UIView {
         let card = UIView()
-        card.backgroundColor = Palette.card
-        card.layer.cornerRadius = 12
+        card.backgroundColor = UIColor(red: 246 / 255, green: 241 / 255, blue: 232 / 255, alpha: 1)
+        card.layer.cornerRadius = 13
         card.layer.borderWidth = 1
         card.layer.borderColor = Palette.border.cgColor
-        card.heightAnchor.constraint(equalToConstant: 42).isActive = true
+        card.heightAnchor.constraint(equalToConstant: 40).isActive = true
 
-        contextLabel.text = "尚未讀取對話"
-        contextLabel.font = .systemFont(ofSize: 13, weight: .semibold)
-        contextLabel.textColor = Palette.text
+        contextLabel.text = "尚未讀取"
+        contextLabel.font = .systemFont(ofSize: 13, weight: .bold)
+        contextLabel.textColor = Palette.primary
         contextLabel.numberOfLines = 1
         contextLabel.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(contextLabel)
@@ -123,12 +125,16 @@ final class KeyboardViewController: UIInputViewController {
         row.distribution = .fillEqually
 
         let readButton = UIButton(type: .system)
-        readButton.setTitle("讀取剪貼簿並生成", for: .normal)
+        readButton.setTitle("讀取對話", for: .normal)
         readButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .bold)
         readButton.setTitleColor(.white, for: .normal)
-        readButton.backgroundColor = Palette.accent
+        readButton.backgroundColor = Palette.primary
         readButton.layer.cornerRadius = 14
-        readButton.heightAnchor.constraint(equalToConstant: 42).isActive = true
+        readButton.layer.shadowColor = Palette.primary.cgColor
+        readButton.layer.shadowOpacity = 0.18
+        readButton.layer.shadowRadius = 8
+        readButton.layer.shadowOffset = CGSize(width: 0, height: 4)
+        readButton.heightAnchor.constraint(equalToConstant: 40).isActive = true
         readButton.addTarget(self, action: #selector(readClipboardAndGenerate), for: .touchUpInside)
         row.addArrangedSubview(readButton)
 
@@ -143,9 +149,9 @@ final class KeyboardViewController: UIInputViewController {
         for style in ReplyStyle.allCases {
             let button = UIButton(type: .system)
             button.setTitle(style.title, for: .normal)
-            button.titleLabel?.font = .systemFont(ofSize: 12, weight: .bold)
-            button.layer.cornerRadius = 13
-            button.heightAnchor.constraint(equalToConstant: 30).isActive = true
+            button.titleLabel?.font = .systemFont(ofSize: 12, weight: .heavy)
+            button.layer.cornerRadius = 12
+            button.heightAnchor.constraint(equalToConstant: 28).isActive = true
             button.tag = style.rawValue
             button.addTarget(self, action: #selector(styleTapped(_:)), for: .touchUpInside)
             styleButtons.append(button)
@@ -158,16 +164,16 @@ final class KeyboardViewController: UIInputViewController {
 
     private func makeReplyList() -> UIView {
         replyStack.axis = .vertical
-        replyStack.spacing = 7
+        replyStack.spacing = 6
         replyStack.distribution = .fillEqually
-        replyStack.heightAnchor.constraint(equalToConstant: 142).isActive = true
+        replyStack.heightAnchor.constraint(equalToConstant: 136).isActive = true
         return replyStack
     }
 
     private func makeUtilityRow() -> UIView {
         let row = UIStackView()
         row.axis = .horizontal
-        row.spacing = 6
+        row.spacing = 7
         row.distribution = .fillEqually
 
         row.addArrangedSubview(commandButton("刪除", action: #selector(deleteBackward)))
@@ -182,30 +188,32 @@ final class KeyboardViewController: UIInputViewController {
         let button = UIButton(type: .system)
         button.setTitle(title, for: .normal)
         button.titleLabel?.font = .systemFont(ofSize: 13, weight: .bold)
-        button.setTitleColor(Palette.text, for: .normal)
+        button.setTitleColor(Palette.secondary, for: .normal)
         button.backgroundColor = Palette.key
-        button.layer.cornerRadius = 10
-        button.heightAnchor.constraint(equalToConstant: 34).isActive = true
+        button.layer.cornerRadius = 11
+        button.layer.borderWidth = 0.5
+        button.layer.borderColor = Palette.border.cgColor
+        button.heightAnchor.constraint(equalToConstant: 33).isActive = true
         button.addTarget(self, action: action, for: .touchUpInside)
         return button
     }
 
     private func replyButton(_ title: String, index: Int) -> UIButton {
         let button = UIButton(type: .system)
-        button.setTitle(title, for: .normal)
+        button.setTitle("  " + title, for: .normal)
         button.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
         button.titleLabel?.numberOfLines = 2
         button.contentHorizontalAlignment = .left
         button.contentEdgeInsets = UIEdgeInsets(top: 8, left: 12, bottom: 8, right: 12)
-        button.setTitleColor(Palette.text, for: .normal)
-        button.backgroundColor = Palette.card
+        button.setTitleColor(index == 0 ? Palette.primary : Palette.text, for: .normal)
+        button.backgroundColor = index == 0 ? Palette.selectedSoft : Palette.card
         button.layer.cornerRadius = 13
         button.layer.borderWidth = 1
-        button.layer.borderColor = Palette.border.cgColor
+        button.layer.borderColor = (index == 0 ? Palette.primary.withAlphaComponent(0.26) : Palette.border).cgColor
         button.layer.shadowColor = UIColor.black.cgColor
-        button.layer.shadowOpacity = 0.06
-        button.layer.shadowRadius = 4
-        button.layer.shadowOffset = CGSize(width: 0, height: 2)
+        button.layer.shadowOpacity = 0.07
+        button.layer.shadowRadius = 7
+        button.layer.shadowOffset = CGSize(width: 0, height: 3)
         button.tag = index
         button.addTarget(self, action: #selector(replyTapped(_:)), for: .touchUpInside)
         return button
@@ -216,14 +224,16 @@ final class KeyboardViewController: UIInputViewController {
         guard !text.isEmpty else {
             currentMessage = ""
             contextLabel.text = "剪貼簿沒有文字"
-            statusLabel.text = "請先複製對方訊息"
+            contextLabel.textColor = Palette.blush
+            statusLabel.text = "先複製訊息"
             renderReplies()
             return
         }
 
         currentMessage = normalizeMessage(text)
-        contextLabel.text = "已讀：" + preview(currentMessage, limit: 20)
-        statusLabel.text = "已重新生成"
+        contextLabel.text = "已讀取：" + preview(currentMessage, limit: 20)
+        contextLabel.textColor = Palette.primary
+        statusLabel.text = "已生成"
         renderReplies()
     }
 
@@ -231,14 +241,14 @@ final class KeyboardViewController: UIInputViewController {
         guard let style = ReplyStyle(rawValue: sender.tag) else { return }
         selectedStyle = style
         updateStyleButtons()
-        statusLabel.text = "已切換 \(style.title)"
+        statusLabel.text = "\(style.title)語氣"
         renderReplies()
     }
 
     @objc private func replyTapped(_ sender: UIButton) {
         guard sender.tag >= 0 && sender.tag < currentReplies.count else { return }
         textDocumentProxy.insertText(currentReplies[sender.tag])
-        statusLabel.text = "已填入，確認後送出"
+        statusLabel.text = "已填入，確認送出"
     }
 
     @objc private func deleteBackward() {
@@ -272,10 +282,10 @@ final class KeyboardViewController: UIInputViewController {
     private func updateStyleButtons() {
         for button in styleButtons {
             let isSelected = button.tag == selectedStyle.rawValue
-            button.backgroundColor = isSelected ? Palette.primary : Palette.card
-            button.setTitleColor(isSelected ? .white : Palette.primary, for: .normal)
-            button.layer.borderWidth = isSelected ? 0 : 1
-            button.layer.borderColor = Palette.border.cgColor
+            button.backgroundColor = isSelected ? Palette.selectedSoft : Palette.card
+            button.setTitleColor(isSelected ? Palette.primary : Palette.secondary, for: .normal)
+            button.layer.borderWidth = isSelected ? 1.5 : 1
+            button.layer.borderColor = (isSelected ? Palette.primary.withAlphaComponent(0.35) : Palette.border).cgColor
         }
     }
 
