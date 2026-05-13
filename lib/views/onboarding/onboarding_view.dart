@@ -40,6 +40,13 @@ class _OnboardingViewState extends State<OnboardingView> {
       subtitle: '配對後不知道說什麼？',
       description: '根據對方資料生成有創意的開場白，告別冷場',
     ),
+    _OnboardingPage(
+      gradient: AppTheme.onboardingGradient2,
+      icon: Icons.keyboard_rounded,
+      title: '聊天鍵盤',
+      subtitle: '複製訊息，切鍵盤，點一下填入',
+      description: '第一次進 App 後會有圖文教學，照步驟設定即可使用',
+    ),
   ];
 
   Future<void> _completeOnboarding() async {
@@ -125,12 +132,12 @@ class _OnboardingViewState extends State<OnboardingView> {
                           onTap: _nextPage,
                           child: Container(
                             height: 52,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 32),
+                            padding: const EdgeInsets.symmetric(horizontal: 32),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(
-                                  AppTheme.radiusFull),
+                                AppTheme.radiusFull,
+                              ),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withValues(alpha: 0.15),
@@ -193,14 +200,14 @@ class _OnboardingPage extends StatelessWidget {
             children: [
               const Spacer(flex: 2),
               Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                ),
-                child: Icon(icon, size: 48, color: Colors.white),
-              )
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                    ),
+                    child: Icon(icon, size: 48, color: Colors.white),
+                  )
                   .animate()
                   .fadeIn(duration: const Duration(milliseconds: 600))
                   .scale(
@@ -216,12 +223,10 @@ class _OnboardingPage extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
                 ),
-              )
-                  .animate()
-                  .fadeIn(
-                    delay: const Duration(milliseconds: 200),
-                    duration: const Duration(milliseconds: 500),
-                  ),
+              ).animate().fadeIn(
+                delay: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 500),
+              ),
               const SizedBox(height: AppTheme.spacingMd),
               Text(
                 subtitle,
@@ -232,12 +237,10 @@ class _OnboardingPage extends StatelessWidget {
                   color: Colors.white,
                   height: 1.5,
                 ),
-              )
-                  .animate()
-                  .fadeIn(
-                    delay: const Duration(milliseconds: 400),
-                    duration: const Duration(milliseconds: 500),
-                  ),
+              ).animate().fadeIn(
+                delay: const Duration(milliseconds: 400),
+                duration: const Duration(milliseconds: 500),
+              ),
               const SizedBox(height: AppTheme.spacingMd),
               Text(
                 description,
@@ -247,12 +250,10 @@ class _OnboardingPage extends StatelessWidget {
                   color: Colors.white.withValues(alpha: 0.8),
                   height: 1.5,
                 ),
-              )
-                  .animate()
-                  .fadeIn(
-                    delay: const Duration(milliseconds: 600),
-                    duration: const Duration(milliseconds: 500),
-                  ),
+              ).animate().fadeIn(
+                delay: const Duration(milliseconds: 600),
+                duration: const Duration(milliseconds: 500),
+              ),
               const Spacer(flex: 3),
             ],
           ),

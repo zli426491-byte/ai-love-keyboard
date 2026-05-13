@@ -28,6 +28,7 @@ import 'package:ai_love_keyboard/views/packages/package_store_view.dart';
 import 'package:ai_love_keyboard/views/packages/seasonal_packages_view.dart';
 import 'package:ai_love_keyboard/views/components/privacy_notice_dialog.dart';
 import 'package:ai_love_keyboard/views/home/home_view.dart';
+import 'package:ai_love_keyboard/views/keyboard/keyboard_guide_view.dart';
 import 'package:ai_love_keyboard/views/onboarding/onboarding_view.dart';
 import 'package:ai_love_keyboard/views/onboarding/gender_selection_view.dart';
 import 'package:ai_love_keyboard/views/coins/coin_store_view.dart';
@@ -61,18 +62,42 @@ void main() async {
   final coinService = CoinService();
   final privacyManager = PrivacyManager.instance;
 
-  try { await AnalyticsService.instance.init(); } catch (_) {}
-  try { await AttributionService.instance.init(); } catch (_) {}
-  try { await DeepLinkService.instance.init(); } catch (_) {}
-  try { await usageService.init(); } catch (_) {}
-  try { await localeService.init(); } catch (_) {}
-  try { await packageManager.init(); } catch (_) {}
-  try { await seasonalService.init(); } catch (_) {}
-  try { await achievementService.init(); } catch (_) {}
-  try { await emergencyService.init(); } catch (_) {}
-  try { await referralService.init(); } catch (_) {}
-  try { await coinService.init(); } catch (_) {}
-  try { await privacyManager.init(); } catch (_) {}
+  try {
+    await AnalyticsService.instance.init();
+  } catch (_) {}
+  try {
+    await AttributionService.instance.init();
+  } catch (_) {}
+  try {
+    await DeepLinkService.instance.init();
+  } catch (_) {}
+  try {
+    await usageService.init();
+  } catch (_) {}
+  try {
+    await localeService.init();
+  } catch (_) {}
+  try {
+    await packageManager.init();
+  } catch (_) {}
+  try {
+    await seasonalService.init();
+  } catch (_) {}
+  try {
+    await achievementService.init();
+  } catch (_) {}
+  try {
+    await emergencyService.init();
+  } catch (_) {}
+  try {
+    await referralService.init();
+  } catch (_) {}
+  try {
+    await coinService.init();
+  } catch (_) {}
+  try {
+    await privacyManager.init();
+  } catch (_) {}
 
   try {
     ContentFilter.instance.setLevel(
@@ -94,26 +119,29 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   final onboardingComplete =
       prefs.getBool(AppConstants.prefOnboardingComplete) ?? false;
-  final genderSelected =
-      prefs.getString(AppConstants.prefUserGender) != null;
+  final genderSelected = prefs.getString(AppConstants.prefUserGender) != null;
   final privacyAccepted = privacyManager.privacyAccepted;
 
-  try { AnalyticsService.instance.trackAppOpen(); } catch (_) {}
+  try {
+    AnalyticsService.instance.trackAppOpen();
+  } catch (_) {}
 
-  runApp(AiLoveKeyboardApp(
-    usageService: usageService,
-    localeService: localeService,
-    privacyManager: privacyManager,
-    packageManager: packageManager,
-    seasonalService: seasonalService,
-    achievementService: achievementService,
-    emergencyService: emergencyService,
-    referralService: referralService,
-    coinService: coinService,
-    onboardingComplete: onboardingComplete,
-    genderSelected: genderSelected,
-    privacyAccepted: privacyAccepted,
-  ));
+  runApp(
+    AiLoveKeyboardApp(
+      usageService: usageService,
+      localeService: localeService,
+      privacyManager: privacyManager,
+      packageManager: packageManager,
+      seasonalService: seasonalService,
+      achievementService: achievementService,
+      emergencyService: emergencyService,
+      referralService: referralService,
+      coinService: coinService,
+      onboardingComplete: onboardingComplete,
+      genderSelected: genderSelected,
+      privacyAccepted: privacyAccepted,
+    ),
+  );
 }
 
 class AiLoveKeyboardApp extends StatelessWidget {
@@ -190,22 +218,15 @@ class AiLoveKeyboardApp extends StatelessWidget {
         themeMode: ThemeMode.system,
         home: _getInitialScreen(),
         routes: {
-          '/character-market': (context) =>
-              const CharacterMarketView(),
-          '/create-persona': (context) =>
-              const CreatePersonaView(),
-          '/package-store': (context) =>
-              const PackageStoreView(),
-          '/achievements': (context) =>
-              const AchievementsView(),
-          '/seasonal-packages': (context) =>
-              const SeasonalPackagesView(),
-          '/referral': (context) =>
-              const ReferralView(),
-          '/emergency': (context) =>
-              const EmergencyCoachView(),
-          '/coin-store': (context) =>
-              const CoinStoreView(),
+          '/character-market': (context) => const CharacterMarketView(),
+          '/create-persona': (context) => const CreatePersonaView(),
+          '/package-store': (context) => const PackageStoreView(),
+          '/achievements': (context) => const AchievementsView(),
+          '/seasonal-packages': (context) => const SeasonalPackagesView(),
+          '/referral': (context) => const ReferralView(),
+          '/emergency': (context) => const EmergencyCoachView(),
+          '/coin-store': (context) => const CoinStoreView(),
+          '/keyboard-guide': (context) => const KeyboardGuideView(),
         },
       ),
     );
@@ -217,10 +238,7 @@ class _PrivacyGate extends StatefulWidget {
   final PrivacyManager privacyManager;
   final Widget child;
 
-  const _PrivacyGate({
-    required this.privacyManager,
-    required this.child,
-  });
+  const _PrivacyGate({required this.privacyManager, required this.child});
 
   @override
   State<_PrivacyGate> createState() => _PrivacyGateState();
@@ -256,10 +274,7 @@ class _PrivacyGateState extends State<_PrivacyGate> {
     // Show a blank scaffold while waiting for privacy acceptance
     return Scaffold(
       backgroundColor: AppTheme.bgDark,
-      body: const Center(
-        child: CircularProgressIndicator(),
-      ),
+      body: const Center(child: CircularProgressIndicator()),
     );
   }
 }
-

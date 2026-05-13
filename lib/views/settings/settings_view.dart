@@ -11,6 +11,7 @@ import 'package:ai_love_keyboard/services/privacy_manager.dart';
 import 'package:ai_love_keyboard/services/usage_service.dart';
 import 'package:ai_love_keyboard/utils/app_theme.dart';
 import 'package:ai_love_keyboard/utils/constants.dart';
+import 'package:ai_love_keyboard/views/keyboard/keyboard_guide_view.dart';
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});
@@ -159,18 +160,18 @@ class SettingsView extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppTheme.spacingMd),
             decoration: BoxDecoration(
-              color: AppTheme.accent.withValues(alpha: 0.08),
+              color: const Color(0xFFFAF7F2),
               borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-              border: Border.all(color: AppTheme.accent.withValues(alpha: 0.3)),
+              border: Border.all(color: const Color(0xFFE7DDD0)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.keyboard_rounded,
-                      color: AppTheme.accent,
+                      color: Color(0xFF1F3A2E),
                       size: 24,
                     ),
                     const SizedBox(width: 10),
@@ -180,6 +181,7 @@ class SettingsView extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
+                          color: Color(0xFF1A1A1A),
                         ),
                       ),
                     ),
@@ -187,8 +189,8 @@ class SettingsView extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  '啟用後可在聊天 App 中快速插入回覆模板。若要使用貼上剪貼簿功能，請開啟「允許完整取用」。',
-                  style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+                  '啟用後可在聊天 App 中讀取你複製的訊息，選擇語氣後直接把建議回覆填入輸入框。',
+                  style: TextStyle(fontSize: 13, color: Color(0xFF6B6B6B)),
                 ),
                 const SizedBox(height: 14),
                 Container(
@@ -208,10 +210,7 @@ class SettingsView extends StatelessWidget {
                       SizedBox(height: 8),
                       _SetupStep(number: '4', text: '在「第三方鍵盤」選擇「AI 戀愛鍵盤」'),
                       SizedBox(height: 8),
-                      _SetupStep(
-                        number: '5',
-                        text: '開啟「允許完整取用」（貼上剪貼簿需要）',
-                      ),
+                      _SetupStep(number: '5', text: '開啟「允許完整取用」（貼上剪貼簿需要）'),
                       SizedBox(height: 8),
                       _SetupStep(
                         number: '6',
@@ -221,6 +220,24 @@ class SettingsView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const KeyboardGuideView(),
+                      ),
+                    ),
+                    icon: const Icon(Icons.menu_book_rounded, size: 18),
+                    label: const Text('查看圖文教學'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF1F3A2E),
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
@@ -234,6 +251,10 @@ class SettingsView extends StatelessWidget {
                     },
                     icon: const Icon(Icons.open_in_new_rounded, size: 18),
                     label: const Text('前往設定'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF1F3A2E),
+                      side: const BorderSide(color: Color(0xFFE7DDD0)),
+                    ),
                   ),
                 ),
               ],
@@ -652,7 +673,12 @@ class _SetupStep extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        Expanded(child: Text(text, style: const TextStyle(fontSize: 14))),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(fontSize: 14, color: Color(0xFF1A1A1A)),
+          ),
+        ),
       ],
     );
   }

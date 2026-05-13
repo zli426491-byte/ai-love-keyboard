@@ -1,0 +1,543 @@
+import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import 'package:ai_love_keyboard/services/analytics_service.dart';
+
+class KeyboardGuideView extends StatelessWidget {
+  const KeyboardGuideView({super.key});
+
+  static const _cream = Color(0xFFFAF7F2);
+  static const _card = Color(0xFFFFFCF7);
+  static const _forest = Color(0xFF1F3A2E);
+  static const _sage = Color(0xFFE7EFE8);
+  static const _brown = Color(0xFF8B6F47);
+  static const _red = Color(0xFFC8385C);
+  static const _text = Color(0xFF1A1A1A);
+  static const _muted = Color(0xFF6B6B6B);
+  static const _line = Color(0xFFE7DDD0);
+
+  Future<void> _openSettings() async {
+    try {
+      AnalyticsService.instance.trackKeyboardEnabled();
+    } catch (_) {}
+    final uri = Uri.parse('app-settings:com.ailovekeyboard.app');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _cream,
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+          children: [
+            Row(
+              children: [
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                  color: _forest,
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _sage,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const Text(
+                    '鍵盤教學',
+                    style: TextStyle(
+                      color: _forest,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            const Text(
+              '先設定一次\n聊天時直接回覆',
+              style: TextStyle(
+                color: _text,
+                fontSize: 34,
+                height: 1.05,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.6,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              '在 LINE、IG、交友 App 裡複製對方訊息，切到 AI 戀愛鍵盤，就能讀取對話並把建議回覆填入輸入框。',
+              style: TextStyle(
+                color: _muted,
+                fontSize: 15,
+                height: 1.55,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 22),
+            const _KeyboardPreview(),
+            const SizedBox(height: 20),
+            const _FlowCard(),
+            const SizedBox(height: 20),
+            _SetupCard(onOpenSettings: _openSettings),
+            const SizedBox(height: 18),
+            SizedBox(
+              height: 54,
+              child: ElevatedButton.icon(
+                onPressed: _openSettings,
+                icon: const Icon(Icons.settings_rounded),
+                label: const Text('打開 iPhone 設定'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _forest,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.check_rounded),
+              label: const Text('我已設定，回 App 測試'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _forest,
+                side: const BorderSide(color: _line),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _KeyboardPreview extends StatelessWidget {
+  const _KeyboardPreview();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: KeyboardGuideView._card,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: KeyboardGuideView._line),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 28,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text(
+                '聊天 App',
+                style: TextStyle(
+                  color: KeyboardGuideView._muted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                width: 54,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: KeyboardGuideView._line,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const _ChatBubble(text: '我今天真的有點累，先回家好了', isMine: false),
+          const SizedBox(height: 8),
+          const _ChatBubble(text: '等我一下，我想好好回你', isMine: true),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: KeyboardGuideView._cream,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: KeyboardGuideView._line),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'AI 回覆',
+                      style: TextStyle(
+                        color: KeyboardGuideView._forest,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '已讀取對話',
+                      style: TextStyle(
+                        color: KeyboardGuideView._brown.withValues(alpha: 0.9),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: KeyboardGuideView._forest,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Text(
+                    '讀取剪貼簿對話',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: const [
+                    _TonePill(text: '溫柔', selected: true),
+                    _TonePill(text: '幽默'),
+                    _TonePill(text: '曖昧'),
+                    _TonePill(text: '道歉'),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                const _ReplyPreview(text: '辛苦了，先別硬撐，我陪你慢慢放鬆。', selected: true),
+                const SizedBox(height: 7),
+                const _ReplyPreview(text: '回家先休息，晚點我再陪你聊。'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FlowCard extends StatelessWidget {
+  const _FlowCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return _GuideCard(
+      title: '實際使用只要三步',
+      child: Column(
+        children: const [
+          _GuideStep(
+            number: '1',
+            title: '複製對方訊息',
+            body: '在任何聊天 App 長按訊息，點「複製」。',
+          ),
+          _GuideDivider(),
+          _GuideStep(
+            number: '2',
+            title: '切到 AI 戀愛鍵盤',
+            body: '長按地球圖示，選擇「AI 戀愛鍵盤」。',
+          ),
+          _GuideDivider(),
+          _GuideStep(
+            number: '3',
+            title: '讀取後點回覆',
+            body: '點「讀取對話」，選一句建議，會直接填入輸入框。',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SetupCard extends StatelessWidget {
+  final Future<void> Function() onOpenSettings;
+
+  const _SetupCard({required this.onOpenSettings});
+
+  @override
+  Widget build(BuildContext context) {
+    return _GuideCard(
+      title: '第一次開啟鍵盤',
+      trailing: TextButton(
+        onPressed: onOpenSettings,
+        child: const Text(
+          '前往設定',
+          style: TextStyle(
+            color: KeyboardGuideView._red,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+      child: Column(
+        children: const [
+          _GuideStep(
+            number: '1',
+            title: '設定 > 一般 > 鍵盤',
+            body: '進入「鍵盤」清單後點「新增鍵盤」。',
+          ),
+          _GuideDivider(),
+          _GuideStep(
+            number: '2',
+            title: '新增 AI 戀愛鍵盤',
+            body: '在第三方鍵盤中選擇「AI 戀愛鍵盤」。',
+          ),
+          _GuideDivider(),
+          _GuideStep(
+            number: '3',
+            title: '允許完整取用',
+            body: '剪貼簿讀取需要此權限；不開啟時只能使用固定回覆。',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GuideCard extends StatelessWidget {
+  final String title;
+  final Widget child;
+  final Widget? trailing;
+
+  const _GuideCard({required this.title, required this.child, this.trailing});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: KeyboardGuideView._card,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: KeyboardGuideView._line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: KeyboardGuideView._text,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ),
+              ?trailing,
+            ],
+          ),
+          const SizedBox(height: 14),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _GuideStep extends StatelessWidget {
+  final String number;
+  final String title;
+  final String body;
+
+  const _GuideStep({
+    required this.number,
+    required this.title,
+    required this.body,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 30,
+          height: 30,
+          decoration: const BoxDecoration(
+            color: KeyboardGuideView._sage,
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Text(
+              number,
+              style: const TextStyle(
+                color: KeyboardGuideView._forest,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: KeyboardGuideView._text,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                body,
+                style: const TextStyle(
+                  color: KeyboardGuideView._muted,
+                  fontSize: 13,
+                  height: 1.45,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GuideDivider extends StatelessWidget {
+  const _GuideDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(left: 15, top: 8, bottom: 8),
+      width: 1,
+      height: 18,
+      color: KeyboardGuideView._line,
+    );
+  }
+}
+
+class _ChatBubble extends StatelessWidget {
+  final String text;
+  final bool isMine;
+
+  const _ChatBubble({required this.text, required this.isMine});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 250),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isMine ? KeyboardGuideView._sage : const Color(0xFFF1ECE5),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(
+            color: KeyboardGuideView._text,
+            fontSize: 14,
+            height: 1.35,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TonePill extends StatelessWidget {
+  final String text;
+  final bool selected;
+
+  const _TonePill({required this.text, this.selected = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.only(right: 6),
+        padding: const EdgeInsets.symmetric(vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? KeyboardGuideView._sage : KeyboardGuideView._card,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected
+                ? KeyboardGuideView._forest
+                : KeyboardGuideView._line,
+          ),
+        ),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: selected
+                ? KeyboardGuideView._forest
+                : KeyboardGuideView._muted,
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReplyPreview extends StatelessWidget {
+  final String text;
+  final bool selected;
+
+  const _ReplyPreview({required this.text, this.selected = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: selected ? KeyboardGuideView._sage : KeyboardGuideView._card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: KeyboardGuideView._line),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: selected ? KeyboardGuideView._forest : KeyboardGuideView._text,
+          fontSize: 13,
+          height: 1.35,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}

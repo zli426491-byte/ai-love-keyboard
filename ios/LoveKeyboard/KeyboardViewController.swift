@@ -52,7 +52,7 @@ final class KeyboardViewController: UIInputViewController {
         view.heightAnchor.constraint(greaterThanOrEqualToConstant: 306).isActive = true
 
         rootStack.axis = .vertical
-        rootStack.spacing = 7
+        rootStack.spacing = 8
         rootStack.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(rootStack)
 
@@ -70,7 +70,7 @@ final class KeyboardViewController: UIInputViewController {
         rootStack.addArrangedSubview(makeReplyList())
         rootStack.addArrangedSubview(makeUtilityRow())
 
-        statusLabel.text = "複製訊息後讀取"
+        statusLabel.text = "先複製對方訊息"
     }
 
     private func makeHeader() -> UIView {
@@ -80,7 +80,7 @@ final class KeyboardViewController: UIInputViewController {
         row.spacing = 8
 
         let title = UILabel()
-        title.text = "AI 回覆"
+        title.text = "AI 戀愛鍵盤"
         title.font = .systemFont(ofSize: 16, weight: .heavy)
         title.textColor = Palette.primary
         row.addArrangedSubview(title)
@@ -100,9 +100,9 @@ final class KeyboardViewController: UIInputViewController {
         card.layer.cornerRadius = 13
         card.layer.borderWidth = 1
         card.layer.borderColor = Palette.border.cgColor
-        card.heightAnchor.constraint(equalToConstant: 40).isActive = true
+        card.heightAnchor.constraint(equalToConstant: 42).isActive = true
 
-        contextLabel.text = "尚未讀取"
+        contextLabel.text = "長按聊天訊息複製，再點讀取"
         contextLabel.font = .systemFont(ofSize: 13, weight: .bold)
         contextLabel.textColor = Palette.primary
         contextLabel.numberOfLines = 1
@@ -125,7 +125,7 @@ final class KeyboardViewController: UIInputViewController {
         row.distribution = .fillEqually
 
         let readButton = UIButton(type: .system)
-        readButton.setTitle("讀取對話", for: .normal)
+        readButton.setTitle("讀取剪貼簿對話", for: .normal)
         readButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .bold)
         readButton.setTitleColor(.white, for: .normal)
         readButton.backgroundColor = Palette.primary
@@ -179,7 +179,7 @@ final class KeyboardViewController: UIInputViewController {
         row.addArrangedSubview(commandButton("刪除", action: #selector(deleteBackward)))
         row.addArrangedSubview(commandButton("空白", action: #selector(insertSpace)))
         row.addArrangedSubview(commandButton("換行", action: #selector(insertReturn)))
-        row.addArrangedSubview(commandButton("切換鍵盤", action: #selector(handleNextKeyboard)))
+        row.addArrangedSubview(commandButton("地球", action: #selector(handleNextKeyboard)))
 
         return row
     }
@@ -200,7 +200,7 @@ final class KeyboardViewController: UIInputViewController {
 
     private func replyButton(_ title: String, index: Int) -> UIButton {
         let button = UIButton(type: .system)
-        button.setTitle("  " + title, for: .normal)
+        button.setTitle("建議 \(index + 1)  " + title, for: .normal)
         button.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
         button.titleLabel?.numberOfLines = 2
         button.contentHorizontalAlignment = .left
@@ -223,17 +223,17 @@ final class KeyboardViewController: UIInputViewController {
         let text = UIPasteboard.general.string?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard !text.isEmpty else {
             currentMessage = ""
-            contextLabel.text = "剪貼簿沒有文字"
+            contextLabel.text = "剪貼簿沒有文字，先回聊天 App 複製"
             contextLabel.textColor = Palette.blush
-            statusLabel.text = "先複製訊息"
+            statusLabel.text = "等待複製"
             renderReplies()
             return
         }
 
         currentMessage = normalizeMessage(text)
-        contextLabel.text = "已讀取：" + preview(currentMessage, limit: 20)
+        contextLabel.text = "對方：" + preview(currentMessage, limit: 22)
         contextLabel.textColor = Palette.primary
-        statusLabel.text = "已生成"
+        statusLabel.text = "\(selectedStyle.title)已更新"
         renderReplies()
     }
 
@@ -241,14 +241,18 @@ final class KeyboardViewController: UIInputViewController {
         guard let style = ReplyStyle(rawValue: sender.tag) else { return }
         selectedStyle = style
         updateStyleButtons()
-        statusLabel.text = "\(style.title)語氣"
+        statusLabel.text = currentMessage.isEmpty ? "已選\(style.title)，先讀取" : "\(style.title)已更新"
         renderReplies()
     }
 
     @objc private func replyTapped(_ sender: UIButton) {
+        guard !currentMessage.isEmpty else {
+            statusLabel.text = "先讀取對話"
+            return
+        }
         guard sender.tag >= 0 && sender.tag < currentReplies.count else { return }
         textDocumentProxy.insertText(currentReplies[sender.tag])
-        statusLabel.text = "已填入，確認送出"
+        statusLabel.text = "已填入輸入框"
     }
 
     @objc private func deleteBackward() {
@@ -306,9 +310,9 @@ final class KeyboardViewController: UIInputViewController {
         let text = message.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {
             return [
-                "你可以先把對方訊息複製起來，我幫你接話。",
-                "讀到對話後，我會直接給你能送出的回覆。",
-                "點這裡會把回覆填進輸入框。"
+                "先在聊天 App 長按對方訊息並複製。",
+                "回到這裡點「讀取剪貼簿對話」。",
+                "選好語氣後，點建議回覆即可填入。"
             ]
         }
 

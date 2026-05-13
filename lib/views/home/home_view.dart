@@ -27,6 +27,7 @@ import 'package:ai_love_keyboard/views/components/reply_scorer.dart';
 import 'package:ai_love_keyboard/views/culture/culture_tips_view.dart';
 import 'package:ai_love_keyboard/views/date/date_invitation_view.dart';
 import 'package:ai_love_keyboard/views/greetings/greetings_view.dart';
+import 'package:ai_love_keyboard/views/keyboard/keyboard_guide_view.dart';
 import 'package:ai_love_keyboard/views/settings/settings_view.dart';
 import 'package:ai_love_keyboard/views/topics/topic_suggestions_view.dart';
 import 'package:ai_love_keyboard/views/translate/translate_reply_view.dart';
@@ -106,9 +107,9 @@ class _HomeViewState extends State<HomeView> {
   Future<void> _generateReplies() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('請先輸入對方的訊息')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('請先輸入對方的訊息')));
       return;
     }
 
@@ -132,10 +133,8 @@ class _HomeViewState extends State<HomeView> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ReplyCardsView(
-              originalMessage: text,
-              style: _selectedStyle,
-            ),
+            builder: (_) =>
+                ReplyCardsView(originalMessage: text, style: _selectedStyle),
           ),
         );
       }
@@ -191,8 +190,10 @@ class _HomeViewState extends State<HomeView> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(
-                      AppTheme.spacingMd, AppTheme.spacingMd,
-                      AppTheme.spacingMd, 0,
+                      AppTheme.spacingMd,
+                      AppTheme.spacingMd,
+                      AppTheme.spacingMd,
+                      0,
                     ),
                     child: Row(
                       children: [
@@ -208,11 +209,14 @@ class _HomeViewState extends State<HomeView> {
                         // Free build badge
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             gradient: AppTheme.romanticGradient,
-                            borderRadius:
-                                BorderRadius.circular(AppTheme.radiusFull),
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.radiusFull,
+                            ),
                           ),
                           child: const Text(
                             'FREE',
@@ -235,14 +239,15 @@ class _HomeViewState extends State<HomeView> {
                               children: [
                                 IconButton(
                                   icon: const Icon(
-                                      Icons.emoji_events_rounded,
-                                      color: AppTheme.textSecondary),
+                                    Icons.emoji_events_rounded,
+                                    color: AppTheme.textSecondary,
+                                  ),
                                   tooltip: '成就',
                                   onPressed: () => Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                        builder: (_) =>
-                                            const AchievementsView()),
+                                      builder: (_) => const AchievementsView(),
+                                    ),
                                   ),
                                 ),
                                 if (unclaimed > 0)
@@ -273,12 +278,15 @@ class _HomeViewState extends State<HomeView> {
                           },
                         ),
                         IconButton(
-                          icon: const Icon(Icons.settings_outlined,
-                              color: AppTheme.textSecondary),
+                          icon: const Icon(
+                            Icons.settings_outlined,
+                            color: AppTheme.textSecondary,
+                          ),
                           onPressed: () => Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (_) => const SettingsView()),
+                              builder: (_) => const SettingsView(),
+                            ),
                           ),
                         ),
                       ],
@@ -289,92 +297,116 @@ class _HomeViewState extends State<HomeView> {
                 // ── Keyboard Setup Banner ─────────────────────────
                 if (!_keyboardBannerDismissed)
                   SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppTheme.spacingMd, AppTheme.spacingMd,
-                        AppTheme.spacingMd, 0,
-                      ),
-                      child: GestureDetector(
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const SettingsView()),
-                        ),
-                        child: Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFFAB47BC), Color(0xFFFF80AB)],
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
+                    child:
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppTheme.spacingMd,
+                            AppTheme.spacingMd,
+                            AppTheme.spacingMd,
+                            0,
+                          ),
+                          child: GestureDetector(
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const KeyboardGuideView(),
+                              ),
                             ),
-                            borderRadius:
-                                BorderRadius.circular(AppTheme.radiusLg),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.primary
-                                    .withValues(alpha: 0.4),
-                                blurRadius: 16,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color:
-                                      Colors.white.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFAF7F2),
+                                borderRadius: BorderRadius.circular(
+                                  AppTheme.radiusLg,
                                 ),
-                                child: const Icon(
-                                  Icons.keyboard_rounded,
-                                  color: Colors.white,
-                                  size: 26,
+                                border: Border.all(
+                                  color: const Color(0xFFE7DDD0),
                                 ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.16),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 10),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 12),
-                              const Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '\u{2328}\u{FE0F} \u{555F}\u{7528} AI \u{9375}\u{76E4}',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 44,
+                                    height: 44,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE7EFE8),
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
-                                    SizedBox(height: 2),
-                                    Text(
-                                      '在 LINE、IG、交友 App 中直接生成回覆',
+                                    child: const Icon(
+                                      Icons.keyboard_rounded,
+                                      color: Color(0xFF1F3A2E),
+                                      size: 26,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '先開啟 AI 鍵盤',
+                                          style: TextStyle(
+                                            color: Color(0xFF1A1A1A),
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                        ),
+                                        SizedBox(height: 2),
+                                        Text(
+                                          '3 步教你在 LINE、IG 裡直接填入回覆',
+                                          style: TextStyle(
+                                            color: Color(0xFF6B6B6B),
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 7,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Color(0xFFE7EFE8),
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: const Text(
+                                      '看教學',
                                       style: TextStyle(
-                                        color: Colors.white70,
+                                        color: Color(0xFF1F3A2E),
                                         fontSize: 12,
+                                        fontWeight: FontWeight.w900,
                                       ),
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () => setState(
+                                      () => _keyboardBannerDismissed = true,
+                                    ),
+                                    child: const Icon(
+                                      Icons.close_rounded,
+                                      color: Color(0xFF8B6F47),
+                                      size: 20,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              GestureDetector(
-                                onTap: () => setState(
-                                    () => _keyboardBannerDismissed = true),
-                                child: const Icon(
-                                  Icons.close_rounded,
-                                  color: Colors.white54,
-                                  size: 20,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
+                        ).animate().fadeIn(
+                          duration: const Duration(milliseconds: 500),
                         ),
-                      ),
-                    ).animate().fadeIn(
-                          duration: const Duration(milliseconds: 500)),
                   ),
 
                 // ── Seasonal Package Banner ──────────────────────
@@ -382,81 +414,174 @@ class _HomeViewState extends State<HomeView> {
                   builder: (_, seasonalSvc, child) {
                     final banner = seasonalSvc.bannerPackage;
                     if (banner == null) {
-                      return const SliverToBoxAdapter(
-                          child: SizedBox.shrink());
+                      return const SliverToBoxAdapter(child: SizedBox.shrink());
                     }
                     return SliverToBoxAdapter(
-                      child: Padding(
+                      child:
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(
+                              AppTheme.spacingMd,
+                              AppTheme.spacingMd,
+                              AppTheme.spacingMd,
+                              0,
+                            ),
+                            child: GestureDetector(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const SeasonalPackagesView(),
+                                ),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(
+                                  AppTheme.radiusLg,
+                                ),
+                                child: BackdropFilter(
+                                  filter: ImageFilter.blur(
+                                    sigmaX: 10,
+                                    sigmaY: 10,
+                                  ),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(14),
+                                    decoration: BoxDecoration(
+                                      gradient: banner.gradient,
+                                      borderRadius: BorderRadius.circular(
+                                        AppTheme.radiusLg,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: banner.primaryColor.withValues(
+                                            alpha: 0.25,
+                                          ),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                          banner.emoji,
+                                          style: const TextStyle(fontSize: 28),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                '${banner.name} 免費開放',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                '剩餘 ${banner.daysRemaining} 天 | 免費使用',
+                                                style: const TextStyle(
+                                                  color: Colors.white70,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        GestureDetector(
+                                          onTap: () => seasonalSvc
+                                              .dismissBanner(banner.id),
+                                          child: const Icon(
+                                            Icons.close_rounded,
+                                            color: Colors.white54,
+                                            size: 20,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ).animate().fadeIn(
+                            duration: const Duration(milliseconds: 500),
+                          ),
+                    );
+                  },
+                ),
+
+                // ── Persona Pill ──────────────────────────────────
+                SliverToBoxAdapter(
+                  child:
+                      Padding(
                         padding: const EdgeInsets.fromLTRB(
-                          AppTheme.spacingMd, AppTheme.spacingMd,
-                          AppTheme.spacingMd, 0,
+                          AppTheme.spacingMd,
+                          AppTheme.spacingMd,
+                          AppTheme.spacingMd,
+                          0,
                         ),
                         child: GestureDetector(
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) =>
-                                    const SeasonalPackagesView()),
-                          ),
+                          onTap: () async {
+                            final persona = await Navigator.push<ChatPersona?>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => CharacterMarketView(
+                                  currentPersona: _selectedPersona,
+                                ),
+                              ),
+                            );
+                            if (mounted) {
+                              setState(() => _selectedPersona = persona);
+                            }
+                          },
                           child: ClipRRect(
-                            borderRadius:
-                                BorderRadius.circular(AppTheme.radiusLg),
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.radiusFull,
+                            ),
                             child: BackdropFilter(
-                              filter:
-                                  ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                               child: Container(
-                                padding: const EdgeInsets.all(14),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
                                 decoration: BoxDecoration(
-                                  gradient: banner.gradient,
+                                  color: Colors.white.withValues(alpha: 0.08),
                                   borderRadius: BorderRadius.circular(
-                                      AppTheme.radiusLg),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: banner.primaryColor
-                                          .withValues(alpha: 0.25),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
+                                    AppTheme.radiusFull,
+                                  ),
+                                  border: Border.all(
+                                    color: _selectedPersona != null
+                                        ? AppTheme.accent.withValues(alpha: 0.4)
+                                        : Colors.white.withValues(alpha: 0.1),
+                                  ),
                                 ),
                                 child: Row(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text(banner.emoji,
-                                        style:
-                                            const TextStyle(fontSize: 28)),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            '${banner.name} 免費開放',
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            '剩餘 ${banner.daysRemaining} 天 | 免費使用',
-                                            style: const TextStyle(
-                                              color: Colors.white70,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ],
+                                    Text(
+                                      _selectedPersona?.emoji ?? '\u{1F3AD}',
+                                      style: const TextStyle(fontSize: 20),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _selectedPersona != null
+                                          ? '角色：${_selectedPersona!.name}'
+                                          : '選擇 AI 角色',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: _selectedPersona != null
+                                            ? AppTheme.accent
+                                            : AppTheme.textSecondary,
                                       ),
                                     ),
-                                    GestureDetector(
-                                      onTap: () => seasonalSvc
-                                          .dismissBanner(banner.id),
-                                      child: const Icon(
-                                        Icons.close_rounded,
-                                        color: Colors.white54,
-                                        size: 20,
-                                      ),
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      Icons.chevron_right_rounded,
+                                      color: AppTheme.textHint,
+                                      size: 18,
                                     ),
                                   ],
                                 ),
@@ -465,261 +590,204 @@ class _HomeViewState extends State<HomeView> {
                           ),
                         ),
                       ).animate().fadeIn(
-                            duration: const Duration(milliseconds: 500)),
-                    );
-                  },
-                ),
-
-                // ── Persona Pill ──────────────────────────────────
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppTheme.spacingMd, AppTheme.spacingMd,
-                      AppTheme.spacingMd, 0,
-                    ),
-                    child: GestureDetector(
-                      onTap: () async {
-                        final persona =
-                            await Navigator.push<ChatPersona?>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => CharacterMarketView(
-                              currentPersona: _selectedPersona,
-                            ),
-                          ),
-                        );
-                        if (mounted) {
-                          setState(
-                              () => _selectedPersona = persona);
-                        }
-                      },
-                      child: ClipRRect(
-                        borderRadius:
-                            BorderRadius.circular(AppTheme.radiusFull),
-                        child: BackdropFilter(
-                          filter:
-                              ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(
-                                  AppTheme.radiusFull),
-                              border: Border.all(
-                                color: _selectedPersona != null
-                                    ? AppTheme.accent
-                                        .withValues(alpha: 0.4)
-                                    : Colors.white
-                                        .withValues(alpha: 0.1),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  _selectedPersona?.emoji ?? '\u{1F3AD}',
-                                  style: const TextStyle(fontSize: 20),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  _selectedPersona != null
-                                      ? '角色：${_selectedPersona!.name}'
-                                      : '選擇 AI 角色',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: _selectedPersona != null
-                                        ? AppTheme.accent
-                                        : AppTheme.textSecondary,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Icon(
-                                  Icons.chevron_right_rounded,
-                                  color: AppTheme.textHint,
-                                  size: 18,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                        duration: const Duration(milliseconds: 400),
                       ),
-                    ),
-                  ).animate().fadeIn(
-                        duration: const Duration(milliseconds: 400)),
                 ),
 
                 // ── Intimacy hearts ───────────────────────────────
                 SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppTheme.spacingMd, AppTheme.spacingMd,
-                      AppTheme.spacingMd, 0,
-                    ),
-                    child: IntimacySelector(
-                      selectedLevel: _intimacyLevel,
-                      onChanged: (level) =>
-                          setState(() => _intimacyLevel = level),
-                    ),
-                  ).animate().fadeIn(
-                        duration: const Duration(milliseconds: 400)),
+                  child:
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppTheme.spacingMd,
+                          AppTheme.spacingMd,
+                          AppTheme.spacingMd,
+                          0,
+                        ),
+                        child: IntimacySelector(
+                          selectedLevel: _intimacyLevel,
+                          onChanged: (level) =>
+                              setState(() => _intimacyLevel = level),
+                        ),
+                      ).animate().fadeIn(
+                        duration: const Duration(milliseconds: 400),
+                      ),
                 ),
 
                 // ── Platform Chips ────────────────────────────────
                 SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppTheme.spacingMd, AppTheme.spacingMd,
-                      AppTheme.spacingMd, 0,
-                    ),
-                    child: Row(
-                      children: _platforms.map((platform) {
-                        final isSelected =
-                            platform == _selectedPlatform;
-                        final emoji = platform == '交友App'
-                            ? '\u{1F498}'
-                            : platform == 'LINE'
+                  child:
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppTheme.spacingMd,
+                          AppTheme.spacingMd,
+                          AppTheme.spacingMd,
+                          0,
+                        ),
+                        child: Row(
+                          children: _platforms.map((platform) {
+                            final isSelected = platform == _selectedPlatform;
+                            final emoji = platform == '交友App'
+                                ? '\u{1F498}'
+                                : platform == 'LINE'
                                 ? '\u{1F4AC}'
                                 : '\u{1F4F8}';
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: GestureDetector(
-                            onTap: () => setState(
-                                () => _selectedPlatform = platform),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(
-                                  AppTheme.radiusFull),
-                              child: BackdropFilter(
-                                filter: ImageFilter.blur(
-                                    sigmaX: 8, sigmaY: 8),
-                                child: AnimatedContainer(
-                                  duration: const Duration(
-                                      milliseconds: 250),
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 10),
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? AppTheme.primary
-                                            .withValues(alpha: 0.25)
-                                        : Colors.white
-                                            .withValues(alpha: 0.06),
-                                    borderRadius:
-                                        BorderRadius.circular(
-                                            AppTheme.radiusFull),
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? AppTheme.accent
-                                              .withValues(alpha: 0.5)
-                                          : Colors.white
-                                              .withValues(alpha: 0.1),
-                                      width: isSelected ? 1.5 : 1,
-                                    ),
-                                    boxShadow: isSelected
-                                        ? [
-                                            BoxShadow(
-                                              color: AppTheme.accent
-                                                  .withValues(
-                                                      alpha: 0.2),
-                                              blurRadius: 8,
-                                            ),
-                                          ]
-                                        : null,
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: GestureDetector(
+                                onTap: () => setState(
+                                  () => _selectedPlatform = platform,
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(
+                                    AppTheme.radiusFull,
                                   ),
-                                  child: Text(
-                                    '$emoji $platform',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: isSelected
-                                          ? FontWeight.w700
-                                          : FontWeight.w500,
-                                      color: isSelected
-                                          ? Colors.white
-                                          : AppTheme.textSecondary,
+                                  child: BackdropFilter(
+                                    filter: ImageFilter.blur(
+                                      sigmaX: 8,
+                                      sigmaY: 8,
+                                    ),
+                                    child: AnimatedContainer(
+                                      duration: const Duration(
+                                        milliseconds: 250,
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 10,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? AppTheme.primary.withValues(
+                                                alpha: 0.25,
+                                              )
+                                            : Colors.white.withValues(
+                                                alpha: 0.06,
+                                              ),
+                                        borderRadius: BorderRadius.circular(
+                                          AppTheme.radiusFull,
+                                        ),
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? AppTheme.accent.withValues(
+                                                  alpha: 0.5,
+                                                )
+                                              : Colors.white.withValues(
+                                                  alpha: 0.1,
+                                                ),
+                                          width: isSelected ? 1.5 : 1,
+                                        ),
+                                        boxShadow: isSelected
+                                            ? [
+                                                BoxShadow(
+                                                  color: AppTheme.accent
+                                                      .withValues(alpha: 0.2),
+                                                  blurRadius: 8,
+                                                ),
+                                              ]
+                                            : null,
+                                      ),
+                                      child: Text(
+                                        '$emoji $platform',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: isSelected
+                                              ? FontWeight.w700
+                                              : FontWeight.w500,
+                                          color: isSelected
+                                              ? Colors.white
+                                              : AppTheme.textSecondary,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ).animate().fadeIn(
-                        duration: const Duration(milliseconds: 400)),
+                            );
+                          }).toList(),
+                        ),
+                      ).animate().fadeIn(
+                        duration: const Duration(milliseconds: 400),
+                      ),
                 ),
 
                 // ── Message Input (glassmorphism) ─────────────────
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(AppTheme.spacingMd),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '對方傳了什麼？',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: AppTheme.spacingSm),
-                        ClipRRect(
-                          borderRadius:
-                              BorderRadius.circular(AppTheme.radiusLg),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(
-                                sigmaX: 10, sigmaY: 10),
-                            child: AnimatedContainer(
-                              duration:
-                                  const Duration(milliseconds: 300),
-                              decoration: BoxDecoration(
-                                color:
-                                    Colors.white.withValues(alpha: 0.06),
-                                borderRadius: BorderRadius.circular(
-                                    AppTheme.radiusLg),
-                                border: Border.all(
-                                  color: _inputFocused
-                                      ? AppTheme.accent
-                                          .withValues(alpha: 0.5)
-                                      : Colors.white
-                                          .withValues(alpha: 0.08),
-                                  width: _inputFocused ? 1.5 : 1,
-                                ),
-                                boxShadow: _inputFocused
-                                    ? [
-                                        BoxShadow(
-                                          color: AppTheme.accent
-                                              .withValues(alpha: 0.15),
-                                          blurRadius: 12,
-                                          spreadRadius: 0,
-                                        ),
-                                      ]
-                                    : null,
+                    child:
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '對方傳了什麼？',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: AppTheme.spacingSm),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                AppTheme.radiusLg,
                               ),
-                              child: TextField(
-                                controller: _messageController,
-                                focusNode: _inputFocusNode,
-                                maxLines: 4,
-                                maxLength:
-                                    AppConstants.maxInputLength,
-                                style: const TextStyle(
-                                    color: AppTheme.textPrimary),
-                                decoration: InputDecoration(
-                                  hintText: '貼上對方的訊息...',
-                                  hintStyle: const TextStyle(
-                                      color: AppTheme.textHint),
-                                  filled: false,
-                                  border: InputBorder.none,
-                                  enabledBorder: InputBorder.none,
-                                  focusedBorder: InputBorder.none,
-                                  contentPadding:
-                                      const EdgeInsets.all(16),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(
+                                  sigmaX: 10,
+                                  sigmaY: 10,
+                                ),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 300),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.06),
+                                    borderRadius: BorderRadius.circular(
+                                      AppTheme.radiusLg,
+                                    ),
+                                    border: Border.all(
+                                      color: _inputFocused
+                                          ? AppTheme.accent.withValues(
+                                              alpha: 0.5,
+                                            )
+                                          : Colors.white.withValues(
+                                              alpha: 0.08,
+                                            ),
+                                      width: _inputFocused ? 1.5 : 1,
+                                    ),
+                                    boxShadow: _inputFocused
+                                        ? [
+                                            BoxShadow(
+                                              color: AppTheme.accent.withValues(
+                                                alpha: 0.15,
+                                              ),
+                                              blurRadius: 12,
+                                              spreadRadius: 0,
+                                            ),
+                                          ]
+                                        : null,
+                                  ),
+                                  child: TextField(
+                                    controller: _messageController,
+                                    focusNode: _inputFocusNode,
+                                    maxLines: 4,
+                                    maxLength: AppConstants.maxInputLength,
+                                    style: const TextStyle(
+                                      color: AppTheme.textPrimary,
+                                    ),
+                                    decoration: InputDecoration(
+                                      hintText: '貼上對方的訊息...',
+                                      hintStyle: const TextStyle(
+                                        color: AppTheme.textHint,
+                                      ),
+                                      filled: false,
+                                      border: InputBorder.none,
+                                      enabledBorder: InputBorder.none,
+                                      focusedBorder: InputBorder.none,
+                                      contentPadding: const EdgeInsets.all(16),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
+                          ],
+                        ).animate().fadeIn(
+                          duration: const Duration(milliseconds: 500),
                         ),
-                      ],
-                    ).animate().fadeIn(
-                        duration: const Duration(milliseconds: 500)),
                   ),
                 ),
 
@@ -727,14 +795,14 @@ class _HomeViewState extends State<HomeView> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: AppTheme.spacingMd),
+                      horizontal: AppTheme.spacingMd,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           '選擇回覆風格',
-                          style:
-                              Theme.of(context).textTheme.titleMedium,
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
                         const SizedBox(height: AppTheme.spacingSm),
                         _buildStyleChips(),
@@ -746,11 +814,9 @@ class _HomeViewState extends State<HomeView> {
                 // ── Generate Button ───────────────────────────────
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding:
-                        const EdgeInsets.all(AppTheme.spacingMd),
+                    padding: const EdgeInsets.all(AppTheme.spacingMd),
                     child: _GradientButton(
-                      onTap:
-                          ai.isLoading ? null : _generateReplies,
+                      onTap: ai.isLoading ? null : _generateReplies,
                       isLoading: ai.isLoading,
                       label: '\u{2728} 生成回覆',
                     ),
@@ -762,35 +828,42 @@ class _HomeViewState extends State<HomeView> {
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: AppTheme.spacingMd),
+                        horizontal: AppTheme.spacingMd,
+                      ),
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color:
-                              AppTheme.error.withValues(alpha: 0.15),
+                          color: AppTheme.error.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(
-                              AppTheme.radiusMd),
+                            AppTheme.radiusMd,
+                          ),
                           border: Border.all(
-                              color: AppTheme.error
-                                  .withValues(alpha: 0.3)),
+                            color: AppTheme.error.withValues(alpha: 0.3),
+                          ),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.error_outline,
-                                color: AppTheme.error, size: 20),
+                            const Icon(
+                              Icons.error_outline,
+                              color: AppTheme.error,
+                              size: 20,
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 ai.error!,
                                 style: const TextStyle(
-                                    color: AppTheme.error,
-                                    fontSize: 13),
+                                  color: AppTheme.error,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.close,
-                                  size: 18,
-                                  color: AppTheme.error),
+                              icon: const Icon(
+                                Icons.close,
+                                size: 18,
+                                color: AppTheme.error,
+                              ),
                               onPressed: ai.clearError,
                             ),
                           ],
@@ -802,17 +875,13 @@ class _HomeViewState extends State<HomeView> {
                 // ── Feature Grid (3 columns) ─────────────────────
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding:
-                        const EdgeInsets.all(AppTheme.spacingMd),
+                    padding: const EdgeInsets.all(AppTheme.spacingMd),
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           '更多功能',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium,
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
                         const SizedBox(height: AppTheme.spacingMd),
                         _buildFeatureGrid(),
@@ -822,9 +891,7 @@ class _HomeViewState extends State<HomeView> {
                 ),
 
                 // Bottom padding
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 80),
-                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 80)),
               ],
             ),
 
@@ -835,8 +902,7 @@ class _HomeViewState extends State<HomeView> {
               child: _PulsingEmergencyButton(
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(
-                      builder: (_) => const EmergencyCoachView()),
+                  MaterialPageRoute(builder: (_) => const EmergencyCoachView()),
                 ),
               ),
             ),
@@ -861,14 +927,12 @@ class _HomeViewState extends State<HomeView> {
             onTap: () => setState(() => _selectedStyle = style),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: isSelected
                     ? style.color.withValues(alpha: 0.2)
                     : Colors.white.withValues(alpha: 0.06),
-                borderRadius:
-                    BorderRadius.circular(AppTheme.radiusFull),
+                borderRadius: BorderRadius.circular(AppTheme.radiusFull),
                 border: Border.all(
                   color: isSelected
                       ? style.color.withValues(alpha: 0.6)
@@ -888,8 +952,7 @@ class _HomeViewState extends State<HomeView> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(style.emoji,
-                      style: const TextStyle(fontSize: 18)),
+                  Text(style.emoji, style: const TextStyle(fontSize: 18)),
                   const SizedBox(width: 6),
                   Text(
                     style.label,
@@ -898,9 +961,7 @@ class _HomeViewState extends State<HomeView> {
                       fontWeight: isSelected
                           ? FontWeight.w700
                           : FontWeight.w500,
-                      color: isSelected
-                          ? style.color
-                          : AppTheme.textSecondary,
+                      color: isSelected ? style.color : AppTheme.textSecondary,
                     ),
                   ),
                 ],
@@ -912,15 +973,11 @@ class _HomeViewState extends State<HomeView> {
           GestureDetector(
             onTap: () => setState(() => _showAllStyles = true),
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.06),
-                borderRadius:
-                    BorderRadius.circular(AppTheme.radiusFull),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.15),
-                ),
+                borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
               ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
@@ -946,102 +1003,163 @@ class _HomeViewState extends State<HomeView> {
   Widget _buildFeatureGrid() {
     final features = <_FeatureItem>[
       _FeatureItem(
-          emoji: '\u{1F321}\u{FE0F}', label: '聊天溫度計',
-          onTap: () {
-            AnalyticsService.instance.trackFeatureUsed(
-                feature: AdTrackingConfig.featureAnalysis);
-            Navigator.push(context, MaterialPageRoute(
-                builder: (_) => const ChatAnalysisView()));
-          }),
+        emoji: '\u{1F321}\u{FE0F}',
+        label: '聊天溫度計',
+        onTap: () {
+          AnalyticsService.instance.trackFeatureUsed(
+            feature: AdTrackingConfig.featureAnalysis,
+          );
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ChatAnalysisView()),
+          );
+        },
+      ),
       _FeatureItem(
-          emoji: '\u{1F9E0}', label: '她什麼意思',
-          onTap: () {
-            AnalyticsService.instance.trackFeatureUsed(
-                feature: AdTrackingConfig.featureInterpret);
-            Navigator.push(context, MaterialPageRoute(
-                builder: (_) =>
-                    const ChatAnalysisView(initialTab: 1)));
-          }),
+        emoji: '\u{1F9E0}',
+        label: '她什麼意思',
+        onTap: () {
+          AnalyticsService.instance.trackFeatureUsed(
+            feature: AdTrackingConfig.featureInterpret,
+          );
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const ChatAnalysisView(initialTab: 1),
+            ),
+          );
+        },
+      ),
       _FeatureItem(
-          emoji: '\u{1F4AC}', label: '破冰開場白',
-          onTap: () {
-            AnalyticsService.instance.trackFeatureUsed(
-                feature: AdTrackingConfig.featureOpener);
-            Navigator.push(context, MaterialPageRoute(
-                builder: (_) => const OpenerView()));
-          }),
+        emoji: '\u{1F4AC}',
+        label: '破冰開場白',
+        onTap: () {
+          AnalyticsService.instance.trackFeatureUsed(
+            feature: AdTrackingConfig.featureOpener,
+          );
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const OpenerView()),
+          );
+        },
+      ),
       _FeatureItem(
-          emoji: '\u{1F4A1}', label: '話題建議',
-          onTap: () {
-            AnalyticsService.instance.trackFeatureUsed(
-                feature: AdTrackingConfig.featureTopic);
-            Navigator.push(context, MaterialPageRoute(
-                builder: (_) => const TopicSuggestionsView()));
-          }),
+        emoji: '\u{1F4A1}',
+        label: '話題建議',
+        onTap: () {
+          AnalyticsService.instance.trackFeatureUsed(
+            feature: AdTrackingConfig.featureTopic,
+          );
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const TopicSuggestionsView()),
+          );
+        },
+      ),
       _FeatureItem(
-          emoji: '\u{1F30D}', label: '跨國翻譯',
-          onTap: () {
-            AnalyticsService.instance.trackFeatureUsed(
-                feature: AdTrackingConfig.featureTranslate);
-            Navigator.push(context, MaterialPageRoute(
-                builder: (_) => const TranslateReplyView()));
-          }),
+        emoji: '\u{1F30D}',
+        label: '跨國翻譯',
+        onTap: () {
+          AnalyticsService.instance.trackFeatureUsed(
+            feature: AdTrackingConfig.featureTranslate,
+          );
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const TranslateReplyView()),
+          );
+        },
+      ),
       _FeatureItem(
-          emoji: '\u{23F0}', label: '節奏教練',
-          onTap: () {
-            AnalyticsService.instance.trackFeatureUsed(
-                feature: AdTrackingConfig.featureTiming);
-            Navigator.push(context, MaterialPageRoute(
-                builder: (_) => const TimingCoachView()));
-          }),
+        emoji: '\u{23F0}',
+        label: '節奏教練',
+        onTap: () {
+          AnalyticsService.instance.trackFeatureUsed(
+            feature: AdTrackingConfig.featureTiming,
+          );
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const TimingCoachView()),
+          );
+        },
+      ),
       _FeatureItem(
-          emoji: '\u{1F60A}', label: '表情建議',
-          onTap: () {
-            AnalyticsService.instance.trackFeatureUsed(
-                feature: AdTrackingConfig.featureEmoji);
-            Navigator.push(context, MaterialPageRoute(
-                builder: (_) => const EmojiSuggesterView()));
-          }),
+        emoji: '\u{1F60A}',
+        label: '表情建議',
+        onTap: () {
+          AnalyticsService.instance.trackFeatureUsed(
+            feature: AdTrackingConfig.featureEmoji,
+          );
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const EmojiSuggesterView()),
+          );
+        },
+      ),
       _FeatureItem(
-          emoji: '\u{2764}\u{FE0F}', label: '約會邀請',
-          onTap: () {
-            AnalyticsService.instance.trackFeatureUsed(
-                feature: AdTrackingConfig.featureDate);
-            Navigator.push(context, MaterialPageRoute(
-                builder: (_) => const DateInvitationView()));
-          }),
+        emoji: '\u{2764}\u{FE0F}',
+        label: '約會邀請',
+        onTap: () {
+          AnalyticsService.instance.trackFeatureUsed(
+            feature: AdTrackingConfig.featureDate,
+          );
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const DateInvitationView()),
+          );
+        },
+      ),
       _FeatureItem(
-          emoji: '\u{1F91D}', label: '吵架和好',
-          onTap: () {
-            AnalyticsService.instance.trackFeatureUsed(
-                feature: AdTrackingConfig.featureArgument);
-            Navigator.push(context, MaterialPageRoute(
-                builder: (_) => const ArgumentResolveView()));
-          }),
+        emoji: '\u{1F91D}',
+        label: '吵架和好',
+        onTap: () {
+          AnalyticsService.instance.trackFeatureUsed(
+            feature: AdTrackingConfig.featureArgument,
+          );
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ArgumentResolveView()),
+          );
+        },
+      ),
       _FeatureItem(
-          emoji: '\u{2600}\u{FE0F}', label: '早安晚安',
-          onTap: () {
-            AnalyticsService.instance.trackFeatureUsed(
-                feature: AdTrackingConfig.featureGreeting);
-            Navigator.push(context, MaterialPageRoute(
-                builder: (_) => const GreetingsView()));
-          }),
+        emoji: '\u{2600}\u{FE0F}',
+        label: '早安晚安',
+        onTap: () {
+          AnalyticsService.instance.trackFeatureUsed(
+            feature: AdTrackingConfig.featureGreeting,
+          );
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const GreetingsView()),
+          );
+        },
+      ),
       _FeatureItem(
-          emoji: '\u{2B50}', label: '回覆評分',
-          onTap: () {
-            AnalyticsService.instance.trackFeatureUsed(
-                feature: AdTrackingConfig.featureScore);
-            Navigator.push(context, MaterialPageRoute(
-                builder: (_) => const ReplyScorerView()));
-          }),
+        emoji: '\u{2B50}',
+        label: '回覆評分',
+        onTap: () {
+          AnalyticsService.instance.trackFeatureUsed(
+            feature: AdTrackingConfig.featureScore,
+          );
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ReplyScorerView()),
+          );
+        },
+      ),
       _FeatureItem(
-          emoji: '\u{1F30F}', label: '約會文化',
-          onTap: () {
-            AnalyticsService.instance.trackFeatureUsed(
-                feature: AdTrackingConfig.featureCulture);
-            Navigator.push(context, MaterialPageRoute(
-                builder: (_) => const CultureTipsView()));
-          }),
+        emoji: '\u{1F30F}',
+        label: '約會文化',
+        onTap: () {
+          AnalyticsService.instance.trackFeatureUsed(
+            feature: AdTrackingConfig.featureCulture,
+          );
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CultureTipsView()),
+          );
+        },
+      ),
     ];
 
     return GridView.builder(
@@ -1057,48 +1175,40 @@ class _HomeViewState extends State<HomeView> {
       itemBuilder: (context, index) {
         final item = features[index];
         return GestureDetector(
-          onTap: item.onTap,
-          child: ClipRRect(
-            borderRadius:
-                BorderRadius.circular(AppTheme.radiusLg),
-            child: BackdropFilter(
-              filter:
-                  ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(
-                      AppTheme.radiusLg),
-                  border: Border.all(
-                    color:
-                        Colors.white.withValues(alpha: 0.08),
+              onTap: item.onTap,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.08),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(item.emoji, style: const TextStyle(fontSize: 28)),
+                        const SizedBox(height: 6),
+                        Text(
+                          item.label,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textPrimary,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                child: Column(
-                  mainAxisAlignment:
-                      MainAxisAlignment.center,
-                  children: [
-                    Text(item.emoji,
-                        style:
-                            const TextStyle(fontSize: 28)),
-                    const SizedBox(height: 6),
-                    Text(
-                      item.label,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
               ),
-            ),
-          ),
-        )
-            .animate(
-                delay: Duration(milliseconds: 200 + index * 50))
+            )
+            .animate(delay: Duration(milliseconds: 200 + index * 50))
             .fadeIn(duration: const Duration(milliseconds: 400));
       },
     );
@@ -1110,11 +1220,7 @@ class _FeatureItem {
   final String label;
   final VoidCallback onTap;
 
-  _FeatureItem({
-    required this.emoji,
-    required this.label,
-    required this.onTap,
-  });
+  _FeatureItem({required this.emoji, required this.label, required this.onTap});
 }
 
 // ── Pulsing Emergency FAB ────────────────────────────────────────────
@@ -1126,31 +1232,28 @@ class _PulsingEmergencyButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFEF4444), Color(0xFFEC4899)],
-          ),
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFEF4444).withValues(alpha: 0.4),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
+          onTap: onTap,
+          child: Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFEF4444), Color(0xFFEC4899)],
+              ),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.4),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: const Center(
-          child: Text(
-            '\u{1F198}',
-            style: TextStyle(fontSize: 24),
+            child: const Center(
+              child: Text('\u{1F198}', style: TextStyle(fontSize: 24)),
+            ),
           ),
-        ),
-      ),
-    )
+        )
         .animate(onPlay: (c) => c.repeat(reverse: true))
         .scale(
           begin: const Offset(1.0, 1.0),
@@ -1189,15 +1292,12 @@ class _GradientButton extends StatelessWidget {
                   end: Alignment.centerRight,
                 )
               : null,
-          color: onTap == null
-              ? Colors.white.withValues(alpha: 0.1)
-              : null,
+          color: onTap == null ? Colors.white.withValues(alpha: 0.1) : null,
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
           boxShadow: onTap != null
               ? [
                   BoxShadow(
-                    color:
-                        const Color(0xFFEC4899).withValues(alpha: 0.4),
+                    color: const Color(0xFFEC4899).withValues(alpha: 0.4),
                     blurRadius: 20,
                     offset: const Offset(0, 6),
                   ),
@@ -1211,8 +1311,7 @@ class _GradientButton extends StatelessWidget {
                   height: 24,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.5,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 )
               : Text(
