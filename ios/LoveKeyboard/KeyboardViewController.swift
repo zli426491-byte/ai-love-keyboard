@@ -1,20 +1,29 @@
 import UIKit
 
 final class KeyboardViewController: UIInputViewController {
-    private enum ReplyStyle: String, CaseIterable {
-        case gentle = "溫柔"
-        case funny = "幽默"
-        case flirty = "曖昧"
-        case apology = "道歉"
+    private enum ReplyStyle: Int, CaseIterable {
+        case gentle = 0
+        case funny = 1
+        case flirty = 2
+        case apology = 3
+
+        var title: String {
+            switch self {
+            case .gentle: return "溫柔"
+            case .funny: return "幽默"
+            case .flirty: return "曖昧"
+            case .apology: return "道歉"
+            }
+        }
     }
 
     private enum Palette {
         static let background = UIColor(red: 247 / 255, green: 243 / 255, blue: 250 / 255, alpha: 1)
         static let card = UIColor.white
-        static let primary = UIColor(red: 94 / 255, green: 54 / 255, blue: 168 / 255, alpha: 1)
-        static let accent = UIColor(red: 20 / 255, green: 170 / 255, blue: 148 / 255, alpha: 1)
-        static let text = UIColor(red: 35 / 255, green: 30 / 255, blue: 48 / 255, alpha: 1)
-        static let secondary = UIColor(red: 112 / 255, green: 103 / 255, blue: 125 / 255, alpha: 1)
+        static let primary = UIColor(red: 88 / 255, green: 58 / 255, blue: 168 / 255, alpha: 1)
+        static let accent = UIColor(red: 24 / 255, green: 168 / 255, blue: 145 / 255, alpha: 1)
+        static let text = UIColor(red: 34 / 255, green: 30 / 255, blue: 44 / 255, alpha: 1)
+        static let secondary = UIColor(red: 108 / 255, green: 101 / 255, blue: 119 / 255, alpha: 1)
         static let border = UIColor(red: 222 / 255, green: 213 / 255, blue: 234 / 255, alpha: 1)
         static let key = UIColor(red: 253 / 255, green: 252 / 255, blue: 255 / 255, alpha: 1)
     }
@@ -24,30 +33,27 @@ final class KeyboardViewController: UIInputViewController {
     private let replyScrollView = UIScrollView()
     private let replyStack = UIStackView()
     private let styleStack = UIStackView()
+    private let quickTextStack = UIStackView()
     private let keyboardStack = UIStackView()
     private let nextKeyboardButton = UIButton(type: .system)
     private let pasteButton = UIButton(type: .system)
-    private let generateButton = UIButton(type: .system)
+    private let refreshButton = UIButton(type: .system)
 
     private var styleButtons: [UIButton] = []
+    private var currentReplies: [String] = []
     private var selectedStyle: ReplyStyle = .gentle
     private var pastedMessage = ""
     private var isUppercase = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        setupKeyboard()
+        setupView()
         renderReplies()
     }
 
-    override func textDidChange(_ textInput: UITextInput?) {
-        super.textDidChange(textInput)
-        refreshStatus()
-    }
-
-    private func setupKeyboard() {
+    private func setupView() {
         view.backgroundColor = Palette.background
-        view.heightAnchor.constraint(greaterThanOrEqualToConstant: 340).isActive = true
+        view.heightAnchor.constraint(greaterThanOrEqualToConstant: 348).isActive = true
 
         rootStack.axis = .vertical
         rootStack.spacing = 7
@@ -58,32 +64,33 @@ final class KeyboardViewController: UIInputViewController {
             rootStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 8),
             rootStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -8),
             rootStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 8),
-            rootStack.bottomAnchor.constraint(lessThanOrEqualTo: view.bottomAnchor, constant: -8),
+            rootStack.bottomAnchor.constraint(lessThanOrEqualTo: view.bottomAnchor, constant: -8)
         ])
 
-        rootStack.addArrangedSubview(headerView())
-        rootStack.addArrangedSubview(styleSelector())
-        rootStack.addArrangedSubview(actionRow())
-        rootStack.addArrangedSubview(replyList())
+        rootStack.addArrangedSubview(makeHeader())
+        rootStack.addArrangedSubview(makeStyleSelector())
+        rootStack.addArrangedSubview(makeActionRow())
+        rootStack.addArrangedSubview(makeReplyList())
+        rootStack.addArrangedSubview(makeQuickTextRow())
 
         keyboardStack.axis = .vertical
         keyboardStack.spacing = 6
         rootStack.addArrangedSubview(keyboardStack)
         renderTypingKeys()
-
-        refreshStatus()
+        refreshStatus("可直接打字，或貼上對話後產生回覆")
     }
 
-    private func headerView() -> UIView {
+    private func makeHeader() -> UIView {
         let header = UIStackView()
         header.axis = .horizontal
         header.alignment = .center
+        header.spacing = 8
 
-        let title = UILabel()
-        title.text = "AI 戀愛鍵盤"
-        title.font = .systemFont(ofSize: 14, weight: .bold)
-        title.textColor = Palette.primary
-        header.addArrangedSubview(title)
+        let titleLabel = UILabel()
+        titleLabel.text = "AI 戀愛鍵盤"
+        titleLabel.font = .systemFont(ofSize: 14, weight: .bold)
+        titleLabel.textColor = Palette.primary
+        header.addArrangedSubview(titleLabel)
 
         statusLabel.font = .systemFont(ofSize: 11, weight: .medium)
         statusLabel.textColor = Palette.secondary
@@ -91,27 +98,28 @@ final class KeyboardViewController: UIInputViewController {
         statusLabel.textAlignment = .center
         header.addArrangedSubview(statusLabel)
 
-        nextKeyboardButton.setTitle("🌐", for: .normal)
-        nextKeyboardButton.titleLabel?.font = .systemFont(ofSize: 18, weight: .bold)
+        nextKeyboardButton.setTitle("切換", for: .normal)
+        nextKeyboardButton.titleLabel?.font = .systemFont(ofSize: 12, weight: .bold)
+        nextKeyboardButton.setTitleColor(Palette.primary, for: .normal)
         nextKeyboardButton.addTarget(self, action: #selector(handleNextKeyboard), for: .touchUpInside)
-        nextKeyboardButton.widthAnchor.constraint(equalToConstant: 44).isActive = true
+        nextKeyboardButton.widthAnchor.constraint(equalToConstant: 46).isActive = true
         header.addArrangedSubview(nextKeyboardButton)
 
         return header
     }
 
-    private func styleSelector() -> UIView {
+    private func makeStyleSelector() -> UIView {
         styleStack.axis = .horizontal
         styleStack.spacing = 6
         styleStack.distribution = .fillEqually
 
         for style in ReplyStyle.allCases {
             let button = UIButton(type: .system)
-            button.setTitle(style.rawValue, for: .normal)
+            button.setTitle(style.title, for: .normal)
             button.titleLabel?.font = .systemFont(ofSize: 12, weight: .bold)
             button.layer.cornerRadius = 13
             button.heightAnchor.constraint(equalToConstant: 30).isActive = true
-            button.tag = styleButtons.count
+            button.tag = style.rawValue
             button.addTarget(self, action: #selector(styleTapped(_:)), for: .touchUpInside)
             styleButtons.append(button)
             styleStack.addArrangedSubview(button)
@@ -121,30 +129,30 @@ final class KeyboardViewController: UIInputViewController {
         return styleStack
     }
 
-    private func actionRow() -> UIView {
+    private func makeActionRow() -> UIView {
         let row = UIStackView()
         row.axis = .horizontal
         row.spacing = 7
         row.distribution = .fillEqually
 
-        pasteButton.setTitle("貼上訊息", for: .normal)
+        pasteButton.setTitle("貼上對話", for: .normal)
         styleSecondaryButton(pasteButton)
         pasteButton.addTarget(self, action: #selector(pasteFromClipboard), for: .touchUpInside)
         row.addArrangedSubview(pasteButton)
 
-        generateButton.setTitle("更新回覆", for: .normal)
-        generateButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .bold)
-        generateButton.setTitleColor(.white, for: .normal)
-        generateButton.backgroundColor = Palette.accent
-        generateButton.layer.cornerRadius = 13
-        generateButton.heightAnchor.constraint(equalToConstant: 38).isActive = true
-        generateButton.addTarget(self, action: #selector(renderReplies), for: .touchUpInside)
-        row.addArrangedSubview(generateButton)
+        refreshButton.setTitle("更新回覆", for: .normal)
+        refreshButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .bold)
+        refreshButton.setTitleColor(.white, for: .normal)
+        refreshButton.backgroundColor = Palette.accent
+        refreshButton.layer.cornerRadius = 13
+        refreshButton.heightAnchor.constraint(equalToConstant: 38).isActive = true
+        refreshButton.addTarget(self, action: #selector(refreshRepliesTapped), for: .touchUpInside)
+        row.addArrangedSubview(refreshButton)
 
         return row
     }
 
-    private func replyList() -> UIView {
+    private func makeReplyList() -> UIView {
         replyScrollView.showsHorizontalScrollIndicator = false
         replyScrollView.heightAnchor.constraint(equalToConstant: 58).isActive = true
 
@@ -158,46 +166,61 @@ final class KeyboardViewController: UIInputViewController {
             replyStack.trailingAnchor.constraint(equalTo: replyScrollView.trailingAnchor),
             replyStack.topAnchor.constraint(equalTo: replyScrollView.topAnchor),
             replyStack.bottomAnchor.constraint(equalTo: replyScrollView.bottomAnchor),
-            replyStack.heightAnchor.constraint(equalTo: replyScrollView.heightAnchor),
+            replyStack.heightAnchor.constraint(equalTo: replyScrollView.heightAnchor)
         ])
 
         return replyScrollView
     }
 
-    private func renderTypingKeys() {
-        keyboardStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+    private func makeQuickTextRow() -> UIView {
+        quickTextStack.axis = .horizontal
+        quickTextStack.spacing = 6
+        quickTextStack.distribution = .fillEqually
 
-        let rows = [
-            Array("qwertyuiop").map(String.init),
-            Array("asdfghjkl").map(String.init),
-            Array("zxcvbnm").map(String.init),
-        ]
-
-        keyboardStack.addArrangedSubview(keyRow(rows[0]))
-        keyboardStack.addArrangedSubview(keyRow(rows[1], horizontalInset: 18))
-
-        let third = UIStackView()
-        third.axis = .horizontal
-        third.spacing = 5
-        third.distribution = .fill
-        third.addArrangedSubview(commandKey(isUppercase ? "ABC" : "abc", width: 48, action: #selector(toggleCase)))
-        for key in rows[2] {
-            third.addArrangedSubview(letterKey(key))
+        let words = ["好呀", "哈哈", "可以", "等等", "沒事", "晚點回"]
+        for (index, word) in words.enumerated() {
+            let button = quickTextButton(word)
+            button.tag = index
+            quickTextStack.addArrangedSubview(button)
         }
-        third.addArrangedSubview(commandKey("⌫", width: 48, action: #selector(deleteBackward)))
-        keyboardStack.addArrangedSubview(third)
 
-        let bottom = UIStackView()
-        bottom.axis = .horizontal
-        bottom.spacing = 6
-        bottom.distribution = .fill
-        bottom.addArrangedSubview(commandKey("123", width: 52, action: #selector(insertQuestionMark)))
-        bottom.addArrangedSubview(commandKey("空白", width: 0, action: #selector(insertSpace)))
-        bottom.addArrangedSubview(commandKey("換行", width: 62, action: #selector(insertReturn)))
-        keyboardStack.addArrangedSubview(bottom)
+        return quickTextStack
     }
 
-    private func keyRow(_ keys: [String], horizontalInset: CGFloat = 0) -> UIView {
+    private func renderTypingKeys() {
+        for view in keyboardStack.arrangedSubviews {
+            keyboardStack.removeArrangedSubview(view)
+            view.removeFromSuperview()
+        }
+
+        keyboardStack.addArrangedSubview(makeKeyRow(["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"]))
+        keyboardStack.addArrangedSubview(makeKeyRow(["a", "s", "d", "f", "g", "h", "j", "k", "l"], inset: 18))
+
+        let thirdRow = UIStackView()
+        thirdRow.axis = .horizontal
+        thirdRow.spacing = 5
+        thirdRow.distribution = .fill
+        thirdRow.addArrangedSubview(commandKey(isUppercase ? "ABC" : "abc", width: 48, action: #selector(toggleCase)))
+
+        let thirdKeys = ["z", "x", "c", "v", "b", "n", "m"]
+        for key in thirdKeys {
+            thirdRow.addArrangedSubview(letterKey(key))
+        }
+
+        thirdRow.addArrangedSubview(commandKey("刪除", width: 54, action: #selector(deleteBackward)))
+        keyboardStack.addArrangedSubview(thirdRow)
+
+        let bottomRow = UIStackView()
+        bottomRow.axis = .horizontal
+        bottomRow.spacing = 6
+        bottomRow.distribution = .fill
+        bottomRow.addArrangedSubview(commandKey("？", width: 48, action: #selector(insertQuestionMark)))
+        bottomRow.addArrangedSubview(commandKey("空白", width: 0, action: #selector(insertSpace)))
+        bottomRow.addArrangedSubview(commandKey("換行", width: 58, action: #selector(insertReturn)))
+        keyboardStack.addArrangedSubview(bottomRow)
+    }
+
+    private func makeKeyRow(_ keys: [String], inset: CGFloat = 0) -> UIView {
         let container = UIView()
         let row = UIStackView()
         row.axis = .horizontal
@@ -205,23 +228,26 @@ final class KeyboardViewController: UIInputViewController {
         row.distribution = .fillEqually
         row.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(row)
+
         for key in keys {
             row.addArrangedSubview(letterKey(key))
         }
+
         NSLayoutConstraint.activate([
-            row.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: horizontalInset),
-            row.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -horizontalInset),
+            row.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: inset),
+            row.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -inset),
             row.topAnchor.constraint(equalTo: container.topAnchor),
             row.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-            container.heightAnchor.constraint(equalToConstant: 38),
+            container.heightAnchor.constraint(equalToConstant: 38)
         ])
+
         return container
     }
 
     private func letterKey(_ value: String) -> UIButton {
         let button = UIButton(type: .system)
-        let display = isUppercase ? value.uppercased() : value
-        button.setTitle(display, for: .normal)
+        let title = isUppercase ? value.uppercased() : value
+        button.setTitle(title, for: .normal)
         button.titleLabel?.font = .systemFont(ofSize: 18, weight: .medium)
         button.setTitleColor(Palette.text, for: .normal)
         button.backgroundColor = Palette.key
@@ -229,16 +255,14 @@ final class KeyboardViewController: UIInputViewController {
         button.layer.borderWidth = 0.5
         button.layer.borderColor = Palette.border.cgColor
         button.heightAnchor.constraint(equalToConstant: 38).isActive = true
-        button.addAction(UIAction { [weak self] _ in
-            self?.textDocumentProxy.insertText(display)
-        }, for: .touchUpInside)
+        button.addTarget(self, action: #selector(letterTapped(_:)), for: .touchUpInside)
         return button
     }
 
     private func commandKey(_ title: String, width: CGFloat, action: Selector) -> UIButton {
         let button = UIButton(type: .system)
         button.setTitle(title, for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: 14, weight: .bold)
+        button.titleLabel?.font = .systemFont(ofSize: 13, weight: .bold)
         button.setTitleColor(Palette.text, for: .normal)
         button.backgroundColor = UIColor(red: 232 / 255, green: 226 / 255, blue: 238 / 255, alpha: 1)
         button.layer.cornerRadius = 8
@@ -250,108 +274,106 @@ final class KeyboardViewController: UIInputViewController {
         return button
     }
 
+    private func quickTextButton(_ title: String) -> UIButton {
+        let button = UIButton(type: .system)
+        button.setTitle(title, for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 13, weight: .bold)
+        button.setTitleColor(Palette.primary, for: .normal)
+        button.backgroundColor = Palette.card
+        button.layer.cornerRadius = 12
+        button.layer.borderWidth = 0.5
+        button.layer.borderColor = Palette.border.cgColor
+        button.heightAnchor.constraint(equalToConstant: 34).isActive = true
+        button.addTarget(self, action: #selector(quickTextTapped(_:)), for: .touchUpInside)
+        return button
+    }
+
+    private func replyButton(_ title: String, index: Int) -> UIButton {
+        let button = UIButton(type: .system)
+        button.setTitle(title, for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
+        button.titleLabel?.numberOfLines = 2
+        button.contentHorizontalAlignment = .left
+        button.contentEdgeInsets = UIEdgeInsets(top: 8, left: 10, bottom: 8, right: 10)
+        button.setTitleColor(Palette.text, for: .normal)
+        button.backgroundColor = Palette.card
+        button.layer.cornerRadius = 14
+        button.layer.borderWidth = 1
+        button.layer.borderColor = Palette.border.cgColor
+        button.layer.shadowColor = UIColor.black.cgColor
+        button.layer.shadowOpacity = 0.08
+        button.layer.shadowRadius = 6
+        button.layer.shadowOffset = CGSize(width: 0, height: 3)
+        button.widthAnchor.constraint(equalToConstant: 210).isActive = true
+        button.tag = index
+        button.addTarget(self, action: #selector(replyTapped(_:)), for: .touchUpInside)
+        return button
+    }
+
     private func styleSecondaryButton(_ button: UIButton) {
         button.titleLabel?.font = .systemFont(ofSize: 14, weight: .bold)
         button.setTitleColor(Palette.primary, for: .normal)
-        button.backgroundColor = .white
+        button.backgroundColor = Palette.card
         button.layer.cornerRadius = 13
         button.layer.borderWidth = 1
         button.layer.borderColor = Palette.border.cgColor
         button.heightAnchor.constraint(equalToConstant: 38).isActive = true
     }
 
-    private func updateStyleButtons() {
-        for (index, button) in styleButtons.enumerated() {
-            let isSelected = ReplyStyle.allCases[index] == selectedStyle
-            button.backgroundColor = isSelected ? Palette.primary : .white
-            button.setTitleColor(isSelected ? .white : Palette.primary, for: .normal)
-            button.layer.borderColor = Palette.border.cgColor
-            button.layer.borderWidth = isSelected ? 0 : 1
+    @objc private func renderReplies() {
+        for view in replyStack.arrangedSubviews {
+            replyStack.removeArrangedSubview(view)
+            view.removeFromSuperview()
         }
+
+        currentReplies = makeReplies(for: selectedStyle, message: pastedMessage)
+        for (index, reply) in currentReplies.enumerated() {
+            replyStack.addArrangedSubview(replyButton(reply, index: index))
+        }
+    }
+
+    @objc private func refreshRepliesTapped() {
+        renderReplies()
+        refreshStatus(pastedMessage.isEmpty ? "已更新預設回覆" : "已根據貼上的內容更新")
     }
 
     @objc private func styleTapped(_ sender: UIButton) {
-        selectedStyle = ReplyStyle.allCases[sender.tag]
+        guard let style = ReplyStyle(rawValue: sender.tag) else { return }
+        selectedStyle = style
         updateStyleButtons()
         renderReplies()
-    }
-
-    @objc private func renderReplies() {
-        replyStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        for reply in replies(for: sourceMessage(), style: selectedStyle) {
-            replyStack.addArrangedSubview(replyButton(reply))
-        }
-        refreshStatus()
-    }
-
-    private func replyButton(_ text: String) -> UIButton {
-        let button = UIButton(type: .system)
-        button.setTitle(text, for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: 12, weight: .semibold)
-        button.titleLabel?.numberOfLines = 2
-        button.contentHorizontalAlignment = .left
-        button.contentEdgeInsets = UIEdgeInsets(top: 8, left: 12, bottom: 8, right: 12)
-        button.setTitleColor(Palette.text, for: .normal)
-        button.backgroundColor = Palette.card
-        button.layer.cornerRadius = 13
-        button.layer.borderWidth = 1
-        button.layer.borderColor = Palette.border.cgColor
-        button.widthAnchor.constraint(equalToConstant: 220).isActive = true
-        button.addAction(UIAction { [weak self] _ in
-            self?.textDocumentProxy.insertText(text)
-            self?.statusLabel.text = "已插入回覆"
-        }, for: .touchUpInside)
-        return button
+        refreshStatus("已切換成\(style.title)語氣")
     }
 
     @objc private func pasteFromClipboard() {
-        guard hasFullAccess else {
-            statusLabel.text = "請先開啟完整取用才能貼上"
+        let text = UIPasteboard.general.string?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if text.isEmpty {
+            pastedMessage = ""
+            renderReplies()
+            refreshStatus("沒有讀到剪貼簿，請確認允許完整取用")
             return
         }
 
-        guard let text = UIPasteboard.general.string?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !text.isEmpty
-        else {
-            statusLabel.text = "剪貼簿沒有文字"
-            return
-        }
-
-        pastedMessage = String(text.prefix(240))
-        statusLabel.text = "已讀取剪貼簿"
+        pastedMessage = text
         renderReplies()
+        let preview = text.count > 12 ? String(text.prefix(12)) + "..." : text
+        refreshStatus("已貼上：\(preview)")
     }
 
-    private func sourceMessage() -> String {
-        if !pastedMessage.isEmpty {
-            return pastedMessage
-        }
-        return (textDocumentProxy.documentContextBeforeInput ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+    @objc private func replyTapped(_ sender: UIButton) {
+        guard sender.tag >= 0 && sender.tag < currentReplies.count else { return }
+        textDocumentProxy.insertText(currentReplies[sender.tag])
+        refreshStatus("已插入回覆")
     }
 
-    private func refreshStatus() {
-        let source = sourceMessage()
-        if source.isEmpty {
-            statusLabel.text = hasFullAccess ? "可打字，也可貼上訊息" : "可打字；貼上需完整取用"
-        } else {
-            statusLabel.text = "參考：" + String(source.prefix(18))
-        }
+    @objc private func quickTextTapped(_ sender: UIButton) {
+        guard let text = sender.title(for: .normal) else { return }
+        textDocumentProxy.insertText(text)
     }
 
-    private func replies(for message: String, style: ReplyStyle) -> [String] {
-        let hasMessage = !message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        switch style {
-        case .gentle:
-            return hasMessage
-                ? ["我懂，你先不用急著回我。", "辛苦了，晚點我陪你聊。", "先照顧好自己，我在。"]
-                : ["你先好好休息。", "我懂，想聊時我都在。", "慢慢來，不急。"]
-        case .funny:
-            return ["收到，我先把吵鬧模式關掉。", "那我先安靜，但你不能忘記我。", "懂了，今天少鬧你一點。"]
-        case .flirty:
-            return ["那你先休息，記得回來找我。", "好，我乖乖等你回覆。", "休息好再回我，我會想你。"]
-        case .apology:
-            return ["剛剛讓你有壓力的話，抱歉。", "我不是想逼你，只是有點在意。", "我會放慢一點，給你空間。"]
-        }
+    @objc private func letterTapped(_ sender: UIButton) {
+        guard let text = sender.title(for: .normal) else { return }
+        textDocumentProxy.insertText(text)
     }
 
     @objc private func toggleCase() {
@@ -372,10 +394,63 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     @objc private func insertQuestionMark() {
-        textDocumentProxy.insertText("?")
+        textDocumentProxy.insertText("？")
+    }
+
+    private func updateStyleButtons() {
+        for button in styleButtons {
+            let isSelected = button.tag == selectedStyle.rawValue
+            button.backgroundColor = isSelected ? Palette.primary : Palette.card
+            button.setTitleColor(isSelected ? .white : Palette.primary, for: .normal)
+            button.layer.borderWidth = isSelected ? 0 : 1
+            button.layer.borderColor = Palette.border.cgColor
+        }
+    }
+
+    private func refreshStatus(_ text: String) {
+        statusLabel.text = text
     }
 
     @objc private func handleNextKeyboard() {
         advanceToNextInputMode()
+    }
+
+    private func makeReplies(for style: ReplyStyle, message: String) -> [String] {
+        let normalized = message.lowercased()
+        let tired = normalized.contains("累") || normalized.contains("tired")
+        let casual = normalized.contains("隨便") || normalized.contains("都可以")
+        let angry = normalized.contains("算了") || normalized.contains("不用") || normalized.contains("生氣")
+
+        switch style {
+        case .gentle:
+            if tired {
+                return ["辛苦了，先好好休息，我晚點陪你聊。", "今天一定很累吧，先把自己照顧好。", "我在，你想說的時候我都會聽。"]
+            }
+            if casual {
+                return ["那我來安排，你只要負責開心就好。", "交給我，我選一個你會舒服的。", "好，我決定，但會以你喜歡為主。"]
+            }
+            return ["我懂你的意思，我會好好回你。", "你這樣說我有放在心上。", "我想先聽聽你真正的想法。"]
+        case .funny:
+            if tired {
+                return ["辛苦了，今天先下班，腦袋也一起打卡。", "那你現在的任務只有一個：躺平。", "我批准你今天不用堅強。"]
+            }
+            if casual {
+                return ["隨便是最難的題目，但我準備好了。", "收到，我來當選擇困難終結者。", "那我選一個不會被扣分的答案。"]
+            }
+            return ["我剛剛認真想了一下，差點把 CPU 燒了。", "這題我會，我先交一版答案。", "等我三秒，我切換高情商模式。"]
+        case .flirty:
+            if tired {
+                return ["那今晚別硬撐，我想把你的壞心情接走。", "累的話靠過來一點，我負責哄你。", "今天先休息，明天換我讓你開心。"]
+            }
+            if casual {
+                return ["那我決定見你，其他都不重要。", "我選你喜歡的，也選跟你一起。", "好，我安排一個適合我們的。"]
+            }
+            return ["你這樣說，我會忍不住一直想你。", "我可以慢慢回，但想你這件事很快。", "你一句話，我心情就被你帶走了。"]
+        case .apology:
+            if angry {
+                return ["我知道你不舒服，剛剛是我沒處理好。", "對不起，我先不辯解，我想把你感受聽完。", "我會改，不是說說而已。"]
+            }
+            return ["如果我剛剛讓你不舒服，真的抱歉。", "我想把話說清楚，也想好好顧到你的感受。", "對不起，我會更注意自己的表達。"]
+        }
     }
 }
