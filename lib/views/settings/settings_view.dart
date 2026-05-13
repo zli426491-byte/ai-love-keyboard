@@ -187,7 +187,7 @@ class SettingsView extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  '啟用後可在聊天 App 中快速插入回覆模板，不需切換 App。',
+                  '啟用後可在聊天 App 中快速插入回覆模板。若鍵盤清單沒有出現，請先刪除舊版 App 後重新安裝。',
                   style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
                 ),
                 const SizedBox(height: 14),
@@ -206,7 +206,7 @@ class SettingsView extends StatelessWidget {
                       SizedBox(height: 8),
                       _SetupStep(number: '3', text: '點選「新增鍵盤...」'),
                       SizedBox(height: 8),
-                      _SetupStep(number: '4', text: '選擇「AI 戀愛鍵盤」'),
+                      _SetupStep(number: '4', text: '在「第三方鍵盤」選擇「AI 戀愛鍵盤」'),
                       SizedBox(height: 8),
                       _SetupStep(
                         number: '5',
