@@ -89,6 +89,8 @@ class KeyboardGuideView extends StatelessWidget {
             const _FlowCard(),
             const SizedBox(height: 20),
             _SetupCard(onOpenSettings: _openSettings),
+            const SizedBox(height: 20),
+            const _SwitchKeyboardCard(),
             const SizedBox(height: 18),
             SizedBox(
               height: 54,
@@ -316,6 +318,190 @@ class _SetupCard extends StatelessWidget {
             number: '3',
             title: '允許完整取用',
             body: '剪貼簿讀取需要此權限；不開啟時只能使用固定回覆。',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SwitchKeyboardCard extends StatelessWidget {
+  const _SwitchKeyboardCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return _GuideCard(
+      title: '找不到鍵盤時',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          Text(
+            '在聊天輸入框叫出鍵盤後，長按左下角地球圖示，選「AI 戀愛鍵盤」。',
+            style: TextStyle(
+              color: KeyboardGuideView._muted,
+              fontSize: 13,
+              height: 1.45,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 14),
+          _KeyboardSwitcherMock(),
+        ],
+      ),
+    );
+  }
+}
+
+class _KeyboardSwitcherMock extends StatelessWidget {
+  const _KeyboardSwitcherMock();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: KeyboardGuideView._cream,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: KeyboardGuideView._line),
+      ),
+      child: Column(
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+              width: 210,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: KeyboardGuideView._card,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: KeyboardGuideView._line),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 14,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: const [
+                  _SwitcherOption(text: '繁體注音'),
+                  _SwitcherOption(text: 'English (US)'),
+                  _SwitcherOption(text: 'AI 戀愛鍵盤', selected: true),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: KeyboardGuideView._forest,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.language_rounded,
+                  color: Colors.white,
+                  size: 21,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Container(
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: KeyboardGuideView._card,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: KeyboardGuideView._line),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      '空格',
+                      style: TextStyle(
+                        color: KeyboardGuideView._muted,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                width: 54,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: KeyboardGuideView._card,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: KeyboardGuideView._line),
+                ),
+                child: const Center(
+                  child: Text(
+                    'return',
+                    style: TextStyle(
+                      color: KeyboardGuideView._muted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            '長按地球圖示切換',
+            style: TextStyle(
+              color: KeyboardGuideView._forest,
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SwitcherOption extends StatelessWidget {
+  final String text;
+  final bool selected;
+
+  const _SwitcherOption({required this.text, this.selected = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: selected ? KeyboardGuideView._sage : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            selected ? Icons.keyboard_rounded : Icons.language_rounded,
+            size: 16,
+            color: selected
+                ? KeyboardGuideView._forest
+                : KeyboardGuideView._muted,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: selected
+                    ? KeyboardGuideView._forest
+                    : KeyboardGuideView._text,
+                fontSize: 13,
+                fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),
