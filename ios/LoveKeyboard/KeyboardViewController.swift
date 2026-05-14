@@ -40,7 +40,7 @@ final class KeyboardViewController: UIInputViewController {
     private var selectedStyle: ReplyStyle = .gentle
     private var currentMessage = ""
     private var statusMode: StatusMode = .idle
-    private var generationIndex = 1
+    private var generationIndex = 0
     private var filledIndex: Int?
 
     private enum StatusMode {
@@ -163,15 +163,15 @@ final class KeyboardViewController: UIInputViewController {
         let prefix = index == 0 ? "★  " : "   "
         let suffix = filledIndex == index ? "    已填入" : "    填入"
         button.setTitle(prefix + title + suffix, for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: index == 0 ? 14 : 13.5, weight: .semibold)
+        button.titleLabel?.font = .systemFont(ofSize: index == 0 ? 14 : 13.5, weight: index == 0 ? .bold : .semibold)
         button.titleLabel?.numberOfLines = 2
         button.contentHorizontalAlignment = .left
         button.contentEdgeInsets = UIEdgeInsets(top: 8, left: 14, bottom: 8, right: 14)
         button.setTitleColor(filledIndex == index ? Palette.primary : (index == 0 ? Palette.primary : Palette.text), for: .normal)
         button.backgroundColor = index == 0 ? Palette.selectedSoft : Palette.card
         button.layer.cornerRadius = index == 0 ? 12 : 10
-        button.layer.borderWidth = 1
-        button.layer.borderColor = (index == 0 ? Palette.primary.withAlphaComponent(0.32) : Palette.border).cgColor
+        button.layer.borderWidth = index == 0 ? 1.5 : 1
+        button.layer.borderColor = (index == 0 ? Palette.primary.withAlphaComponent(0.30) : Palette.border).cgColor
         button.layer.shadowColor = UIColor.black.cgColor
         button.layer.shadowOpacity = index == 0 ? 0.08 : 0.04
         button.layer.shadowRadius = index == 0 ? 8 : 5
@@ -203,7 +203,7 @@ final class KeyboardViewController: UIInputViewController {
         currentMessage = normalizeMessage(text)
         statusMode = .ready
         filledIndex = nil
-        generationIndex = 1
+        generationIndex += 1
         renderContent()
     }
 
@@ -213,7 +213,7 @@ final class KeyboardViewController: UIInputViewController {
         updateStyleButtons()
         filledIndex = nil
         if !currentMessage.isEmpty {
-            generationIndex = 1
+            generationIndex += 1
             statusMode = .ready
         }
         renderContent()
@@ -259,8 +259,8 @@ final class KeyboardViewController: UIInputViewController {
             statusLabel.text = "等你開始"
             contentStack.addArrangedSubview(actionCard(
                 title: "先複製對方訊息",
-                subtitle: "再回來這裡點一下",
-                buttonTitle: "我已複製，讀取",
+                subtitle: "再回來點一下，3 秒給你 3 句",
+                buttonTitle: "我已複製，產生 3 句",
                 toneHint: "讀到對話後套用\(selectedStyle.title)語氣",
                 isWarning: false
             ))
@@ -424,114 +424,113 @@ final class KeyboardViewController: UIInputViewController {
         }
 
         let lower = text.lowercased()
-        let topic = shortTopic(from: text)
         let isQuestion = containsAny(lower, ["?", "？", "嗎", "是不是", "要不要", "可不可以", "怎麼", "哪", "什麼"])
         let isFood = containsAny(lower, ["吃", "喝", "火鍋", "餐廳", "宵夜", "晚餐", "午餐", "咖啡"])
         let isTired = containsAny(lower, ["累", "忙", "煩", "壓力", "不舒服", "睡"])
         let isCold = containsAny(lower, ["嗯", "對", "好", "哈哈", "喔"]) && text.count <= 6
-        let isNegative = containsAny(lower, ["算了", "不用", "沒差", "隨便", "生氣", "不爽", "吵", "討厭"])
+        let isNegative = containsAny(lower, ["算了", "不用", "沒差", "隨便", "生氣", "不爽", "吵", "討厭", "不適合"])
 
         switch style {
         case .gentle:
             if isFood {
                 return [
-                    "好啊，\(topic)可以，我來看哪個時間最剛好。",
-                    "可以，等等就去，今天不用想太多。",
-                    "那就\(topic)，我陪你慢慢吃、慢慢聊。"
+                    "就吃這個",
+                    "我來找時間，今天不用你費心。",
+                    "那我們吃完再散步一下，好不好?"
                 ]
             }
             if isTired {
                 return [
-                    "辛苦了，先別硬撐，我陪你慢慢放鬆。",
-                    "我知道你今天很累，先把自己照顧好。",
-                    "沒事，你想休息就先休息，我在。"
+                    "先休息，我在",
+                    "今天別硬撐，把力氣留給自己。",
+                    "晚點想說話的時候，我陪你慢慢聊好嗎?"
                 ]
             }
             if isQuestion {
                 return [
-                    "我想了一下，這件事我會比較偏向先照顧你的感受。",
-                    "可以，我認真回你：我覺得先這樣安排會比較好。",
-                    "你問得很對，我先說我的想法給你聽。"
+                    "我認真想了",
+                    "這題我會先照顧你的感受。",
+                    "要不要我先說我的想法，再一起決定?"
                 ]
             }
             if isCold {
                 return [
-                    "好，那我懂你的意思了。",
-                    "嗯嗯，我有收到，你不用急著多說。",
-                    "可以，那我先照你的節奏來。"
+                    "我懂你的意思",
+                    "你不用急著多說，我先陪著。",
+                    "等你想聊時再丟給我，我都會接住好嗎?"
                 ]
             }
             return [
-                "我懂你說的「\(topic)」，我會好好回你。",
-                "這句我有放在心上，不會隨便帶過。",
-                "我想先理解你的意思，再好好接話。"
+                "我有放在心上",
+                "這句我不會隨便帶過。",
+                "要不要慢慢說，我想把你的意思聽完整?"
             ]
         case .funny:
             if isFood {
                 return [
-                    "\(topic)可以，我的胃已經先答應了。",
-                    "走啊，今天就讓火鍋替我們主持公道。",
-                    "可以，我負責吃肉，你負責開心。"
+                    "胃先答應了",
+                    "今天讓晚餐替我們主持公道。",
+                    "要不要直接出發，我負責不讓氣氛冷掉?"
                 ]
             }
             if isTired {
                 return [
-                    "辛苦了，今天先把腦袋切成省電模式。",
-                    "那你現在唯一任務：躺平，不准逞強。",
-                    "我批准你今天不用堅強，休息最大。"
+                    "先開省電模式",
+                    "你今天唯一任務是躺平。",
+                    "要不要先休息，我晚點再帶笑話來報到?"
                 ]
             }
             if isNegative {
                 return [
-                    "收到，我先把求生欲開到最大。",
-                    "這句我聽懂了，我先不亂皮。",
-                    "我感覺這題不能亂答，我認真一點。"
+                    "我先收起嘴砲",
+                    "這題不能亂答，我認真一點。",
+                    "要不要給我一次補考，我想把話講好?"
                 ]
             }
             return [
-                "你這句「\(topic)」我先接住，不然我怕掉分。",
-                "等我一下，我正在切換高情商模式。",
-                "這題我會，我先交一版不尷尬的答案。"
+                "我先接住這題",
+                "等我切換高情商模式。",
+                "要不要我交一版不尷尬的答案給你?"
             ]
         case .flirty:
             if isFood {
                 return [
-                    "好，等等去\(topic)，但我要坐你旁邊。",
-                    "可以，吃什麼都行，重點是跟你一起。",
-                    "那就走吧，我想把今天的時間留給你。"
+                    "想坐妳旁邊",
+                    "吃什麼都行，重點是跟妳一起。",
+                    "要不要我帶妳去那家，妳上次說想吃的?"
                 ]
             }
             if isTired {
                 return [
-                    "累的話靠近一點，我負責哄你。",
-                    "今天先別撐了，我想把你的壞心情接走。",
-                    "你休息，我想你這件事我來負責。"
+                    "靠近一點吧",
+                    "今天別撐了，我想接走妳的壞心情。",
+                    "要不要休息一下，我晚點再溫柔地吵妳?"
                 ]
             }
             if isQuestion {
                 return [
-                    "如果是你的話，我其實很願意。",
-                    "你這樣問，我會忍不住想多想一點。",
-                    "可以啊，只要是跟你，我都想試試看。"
+                    "如果是妳我願意",
+                    "妳這樣問，我會忍不住多想。",
+                    "要不要讓我用行動回答，比文字更清楚?"
                 ]
             }
             return [
-                "你說「\(topic)」的時候，我有點想你。",
-                "我可以慢慢回，但想靠近你這件事很快。",
-                "你一句話，就把我的注意力帶走了。"
+                "有點想妳了",
+                "妳一句話就把我的注意力帶走。",
+                "要不要晚點聊，我想把今天留一點給妳?"
             ]
         case .apology:
             if isNegative {
                 return [
-                    "我知道你不舒服，剛剛是我沒處理好。",
-                    "對不起，我先不辯解，我想把你感受聽完。",
-                    "我會改，不是說說而已。"
+                    "我剛剛沒做好",
+                    "先不辯解，我想把你的感受聽完。",
+                    "要不要給我一點時間，我會把態度改給你看?"
                 ]
             }
             return [
-                "如果我剛剛讓你不舒服，真的抱歉。",
-                "我想把話說清楚，也想好好顧到你的感受。",
-                "對不起，我會更注意自己的表達。"
+                "是我沒顧好",
+                "我想把話說清楚，也顧到你。",
+                "要不要讓我重新說一次，這次我會更小心?"
             ]
         }
     }
@@ -543,16 +542,4 @@ final class KeyboardViewController: UIInputViewController {
         return false
     }
 
-    private func shortTopic(from text: String) -> String {
-        var cleaned = text
-        let replacements = ["你", "我", "們", "啊", "啦", "欸", "耶", "嗎", "？", "?", "，", ",", "。", ".", "！", "!"]
-        for item in replacements {
-            cleaned = cleaned.replacingOccurrences(of: item, with: "")
-        }
-        cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
-        if cleaned.isEmpty {
-            cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        return preview(cleaned, limit: 8)
-    }
 }

@@ -223,7 +223,7 @@ class _KeyboardPreview extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: const Text(
-                    '讀取剪貼簿對話',
+                    '我已複製，產生 3 句',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white,
@@ -277,7 +277,7 @@ class _FlowCard extends StatelessWidget {
           _GuideStep(
             number: '3',
             title: '讀取後點回覆',
-            body: '點「讀取對話」，選一句建議，會直接填入輸入框。',
+            body: '點「我已複製，產生 3 句」，選一句建議，會直接填入輸入框。',
           ),
         ],
       ),
@@ -377,25 +377,100 @@ class _FullAccessCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _GuideCard(
-      title: '為什麼要完整取用',
+      title: '為什麼要「完整取用」',
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: const [
-          _GuideStep(
-            number: '1',
-            title: '讀取你複製的文字',
-            body: 'AI 鍵盤只能讀剪貼簿文字，才能知道你要回哪一句。',
+          _ExplainHeading(text: '開了會怎樣？'),
+          SizedBox(height: 10),
+          _ExplainRow(text: '讓鍵盤讀到你剛複製的訊息', color: KeyboardGuideView._forest),
+          _ExplainRow(text: '才能對訊息生成合適回覆', color: KeyboardGuideView._forest),
+          SizedBox(height: 12),
+          Divider(color: KeyboardGuideView._line),
+          SizedBox(height: 12),
+          _ExplainHeading(text: '不開會怎樣？'),
+          SizedBox(height: 10),
+          _ExplainRow(
+            icon: '•',
+            text: '只能用 4 種固定模板',
+            color: KeyboardGuideView._muted,
           ),
-          _GuideDivider(),
-          _GuideStep(
-            number: '2',
-            title: '不儲存聊天內容',
-            body: '目前鍵盤只在本機使用複製內容，不把你的聊天紀錄存到 App。',
+          _ExplainRow(
+            icon: '•',
+            text: '無法依對方訊息個人化生成',
+            color: KeyboardGuideView._muted,
           ),
-          _GuideDivider(),
-          _GuideStep(
-            number: '3',
-            title: '沒開也能切鍵盤',
-            body: '但無法讀取對方訊息，只能看到固定提示與手動工具列。',
+          SizedBox(height: 12),
+          Divider(color: KeyboardGuideView._line),
+          SizedBox(height: 12),
+          _ExplainHeading(text: '我們的承諾', color: KeyboardGuideView._forest),
+          SizedBox(height: 10),
+          _ExplainRow(text: '不蒐集你的訊息內容', color: KeyboardGuideView._forest),
+          _ExplainRow(text: '目前不上傳到任何伺服器', color: KeyboardGuideView._forest),
+          _ExplainRow(text: '處理完成立即丟棄', color: KeyboardGuideView._forest),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExplainHeading extends StatelessWidget {
+  final String text;
+  final Color color;
+
+  const _ExplainHeading({
+    required this.text,
+    this.color = KeyboardGuideView._text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.w900),
+    );
+  }
+}
+
+class _ExplainRow extends StatelessWidget {
+  final String icon;
+  final String text;
+  final Color color;
+
+  const _ExplainRow({
+    required this.text,
+    this.icon = '✓',
+    this.color = KeyboardGuideView._forest,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 9),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 22,
+            child: Text(
+              icon,
+              style: TextStyle(
+                color: color,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: color,
+                fontSize: 13,
+                height: 1.35,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),

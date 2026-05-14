@@ -6,6 +6,7 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:ai_love_keyboard/utils/app_theme.dart';
 import 'package:ai_love_keyboard/utils/constants.dart';
 import 'package:ai_love_keyboard/views/home/home_view.dart';
+import 'package:ai_love_keyboard/views/onboarding/onboarding_try_view.dart';
 
 class OnboardingView extends StatefulWidget {
   const OnboardingView({super.key});
@@ -18,7 +19,7 @@ class _OnboardingViewState extends State<OnboardingView> {
   final _pageController = PageController();
   int _currentPage = 0;
 
-  final _pages = const [
+  final List<Widget> _pages = const [
     _OnboardingPage(
       gradient: AppTheme.onboardingGradient1,
       icon: Icons.auto_awesome_rounded,
@@ -40,6 +41,7 @@ class _OnboardingViewState extends State<OnboardingView> {
       subtitle: '配對後不知道說什麼？',
       description: '根據對方資料生成有創意的開場白，告別冷場',
     ),
+    OnboardingTryView(),
     _OnboardingPage(
       gradient: AppTheme.onboardingGradient2,
       icon: Icons.keyboard_rounded,
