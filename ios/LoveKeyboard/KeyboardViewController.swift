@@ -16,12 +16,12 @@ final class KeyboardViewController: UIInputViewController {
             }
         }
 
-        var emoji: String {
+        var symbolName: String {
             switch self {
-            case .gentle: return "🌿"
-            case .funny: return "🔆"
-            case .flirty: return "🌹"
-            case .apology: return "🌊"
+            case .gentle: return "leaf.fill"
+            case .funny: return "sun.max.fill"
+            case .flirty: return "heart.fill"
+            case .apology: return "drop.fill"
             }
         }
 
@@ -138,8 +138,9 @@ final class KeyboardViewController: UIInputViewController {
             item.spacing = 2
 
             let button = UIButton(type: .system)
-            button.setTitle(style.emoji, for: .normal)
-            button.titleLabel?.font = .systemFont(ofSize: 22, weight: .bold)
+            button.setImage(UIImage(systemName: style.symbolName), for: .normal)
+            button.imageView?.contentMode = .scaleAspectFit
+            button.tintColor = Palette.primary
             button.backgroundColor = style.backgroundColor
             button.layer.cornerRadius = 22
             button.widthAnchor.constraint(equalToConstant: 44).isActive = true
@@ -356,7 +357,9 @@ final class KeyboardViewController: UIInputViewController {
         for button in styleButtons {
             let isSelected = button.tag == selectedStyle.rawValue
             guard let style = ReplyStyle(rawValue: button.tag) else { continue }
-            button.setTitle(style.emoji, for: .normal)
+            let config = UIImage.SymbolConfiguration(pointSize: isSelected ? 19 : 18, weight: isSelected ? .bold : .semibold)
+            button.setImage(UIImage(systemName: style.symbolName, withConfiguration: config), for: .normal)
+            button.tintColor = Palette.primary
             button.backgroundColor = style.backgroundColor
             button.alpha = isSelected ? 1 : 0.72
             button.transform = isSelected ? CGAffineTransform(scaleX: 1.08, y: 1.08) : .identity

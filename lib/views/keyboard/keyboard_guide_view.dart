@@ -239,23 +239,23 @@ class _KeyboardPreview extends StatelessWidget {
                   children: [
                     _ToneIcon(
                       label: '溫柔',
-                      emoji: '🌿',
+                      icon: Icons.eco_rounded,
                       background: KeyboardGuideView._sage,
                       selected: true,
                     ),
                     _ToneIcon(
                       label: '幽默',
-                      emoji: '🔆',
+                      icon: Icons.wb_sunny_rounded,
                       background: KeyboardGuideView._warmYellow,
                     ),
                     _ToneIcon(
                       label: '曖昧',
-                      emoji: '🌹',
+                      icon: Icons.favorite_rounded,
                       background: KeyboardGuideView._roseSoft,
                     ),
                     _ToneIcon(
                       label: '道歉',
-                      emoji: '🌊',
+                      icon: Icons.water_drop_rounded,
                       background: KeyboardGuideView._navySoft,
                     ),
                   ],
@@ -337,26 +337,26 @@ class _PracticeCard extends StatelessWidget {
             children: [
               _ToneIcon(
                 label: '溫柔',
-                emoji: '🌿',
+                icon: Icons.eco_rounded,
                 background: KeyboardGuideView._sage,
                 compact: true,
               ),
               _ToneIcon(
                 label: '幽默',
-                emoji: '🔆',
+                icon: Icons.wb_sunny_rounded,
                 background: KeyboardGuideView._warmYellow,
                 compact: true,
               ),
               _ToneIcon(
                 label: '曖昧',
-                emoji: '🌹',
+                icon: Icons.favorite_rounded,
                 background: KeyboardGuideView._roseSoft,
                 selected: true,
                 compact: true,
               ),
               _ToneIcon(
                 label: '道歉',
-                emoji: '🌊',
+                icon: Icons.water_drop_rounded,
                 background: KeyboardGuideView._navySoft,
                 compact: true,
               ),
@@ -786,14 +786,14 @@ class _PracticeReply extends StatelessWidget {
 
 class _ToneIcon extends StatelessWidget {
   final String label;
-  final String emoji;
+  final IconData icon;
   final Color background;
   final bool selected;
   final bool compact;
 
   const _ToneIcon({
     required this.label,
-    required this.emoji,
+    required this.icon,
     required this.background,
     this.selected = false,
     this.compact = false,
@@ -829,12 +829,12 @@ class _ToneIcon extends StatelessWidget {
                         width: selected ? 1.8 : 1,
                       ),
                     ),
-                    child: Text(
-                      emoji,
-                      style: TextStyle(
-                        fontSize: compact ? 18 : 20,
-                        fontWeight: FontWeight.w900,
+                    child: Icon(
+                      icon,
+                      color: KeyboardGuideView._forest.withValues(
+                        alpha: selected ? 1 : 0.72,
                       ),
+                      size: compact ? 19 : 21,
                     ),
                   ),
                   if (selected)

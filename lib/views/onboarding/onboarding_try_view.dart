@@ -47,17 +47,17 @@ class _OnboardingTryViewState extends State<OnboardingTryView> {
     setState(() => _currentStyle = style);
   }
 
-  String _toneEmoji(String style) {
+  IconData _toneIcon(String style) {
     switch (style) {
       case '幽默':
-        return '🔆';
+        return Icons.wb_sunny_rounded;
       case '曖昧':
-        return '🌹';
+        return Icons.favorite_rounded;
       case '道歉':
-        return '🌊';
+        return Icons.water_drop_rounded;
       case '溫柔':
       default:
-        return '🌿';
+        return Icons.eco_rounded;
     }
   }
 
@@ -81,31 +81,48 @@ class _OnboardingTryViewState extends State<OnboardingTryView> {
       color: _cream,
       child: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(22, 24, 22, 148),
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 132),
           children: [
             const Text(
-              '試玩一下\n我們的 AI',
+              '先試一句\nAI 幫你接話',
               style: TextStyle(
                 color: _text,
-                fontSize: 36,
-                height: 1.02,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -0.8,
+                fontSize: 32,
+                height: 1.08,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0,
               ),
             ),
             const SizedBox(height: 12),
             const Text(
-              '不用先去聊天 App，直接選一句常見訊息，看看鍵盤會怎麼接。',
+              '選一句常見訊息，切換語氣，立刻看 AI 怎麼幫你回。',
               style: TextStyle(
                 color: _muted,
-                fontSize: 15,
+                fontSize: 14,
                 height: 1.45,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 24),
             _MessageCard(message: _currentMessage, onNext: _nextMessage),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
+            _ToneSelector(
+              styles: _styles,
+              currentStyle: _currentStyle,
+              iconForStyle: _toneIcon,
+              backgroundForStyle: _toneBackground,
+              onSelect: _selectStyle,
+            ),
+            const SizedBox(height: 18),
+            const Text(
+              'AI 建議回覆',
+              style: TextStyle(
+                color: _text,
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 9),
             for (var i = 0; i < _currentReplies.length; i++) ...[
               _ReplyCard(
                 text: _currentReplies[i],
@@ -114,39 +131,6 @@ class _OnboardingTryViewState extends State<OnboardingTryView> {
               ),
               const SizedBox(height: 10),
             ],
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 12,
-              runSpacing: 10,
-              children: [
-                for (final style in _styles)
-                  _ToneIconButton(
-                    label: style,
-                    emoji: _toneEmoji(style),
-                    background: _toneBackground(style),
-                    selected: style == _currentStyle,
-                    onTap: () => _selectStyle(style),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-              decoration: BoxDecoration(
-                color: _forest,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: const Text(
-                '試完了，下一步設定鍵盤',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -232,16 +216,18 @@ class _MessageCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       decoration: BoxDecoration(
         color: _OnboardingTryViewState._card,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _OnboardingTryViewState._line),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: _OnboardingTryViewState._line.withValues(alpha: 0.82),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 22,
-            offset: const Offset(0, 12),
+            color: Colors.black.withValues(alpha: 0.045),
+            blurRadius: 30,
+            offset: const Offset(0, 16),
           ),
         ],
       ),
@@ -254,18 +240,27 @@ class _MessageCard extends StatelessWidget {
                 '對方訊息',
                 style: TextStyle(
                   color: _OnboardingTryViewState._muted,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const Spacer(),
               TextButton(
                 onPressed: onNext,
+                style: TextButton.styleFrom(
+                  minimumSize: Size.zero,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
                 child: const Text(
                   '換例句',
                   style: TextStyle(
                     color: _OnboardingTryViewState._red,
-                    fontWeight: FontWeight.w900,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
@@ -276,17 +271,73 @@ class _MessageCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
             decoration: BoxDecoration(
               color: const Color(0xFFF1ECE5),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               message,
               style: const TextStyle(
                 color: _OnboardingTryViewState._text,
-                fontSize: 16,
+                fontSize: 17,
                 height: 1.35,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ToneSelector extends StatelessWidget {
+  final List<String> styles;
+  final String currentStyle;
+  final IconData Function(String style) iconForStyle;
+  final Color Function(String style) backgroundForStyle;
+  final ValueChanged<String> onSelect;
+
+  const _ToneSelector({
+    required this.styles,
+    required this.currentStyle,
+    required this.iconForStyle,
+    required this.backgroundForStyle,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+      decoration: BoxDecoration(
+        color: _OnboardingTryViewState._card,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: _OnboardingTryViewState._line.withValues(alpha: 0.78),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '選擇語氣',
+            style: TextStyle(
+              color: _OnboardingTryViewState._muted,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 11),
+          Row(
+            children: [
+              for (final style in styles)
+                _ToneIconButton(
+                  label: style,
+                  icon: iconForStyle(style),
+                  background: backgroundForStyle(style),
+                  selected: style == currentStyle,
+                  onTap: () => onSelect(style),
+                ),
+            ],
           ),
         ],
       ),
@@ -309,21 +360,32 @@ class _ReplyCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
       decoration: BoxDecoration(
         color: selected
             ? _OnboardingTryViewState._sage
             : _OnboardingTryViewState._card,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: selected
-              ? _OnboardingTryViewState._forest
-              : _OnboardingTryViewState._line,
-          width: selected ? 1.4 : 1,
+              ? _OnboardingTryViewState._forest.withValues(alpha: 0.52)
+              : _OnboardingTryViewState._line.withValues(alpha: 0.76),
+          width: selected ? 1.2 : 1,
         ),
       ),
       child: Row(
         children: [
+          Container(
+            width: 5,
+            height: 38,
+            decoration: BoxDecoration(
+              color: selected
+                  ? _OnboardingTryViewState._forest
+                  : _OnboardingTryViewState._line,
+              borderRadius: BorderRadius.circular(99),
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               text,
@@ -331,9 +393,9 @@ class _ReplyCard extends StatelessWidget {
                 color: selected
                     ? _OnboardingTryViewState._forest
                     : _OnboardingTryViewState._text,
-                fontSize: selected ? 15 : 14,
+                fontSize: 14,
                 height: 1.35,
-                fontWeight: FontWeight.w900,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
               ),
             ),
           ),
@@ -343,9 +405,9 @@ class _ReplyCard extends StatelessWidget {
             style: TextStyle(
               color: selected
                   ? _OnboardingTryViewState._forest
-                  : _OnboardingTryViewState._brown,
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
+                  : _OnboardingTryViewState._brown.withValues(alpha: 0.78),
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ],
@@ -356,14 +418,14 @@ class _ReplyCard extends StatelessWidget {
 
 class _ToneIconButton extends StatelessWidget {
   final String label;
-  final String emoji;
+  final IconData icon;
   final Color background;
   final bool selected;
   final VoidCallback onTap;
 
   const _ToneIconButton({
     required this.label,
-    required this.emoji,
+    required this.icon,
     required this.background,
     required this.selected,
     required this.onTap,
@@ -371,11 +433,10 @@ class _ToneIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 58,
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -388,8 +449,8 @@ class _ToneIconButton extends StatelessWidget {
                 children: [
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 160),
-                    width: 48,
-                    height: 48,
+                    width: 46,
+                    height: 46,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: background.withValues(alpha: selected ? 1 : 0.78),
@@ -400,25 +461,25 @@ class _ToneIconButton extends StatelessWidget {
                             : _OnboardingTryViewState._forest.withValues(
                                 alpha: 0.18,
                               ),
-                        width: selected ? 1.8 : 1,
+                        width: selected ? 1.5 : 1,
                       ),
                       boxShadow: selected
                           ? [
                               BoxShadow(
                                 color: _OnboardingTryViewState._forest
-                                    .withValues(alpha: 0.14),
-                                blurRadius: 14,
-                                offset: const Offset(0, 8),
+                                    .withValues(alpha: 0.10),
+                                blurRadius: 12,
+                                offset: const Offset(0, 7),
                               ),
                             ]
                           : null,
                     ),
-                    child: Text(
-                      emoji,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
+                    child: Icon(
+                      icon,
+                      color: _OnboardingTryViewState._forest.withValues(
+                        alpha: selected ? 1 : 0.68,
                       ),
+                      size: 21,
                     ),
                   ),
                   if (selected)
@@ -456,8 +517,8 @@ class _ToneIconButton extends StatelessWidget {
                 color: selected
                     ? _OnboardingTryViewState._forest
                     : _OnboardingTryViewState._muted,
-                fontSize: 11,
-                fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+                fontSize: 10,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
               ),
             ),
           ],
