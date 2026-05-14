@@ -31,20 +31,30 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private let rootStack = UIStackView()
-    private let contextLabel = UILabel()
+    private let contentStack = UIStackView()
     private let statusLabel = UILabel()
     private let styleStack = UIStackView()
-    private let replyStack = UIStackView()
 
     private var styleButtons: [UIButton] = []
     private var currentReplies: [String] = []
     private var selectedStyle: ReplyStyle = .gentle
     private var currentMessage = ""
+    private var statusMode: StatusMode = .idle
+    private var generationIndex = 1
+    private var filledIndex: Int?
+
+    private enum StatusMode {
+        case idle
+        case emptyClipboard
+        case noFullAccess
+        case ready
+        case filled
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
         setupView()
-        renderReplies()
+        renderContent()
     }
 
     private func setupView() {
@@ -64,13 +74,11 @@ final class KeyboardViewController: UIInputViewController {
         ])
 
         rootStack.addArrangedSubview(makeHeader())
-        rootStack.addArrangedSubview(makeContextCard())
-        rootStack.addArrangedSubview(makeReadButton())
+        rootStack.addArrangedSubview(makeContentArea())
         rootStack.addArrangedSubview(makeStyleSelector())
-        rootStack.addArrangedSubview(makeReplyList())
         rootStack.addArrangedSubview(makeUtilityRow())
 
-        statusLabel.text = "複製訊息後讀取"
+        renderContent()
     }
 
     private func makeHeader() -> UIView {
@@ -90,53 +98,6 @@ final class KeyboardViewController: UIInputViewController {
         statusLabel.textAlignment = .right
         statusLabel.numberOfLines = 1
         row.addArrangedSubview(statusLabel)
-
-        return row
-    }
-
-    private func makeContextCard() -> UIView {
-        let card = UIView()
-        card.backgroundColor = Palette.card
-        card.layer.cornerRadius = 12
-        card.layer.borderWidth = 1
-        card.layer.borderColor = Palette.border.cgColor
-        card.heightAnchor.constraint(equalToConstant: 36).isActive = true
-
-        contextLabel.text = "尚未讀取"
-        contextLabel.font = .systemFont(ofSize: 13, weight: .semibold)
-        contextLabel.textColor = Palette.secondary
-        contextLabel.numberOfLines = 1
-        contextLabel.translatesAutoresizingMaskIntoConstraints = false
-        card.addSubview(contextLabel)
-
-        NSLayoutConstraint.activate([
-            contextLabel.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 14),
-            contextLabel.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14),
-            contextLabel.centerYAnchor.constraint(equalTo: card.centerYAnchor)
-        ])
-
-        return card
-    }
-
-    private func makeReadButton() -> UIView {
-        let row = UIStackView()
-        row.axis = .horizontal
-        row.spacing = 8
-        row.distribution = .fillEqually
-
-        let readButton = UIButton(type: .system)
-        readButton.setTitle("讀取對話", for: .normal)
-        readButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .bold)
-        readButton.setTitleColor(.white, for: .normal)
-        readButton.backgroundColor = Palette.primary
-        readButton.layer.cornerRadius = 10
-        readButton.layer.shadowColor = Palette.primary.cgColor
-        readButton.layer.shadowOpacity = 0.18
-        readButton.layer.shadowRadius = 8
-        readButton.layer.shadowOffset = CGSize(width: 0, height: 4)
-        readButton.heightAnchor.constraint(equalToConstant: 38).isActive = true
-        readButton.addTarget(self, action: #selector(readClipboardAndGenerate), for: .touchUpInside)
-        row.addArrangedSubview(readButton)
 
         return row
     }
@@ -162,12 +123,11 @@ final class KeyboardViewController: UIInputViewController {
         return styleStack
     }
 
-    private func makeReplyList() -> UIView {
-        replyStack.axis = .vertical
-        replyStack.spacing = 6
-        replyStack.distribution = .fillEqually
-        replyStack.heightAnchor.constraint(equalToConstant: 132).isActive = true
-        return replyStack
+    private func makeContentArea() -> UIView {
+        contentStack.axis = .vertical
+        contentStack.spacing = 6
+        contentStack.heightAnchor.constraint(greaterThanOrEqualToConstant: 196).isActive = true
+        return contentStack
     }
 
     private func makeUtilityRow() -> UIView {
@@ -200,59 +160,76 @@ final class KeyboardViewController: UIInputViewController {
 
     private func replyButton(_ title: String, index: Int) -> UIButton {
         let button = UIButton(type: .system)
-        button.setTitle(title, for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: 13.5, weight: .semibold)
+        let prefix = index == 0 ? "★  " : "   "
+        let suffix = filledIndex == index ? "    已填入" : "    填入"
+        button.setTitle(prefix + title + suffix, for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: index == 0 ? 14 : 13.5, weight: .semibold)
         button.titleLabel?.numberOfLines = 2
         button.contentHorizontalAlignment = .left
         button.contentEdgeInsets = UIEdgeInsets(top: 8, left: 14, bottom: 8, right: 14)
-        button.setTitleColor(index == 0 ? Palette.primary : Palette.text, for: .normal)
+        button.setTitleColor(filledIndex == index ? Palette.primary : (index == 0 ? Palette.primary : Palette.text), for: .normal)
         button.backgroundColor = index == 0 ? Palette.selectedSoft : Palette.card
-        button.layer.cornerRadius = 10
+        button.layer.cornerRadius = index == 0 ? 12 : 10
         button.layer.borderWidth = 1
-        button.layer.borderColor = (index == 0 ? Palette.primary.withAlphaComponent(0.26) : Palette.border).cgColor
+        button.layer.borderColor = (index == 0 ? Palette.primary.withAlphaComponent(0.32) : Palette.border).cgColor
         button.layer.shadowColor = UIColor.black.cgColor
-        button.layer.shadowOpacity = 0.07
-        button.layer.shadowRadius = 7
+        button.layer.shadowOpacity = index == 0 ? 0.08 : 0.04
+        button.layer.shadowRadius = index == 0 ? 8 : 5
         button.layer.shadowOffset = CGSize(width: 0, height: 3)
+        button.heightAnchor.constraint(equalToConstant: index == 0 ? 52 : 44).isActive = true
         button.tag = index
         button.addTarget(self, action: #selector(replyTapped(_:)), for: .touchUpInside)
         return button
     }
 
     @objc private func readClipboardAndGenerate() {
+        guard hasFullAccess else {
+            currentMessage = ""
+            statusMode = .noFullAccess
+            filledIndex = nil
+            renderContent()
+            return
+        }
+
         let text = UIPasteboard.general.string?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard !text.isEmpty else {
             currentMessage = ""
-            contextLabel.text = "尚未讀取"
-            contextLabel.textColor = Palette.blush
-            statusLabel.text = "先複製對方訊息"
-            renderReplies()
+            statusMode = .emptyClipboard
+            filledIndex = nil
+            renderContent()
             return
         }
 
         currentMessage = normalizeMessage(text)
-        contextLabel.text = "已讀取：" + preview(currentMessage, limit: 22)
-        contextLabel.textColor = Palette.primary
-        statusLabel.text = "\(selectedStyle.title)語氣"
-        renderReplies()
+        statusMode = .ready
+        filledIndex = nil
+        generationIndex = 1
+        renderContent()
     }
 
     @objc private func styleTapped(_ sender: UIButton) {
         guard let style = ReplyStyle(rawValue: sender.tag) else { return }
         selectedStyle = style
         updateStyleButtons()
-        statusLabel.text = currentMessage.isEmpty ? "已選\(style.title)" : "\(style.title)語氣"
-        renderReplies()
+        filledIndex = nil
+        if !currentMessage.isEmpty {
+            generationIndex = 1
+            statusMode = .ready
+        }
+        renderContent()
     }
 
     @objc private func replyTapped(_ sender: UIButton) {
         guard !currentMessage.isEmpty else {
-            statusLabel.text = "先點讀取對話"
+            statusMode = .idle
+            renderContent()
             return
         }
         guard sender.tag >= 0 && sender.tag < currentReplies.count else { return }
         textDocumentProxy.insertText(currentReplies[sender.tag])
-        statusLabel.text = "已填入，確認送出"
+        filledIndex = sender.tag
+        statusMode = .filled
+        renderContent()
     }
 
     @objc private func deleteBackward() {
@@ -271,15 +248,47 @@ final class KeyboardViewController: UIInputViewController {
         advanceToNextInputMode()
     }
 
-    private func renderReplies() {
-        for view in replyStack.arrangedSubviews {
-            replyStack.removeArrangedSubview(view)
+    private func renderContent() {
+        for view in contentStack.arrangedSubviews {
+            contentStack.removeArrangedSubview(view)
             view.removeFromSuperview()
         }
 
-        currentReplies = makeReplies(for: selectedStyle, message: currentMessage)
-        for (index, reply) in currentReplies.enumerated() {
-            replyStack.addArrangedSubview(replyButton(reply, index: index))
+        switch statusMode {
+        case .idle:
+            statusLabel.text = "等你開始"
+            contentStack.addArrangedSubview(actionCard(
+                title: "先複製對方訊息",
+                subtitle: "再回來這裡點一下",
+                buttonTitle: "我已複製，讀取",
+                toneHint: "讀到對話後套用\(selectedStyle.title)語氣",
+                isWarning: false
+            ))
+        case .emptyClipboard:
+            statusLabel.text = "剪貼簿空"
+            contentStack.addArrangedSubview(actionCard(
+                title: "剪貼簿沒內容",
+                subtitle: "回聊天 App 長按訊息複製",
+                buttonTitle: "再試一次",
+                toneHint: "複製完整一句，AI 比較好接話",
+                isWarning: true
+            ))
+        case .noFullAccess:
+            statusLabel.text = "需要權限"
+            contentStack.addArrangedSubview(actionCard(
+                title: "開完整取用",
+                subtitle: "才能讀取你複製的訊息",
+                buttonTitle: "我開好了，重試",
+                toneHint: "App 只讀剪貼簿文字，不儲存聊天",
+                isWarning: true
+            ))
+        case .ready, .filled:
+            statusLabel.text = statusMode == .filled ? "已填入" : "\(selectedStyle.title) · 第\(generationIndex)組"
+            contentStack.addArrangedSubview(readPreviewCard())
+            currentReplies = makeReplies(for: selectedStyle, message: currentMessage)
+            for (index, reply) in currentReplies.enumerated() {
+                contentStack.addArrangedSubview(replyButton(reply, index: index))
+            }
         }
     }
 
@@ -288,9 +297,107 @@ final class KeyboardViewController: UIInputViewController {
             let isSelected = button.tag == selectedStyle.rawValue
             button.backgroundColor = isSelected ? Palette.primary : Palette.card
             button.setTitleColor(isSelected ? .white : Palette.secondary, for: .normal)
+            if let style = ReplyStyle(rawValue: button.tag) {
+                button.setTitle(isSelected ? "\(style.title) ✓" : style.title, for: .normal)
+            }
             button.layer.borderWidth = 1
             button.layer.borderColor = (isSelected ? Palette.primary : Palette.border).cgColor
         }
+    }
+
+    private func actionCard(title: String, subtitle: String, buttonTitle: String, toneHint: String, isWarning: Bool) -> UIView {
+        let card = UIView()
+        card.backgroundColor = isWarning ? UIColor(red: 251 / 255, green: 233 / 255, blue: 238 / 255, alpha: 1) : Palette.card
+        card.layer.cornerRadius = 16
+        card.layer.borderWidth = 1
+        card.layer.borderColor = (isWarning ? Palette.blush.withAlphaComponent(0.28) : Palette.border).cgColor
+        card.heightAnchor.constraint(equalToConstant: 190).isActive = true
+
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.alignment = .center
+        stack.spacing = 8
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(stack)
+
+        let titleLabel = UILabel()
+        titleLabel.text = title
+        titleLabel.font = .systemFont(ofSize: 17, weight: .heavy)
+        titleLabel.textColor = isWarning ? Palette.blush : Palette.text
+        titleLabel.textAlignment = .center
+        stack.addArrangedSubview(titleLabel)
+
+        let subtitleLabel = UILabel()
+        subtitleLabel.text = subtitle
+        subtitleLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        subtitleLabel.textColor = Palette.secondary
+        subtitleLabel.textAlignment = .center
+        stack.addArrangedSubview(subtitleLabel)
+
+        let button = UIButton(type: .system)
+        button.setTitle(buttonTitle, for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 14, weight: .heavy)
+        button.setTitleColor(.white, for: .normal)
+        button.backgroundColor = Palette.primary
+        button.layer.cornerRadius = 10
+        button.heightAnchor.constraint(equalToConstant: 38).isActive = true
+        button.widthAnchor.constraint(greaterThanOrEqualToConstant: 174).isActive = true
+        button.addTarget(self, action: #selector(readClipboardAndGenerate), for: .touchUpInside)
+        stack.addArrangedSubview(button)
+
+        let hintLabel = UILabel()
+        hintLabel.text = toneHint
+        hintLabel.font = .systemFont(ofSize: 11, weight: .semibold)
+        hintLabel.textColor = Palette.accent
+        hintLabel.textAlignment = .center
+        hintLabel.numberOfLines = 2
+        stack.addArrangedSubview(hintLabel)
+
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
+            stack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
+            stack.centerYAnchor.constraint(equalTo: card.centerYAnchor)
+        ])
+
+        return card
+    }
+
+    private func readPreviewCard() -> UIView {
+        let card = UIView()
+        card.backgroundColor = Palette.card
+        card.layer.cornerRadius = 12
+        card.layer.borderWidth = 1
+        card.layer.borderColor = Palette.border.cgColor
+        card.heightAnchor.constraint(equalToConstant: 34).isActive = true
+
+        let row = UIStackView()
+        row.axis = .horizontal
+        row.alignment = .center
+        row.spacing = 8
+        row.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(row)
+
+        let label = UILabel()
+        label.text = "已讀取：" + preview(currentMessage, limit: 18)
+        label.font = .systemFont(ofSize: 12.5, weight: .semibold)
+        label.textColor = Palette.primary
+        label.numberOfLines = 1
+        row.addArrangedSubview(label)
+
+        let reload = UIButton(type: .system)
+        reload.setTitle("↻ 重讀", for: .normal)
+        reload.titleLabel?.font = .systemFont(ofSize: 12, weight: .bold)
+        reload.setTitleColor(Palette.blush, for: .normal)
+        reload.addTarget(self, action: #selector(readClipboardAndGenerate), for: .touchUpInside)
+        row.addArrangedSubview(reload)
+
+        NSLayoutConstraint.activate([
+            row.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 12),
+            row.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -10),
+            row.centerYAnchor.constraint(equalTo: card.centerYAnchor)
+        ])
+
+        return card
     }
 
     private func normalizeMessage(_ text: String) -> String {

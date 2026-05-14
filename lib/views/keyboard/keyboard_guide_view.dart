@@ -88,7 +88,11 @@ class KeyboardGuideView extends StatelessWidget {
             const SizedBox(height: 20),
             const _FlowCard(),
             const SizedBox(height: 20),
+            const _PracticeCard(),
+            const SizedBox(height: 20),
             _SetupCard(onOpenSettings: _openSettings),
+            const SizedBox(height: 20),
+            const _FullAccessCard(),
             const SizedBox(height: 20),
             const _SwitchKeyboardCard(),
             const SizedBox(height: 18),
@@ -281,6 +285,48 @@ class _FlowCard extends StatelessWidget {
   }
 }
 
+class _PracticeCard extends StatelessWidget {
+  const _PracticeCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return _GuideCard(
+      title: '先試一次',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          Text(
+            '假裝對方傳了這句，先看 AI 鍵盤會怎麼接。',
+            style: TextStyle(
+              color: KeyboardGuideView._muted,
+              fontSize: 13,
+              height: 1.45,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 12),
+          _PracticeBubble(text: '我今天真的有點累，先回家好了'),
+          SizedBox(height: 12),
+          _PracticeReply(text: '★ 累的話靠近一點，我負責哄你', selected: true),
+          SizedBox(height: 8),
+          _PracticeReply(text: '今天先別撐了，我接走你的壞心情'),
+          SizedBox(height: 8),
+          _PracticeReply(text: '你休息，我想你這件事我來負責'),
+          SizedBox(height: 12),
+          Row(
+            children: [
+              _MiniTone(text: '溫柔'),
+              _MiniTone(text: '幽默'),
+              _MiniTone(text: '曖昧', selected: true),
+              _MiniTone(text: '道歉'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _SetupCard extends StatelessWidget {
   final Future<void> Function() onOpenSettings;
 
@@ -318,6 +364,38 @@ class _SetupCard extends StatelessWidget {
             number: '3',
             title: '允許完整取用',
             body: '剪貼簿讀取需要此權限；不開啟時只能使用固定回覆。',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FullAccessCard extends StatelessWidget {
+  const _FullAccessCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return _GuideCard(
+      title: '為什麼要完整取用',
+      child: Column(
+        children: const [
+          _GuideStep(
+            number: '1',
+            title: '讀取你複製的文字',
+            body: 'AI 鍵盤只能讀剪貼簿文字，才能知道你要回哪一句。',
+          ),
+          _GuideDivider(),
+          _GuideStep(
+            number: '2',
+            title: '不儲存聊天內容',
+            body: '目前鍵盤只在本機使用複製內容，不把你的聊天紀錄存到 App。',
+          ),
+          _GuideDivider(),
+          _GuideStep(
+            number: '3',
+            title: '沒開也能切鍵盤',
+            body: '但無法讀取對方訊息，只能看到固定提示與手動工具列。',
           ),
         ],
       ),
@@ -504,6 +582,124 @@ class _SwitcherOption extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PracticeBubble extends StatelessWidget {
+  final String text;
+
+  const _PracticeBubble({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 290),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF1ECE5),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: KeyboardGuideView._line),
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(
+            color: KeyboardGuideView._text,
+            fontSize: 14,
+            height: 1.35,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PracticeReply extends StatelessWidget {
+  final String text;
+  final bool selected;
+
+  const _PracticeReply({required this.text, this.selected = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+      decoration: BoxDecoration(
+        color: selected ? KeyboardGuideView._sage : KeyboardGuideView._card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: selected ? KeyboardGuideView._forest : KeyboardGuideView._line,
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: selected
+                    ? KeyboardGuideView._forest
+                    : KeyboardGuideView._text,
+                fontSize: 13,
+                height: 1.35,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '填入',
+            style: TextStyle(
+              color: selected
+                  ? KeyboardGuideView._forest
+                  : KeyboardGuideView._brown,
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniTone extends StatelessWidget {
+  final String text;
+  final bool selected;
+
+  const _MiniTone({required this.text, this.selected = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.only(right: 6),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: selected
+              ? KeyboardGuideView._forest
+              : KeyboardGuideView._cream,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected
+                ? KeyboardGuideView._forest
+                : KeyboardGuideView._line,
+          ),
+        ),
+        child: Text(
+          selected ? '$text ✓' : text,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: selected ? Colors.white : KeyboardGuideView._muted,
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
       ),
     );
   }
