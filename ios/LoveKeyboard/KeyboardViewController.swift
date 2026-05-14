@@ -219,28 +219,66 @@ final class KeyboardViewController: UIInputViewController {
         return button
     }
 
-    private func replyButton(_ title: String, index: Int) -> UIButton {
-        let button = UIButton(type: .system)
-        let prefix = index == 0 ? "★  " : "   "
-        let suffix = filledIndex == index ? "    已填入" : "    填入"
-        button.setTitle(prefix + title + suffix, for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: index == 0 ? 14 : 13.5, weight: index == 0 ? .bold : .semibold)
-        button.titleLabel?.numberOfLines = 2
-        button.contentHorizontalAlignment = .left
-        button.contentEdgeInsets = UIEdgeInsets(top: 8, left: 14, bottom: 8, right: 14)
-        button.setTitleColor(filledIndex == index ? Palette.primary : (index == 0 ? Palette.primary : Palette.text), for: .normal)
-        button.backgroundColor = index == 0 ? Palette.selectedSoft : Palette.card
-        button.layer.cornerRadius = index == 0 ? 12 : 10
-        button.layer.borderWidth = index == 0 ? 1.5 : 1
-        button.layer.borderColor = (index == 0 ? Palette.primary.withAlphaComponent(0.30) : Palette.border).cgColor
-        button.layer.shadowColor = UIColor.black.cgColor
-        button.layer.shadowOpacity = index == 0 ? 0.08 : 0.04
-        button.layer.shadowRadius = index == 0 ? 8 : 5
-        button.layer.shadowOffset = CGSize(width: 0, height: 3)
-        button.heightAnchor.constraint(equalToConstant: index == 0 ? 52 : 44).isActive = true
-        button.tag = index
-        button.addTarget(self, action: #selector(replyTapped(_:)), for: .touchUpInside)
-        return button
+    private func replyButton(_ title: String, index: Int) -> UIControl {
+        let control = UIControl()
+        let isRecommended = index == 0
+        let isFilled = filledIndex == index
+
+        control.backgroundColor = Palette.card
+        control.layer.cornerRadius = 12
+        control.layer.borderWidth = isRecommended ? 1.2 : 0.8
+        control.layer.borderColor = (isRecommended ? Palette.primary.withAlphaComponent(0.28) : Palette.border.withAlphaComponent(0.86)).cgColor
+        control.layer.shadowColor = UIColor.black.cgColor
+        control.layer.shadowOpacity = isRecommended ? 0.07 : 0.035
+        control.layer.shadowRadius = isRecommended ? 8 : 5
+        control.layer.shadowOffset = CGSize(width: 0, height: 3)
+        control.heightAnchor.constraint(equalToConstant: isRecommended ? 50 : 44).isActive = true
+        control.tag = index
+        control.addTarget(self, action: #selector(replyTapped(_:)), for: .touchUpInside)
+
+        let row = UIStackView()
+        row.axis = .horizontal
+        row.alignment = .center
+        row.spacing = 10
+        row.translatesAutoresizingMaskIntoConstraints = false
+        control.addSubview(row)
+
+        let marker = UIView()
+        marker.backgroundColor = isRecommended ? Palette.primary : Palette.border
+        marker.layer.cornerRadius = 2
+        marker.widthAnchor.constraint(equalToConstant: 4).isActive = true
+        marker.heightAnchor.constraint(equalToConstant: isRecommended ? 28 : 22).isActive = true
+        row.addArrangedSubview(marker)
+
+        let textLabel = UILabel()
+        textLabel.text = title
+        textLabel.font = .systemFont(ofSize: isRecommended ? 13.8 : 13.2, weight: isRecommended ? .bold : .semibold)
+        textLabel.textColor = isFilled || isRecommended ? Palette.primary : Palette.text
+        textLabel.numberOfLines = 2
+        textLabel.lineBreakMode = .byTruncatingTail
+        row.addArrangedSubview(textLabel)
+
+        let actionLabel = UILabel()
+        actionLabel.text = isFilled ? "已填入" : "填入"
+        actionLabel.textAlignment = .center
+        actionLabel.font = .systemFont(ofSize: 11, weight: .heavy)
+        actionLabel.textColor = isFilled ? .white : Palette.primary
+        actionLabel.backgroundColor = isFilled ? Palette.primary : Palette.selectedSoft
+        actionLabel.layer.cornerRadius = 12
+        actionLabel.clipsToBounds = true
+        actionLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+        actionLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: isFilled ? 52 : 42).isActive = true
+        actionLabel.heightAnchor.constraint(equalToConstant: 24).isActive = true
+        row.addArrangedSubview(actionLabel)
+
+        NSLayoutConstraint.activate([
+            row.leadingAnchor.constraint(equalTo: control.leadingAnchor, constant: 12),
+            row.trailingAnchor.constraint(equalTo: control.trailingAnchor, constant: -12),
+            row.topAnchor.constraint(equalTo: control.topAnchor, constant: 7),
+            row.bottomAnchor.constraint(equalTo: control.bottomAnchor, constant: -7)
+        ])
+
+        return control
     }
 
     @objc private func readClipboardAndGenerate() {
@@ -280,7 +318,7 @@ final class KeyboardViewController: UIInputViewController {
         renderContent()
     }
 
-    @objc private func replyTapped(_ sender: UIButton) {
+    @objc private func replyTapped(_ sender: UIControl) {
         guard !currentMessage.isEmpty else {
             statusMode = .idle
             renderContent()
@@ -435,35 +473,42 @@ final class KeyboardViewController: UIInputViewController {
     private func readPreviewCard() -> UIView {
         let card = UIView()
         card.backgroundColor = Palette.card
-        card.layer.cornerRadius = 12
-        card.layer.borderWidth = 1
-        card.layer.borderColor = Palette.border.cgColor
-        card.heightAnchor.constraint(equalToConstant: 34).isActive = true
+        card.layer.cornerRadius = 11
+        card.layer.borderWidth = 0.8
+        card.layer.borderColor = Palette.border.withAlphaComponent(0.86).cgColor
+        card.heightAnchor.constraint(equalToConstant: 32).isActive = true
 
         let row = UIStackView()
         row.axis = .horizontal
         row.alignment = .center
-        row.spacing = 8
+        row.spacing = 7
         row.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(row)
 
+        let icon = UIImageView(image: UIImage(systemName: "doc.on.clipboard"))
+        icon.tintColor = Palette.primary.withAlphaComponent(0.76)
+        icon.contentMode = .scaleAspectFit
+        icon.widthAnchor.constraint(equalToConstant: 14).isActive = true
+        icon.heightAnchor.constraint(equalToConstant: 14).isActive = true
+        row.addArrangedSubview(icon)
+
         let label = UILabel()
-        label.text = "已讀取：" + preview(currentMessage, limit: 18)
-        label.font = .systemFont(ofSize: 12.5, weight: .semibold)
+        label.text = preview(currentMessage, limit: 20)
+        label.font = .systemFont(ofSize: 12, weight: .semibold)
         label.textColor = Palette.primary
         label.numberOfLines = 1
         row.addArrangedSubview(label)
 
         let reload = UIButton(type: .system)
-        reload.setTitle("↻ 重讀", for: .normal)
-        reload.titleLabel?.font = .systemFont(ofSize: 12, weight: .bold)
+        reload.setTitle("重讀", for: .normal)
+        reload.titleLabel?.font = .systemFont(ofSize: 11, weight: .bold)
         reload.setTitleColor(Palette.blush, for: .normal)
         reload.addTarget(self, action: #selector(readClipboardAndGenerate), for: .touchUpInside)
         row.addArrangedSubview(reload)
 
         NSLayoutConstraint.activate([
             row.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 12),
-            row.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -10),
+            row.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -12),
             row.centerYAnchor.constraint(equalTo: card.centerYAnchor)
         ])
 
