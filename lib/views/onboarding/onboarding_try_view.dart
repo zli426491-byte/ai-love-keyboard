@@ -12,6 +12,9 @@ class _OnboardingTryViewState extends State<OnboardingTryView> {
   static const _card = Color(0xFFFFFCF7);
   static const _forest = Color(0xFF1F3A2E);
   static const _sage = Color(0xFFE7EFE8);
+  static const _warmYellow = Color(0xFFF5E6B8);
+  static const _roseSoft = Color(0xFFF5D6DC);
+  static const _navySoft = Color(0xFFD6E0EC);
   static const _brown = Color(0xFF8B6F47);
   static const _red = Color(0xFFC8385C);
   static const _text = Color(0xFF1A1A1A);
@@ -42,6 +45,34 @@ class _OnboardingTryViewState extends State<OnboardingTryView> {
 
   void _selectStyle(String style) {
     setState(() => _currentStyle = style);
+  }
+
+  String _toneEmoji(String style) {
+    switch (style) {
+      case '幽默':
+        return '🔆';
+      case '曖昧':
+        return '🌹';
+      case '道歉':
+        return '🌊';
+      case '溫柔':
+      default:
+        return '🌿';
+    }
+  }
+
+  Color _toneBackground(String style) {
+    switch (style) {
+      case '幽默':
+        return _warmYellow;
+      case '曖昧':
+        return _roseSoft;
+      case '道歉':
+        return _navySoft;
+      case '溫柔':
+      default:
+        return _sage;
+    }
   }
 
   @override
@@ -85,12 +116,14 @@ class _OnboardingTryViewState extends State<OnboardingTryView> {
             ],
             const SizedBox(height: 6),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: 12,
+              runSpacing: 10,
               children: [
                 for (final style in _styles)
-                  _ToneChip(
-                    text: style,
+                  _ToneIconButton(
+                    label: style,
+                    emoji: _toneEmoji(style),
+                    background: _toneBackground(style),
                     selected: style == _currentStyle,
                     onTap: () => _selectStyle(style),
                   ),
@@ -321,13 +354,17 @@ class _ReplyCard extends StatelessWidget {
   }
 }
 
-class _ToneChip extends StatelessWidget {
-  final String text;
+class _ToneIconButton extends StatelessWidget {
+  final String label;
+  final String emoji;
+  final Color background;
   final bool selected;
   final VoidCallback onTap;
 
-  const _ToneChip({
-    required this.text,
+  const _ToneIconButton({
+    required this.label,
+    required this.emoji,
+    required this.background,
     required this.selected,
     required this.onTap,
   });
@@ -336,26 +373,94 @@ class _ToneChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
-        decoration: BoxDecoration(
-          color: selected
-              ? _OnboardingTryViewState._forest
-              : _OnboardingTryViewState._card,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: selected
-                ? _OnboardingTryViewState._forest
-                : _OnboardingTryViewState._line,
-          ),
-        ),
-        child: Text(
-          selected ? '$text ✓' : text,
-          style: TextStyle(
-            color: selected ? Colors.white : _OnboardingTryViewState._muted,
-            fontSize: 13,
-            fontWeight: FontWeight.w900,
-          ),
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 58,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedScale(
+              scale: selected ? 1.08 : 1,
+              duration: const Duration(milliseconds: 160),
+              curve: Curves.easeOutCubic,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    width: 48,
+                    height: 48,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: background.withValues(alpha: selected ? 1 : 0.78),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: selected
+                            ? _OnboardingTryViewState._forest
+                            : _OnboardingTryViewState._forest.withValues(
+                                alpha: 0.18,
+                              ),
+                        width: selected ? 1.8 : 1,
+                      ),
+                      boxShadow: selected
+                          ? [
+                              BoxShadow(
+                                color: _OnboardingTryViewState._forest
+                                    .withValues(alpha: 0.14),
+                                blurRadius: 14,
+                                offset: const Offset(0, 8),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Text(
+                      emoji,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  if (selected)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 15,
+                        height: 15,
+                        alignment: Alignment.center,
+                        decoration: const BoxDecoration(
+                          color: _OnboardingTryViewState._forest,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Text(
+                          '✓',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.w900,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: selected
+                    ? _OnboardingTryViewState._forest
+                    : _OnboardingTryViewState._muted,
+                fontSize: 11,
+                fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -10,6 +10,9 @@ class KeyboardGuideView extends StatelessWidget {
   static const _card = Color(0xFFFFFCF7);
   static const _forest = Color(0xFF1F3A2E);
   static const _sage = Color(0xFFE7EFE8);
+  static const _warmYellow = Color(0xFFF5E6B8);
+  static const _roseSoft = Color(0xFFF5D6DC);
+  static const _navySoft = Color(0xFFD6E0EC);
   static const _brown = Color(0xFF8B6F47);
   static const _red = Color(0xFFC8385C);
   static const _text = Color(0xFF1A1A1A);
@@ -232,12 +235,29 @@ class _KeyboardPreview extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 10),
-                Row(
-                  children: const [
-                    _TonePill(text: '溫柔', selected: true),
-                    _TonePill(text: '幽默'),
-                    _TonePill(text: '曖昧'),
-                    _TonePill(text: '道歉'),
+                const Row(
+                  children: [
+                    _ToneIcon(
+                      label: '溫柔',
+                      emoji: '🌿',
+                      background: KeyboardGuideView._sage,
+                      selected: true,
+                    ),
+                    _ToneIcon(
+                      label: '幽默',
+                      emoji: '🔆',
+                      background: KeyboardGuideView._warmYellow,
+                    ),
+                    _ToneIcon(
+                      label: '曖昧',
+                      emoji: '🌹',
+                      background: KeyboardGuideView._roseSoft,
+                    ),
+                    _ToneIcon(
+                      label: '道歉',
+                      emoji: '🌊',
+                      background: KeyboardGuideView._navySoft,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -315,10 +335,31 @@ class _PracticeCard extends StatelessWidget {
           SizedBox(height: 12),
           Row(
             children: [
-              _MiniTone(text: '溫柔'),
-              _MiniTone(text: '幽默'),
-              _MiniTone(text: '曖昧', selected: true),
-              _MiniTone(text: '道歉'),
+              _ToneIcon(
+                label: '溫柔',
+                emoji: '🌿',
+                background: KeyboardGuideView._sage,
+                compact: true,
+              ),
+              _ToneIcon(
+                label: '幽默',
+                emoji: '🔆',
+                background: KeyboardGuideView._warmYellow,
+                compact: true,
+              ),
+              _ToneIcon(
+                label: '曖昧',
+                emoji: '🌹',
+                background: KeyboardGuideView._roseSoft,
+                selected: true,
+                compact: true,
+              ),
+              _ToneIcon(
+                label: '道歉',
+                emoji: '🌊',
+                background: KeyboardGuideView._navySoft,
+                compact: true,
+              ),
             ],
           ),
         ],
@@ -743,37 +784,100 @@ class _PracticeReply extends StatelessWidget {
   }
 }
 
-class _MiniTone extends StatelessWidget {
-  final String text;
+class _ToneIcon extends StatelessWidget {
+  final String label;
+  final String emoji;
+  final Color background;
   final bool selected;
+  final bool compact;
 
-  const _MiniTone({required this.text, this.selected = false});
+  const _ToneIcon({
+    required this.label,
+    required this.emoji,
+    required this.background,
+    this.selected = false,
+    this.compact = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final size = compact ? 38.0 : 42.0;
+    final labelSize = compact ? 9.0 : 10.0;
+
     return Expanded(
-      child: Container(
-        margin: const EdgeInsets.only(right: 6),
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: selected
-              ? KeyboardGuideView._forest
-              : KeyboardGuideView._cream,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: selected
-                ? KeyboardGuideView._forest
-                : KeyboardGuideView._line,
-          ),
-        ),
-        child: Text(
-          selected ? '$text ✓' : text,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: selected ? Colors.white : KeyboardGuideView._muted,
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
-          ),
+      child: Padding(
+        padding: EdgeInsets.only(right: compact ? 5 : 6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Transform.scale(
+              scale: selected ? 1.06 : 1,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: size,
+                    height: size,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: background.withValues(alpha: selected ? 1 : 0.78),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: selected
+                            ? KeyboardGuideView._forest
+                            : KeyboardGuideView._forest.withValues(alpha: 0.18),
+                        width: selected ? 1.8 : 1,
+                      ),
+                    ),
+                    child: Text(
+                      emoji,
+                      style: TextStyle(
+                        fontSize: compact ? 18 : 20,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  if (selected)
+                    Positioned(
+                      right: -1,
+                      bottom: -1,
+                      child: Container(
+                        width: 14,
+                        height: 14,
+                        alignment: Alignment.center,
+                        decoration: const BoxDecoration(
+                          color: KeyboardGuideView._forest,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Text(
+                          '✓',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.w900,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: selected
+                    ? KeyboardGuideView._forest
+                    : KeyboardGuideView._muted,
+                fontSize: labelSize,
+                fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -926,43 +1030,6 @@ class _ChatBubble extends StatelessWidget {
             fontSize: 14,
             height: 1.35,
             fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TonePill extends StatelessWidget {
-  final String text;
-  final bool selected;
-
-  const _TonePill({required this.text, this.selected = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.only(right: 6),
-        padding: const EdgeInsets.symmetric(vertical: 7),
-        decoration: BoxDecoration(
-          color: selected ? KeyboardGuideView._sage : KeyboardGuideView._card,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: selected
-                ? KeyboardGuideView._forest
-                : KeyboardGuideView._line,
-          ),
-        ),
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: selected
-                ? KeyboardGuideView._forest
-                : KeyboardGuideView._muted,
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
           ),
         ),
       ),

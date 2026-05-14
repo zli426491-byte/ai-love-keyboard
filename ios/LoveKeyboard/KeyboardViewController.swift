@@ -15,6 +15,24 @@ final class KeyboardViewController: UIInputViewController {
             case .apology: return "道歉"
             }
         }
+
+        var emoji: String {
+            switch self {
+            case .gentle: return "🌿"
+            case .funny: return "🔆"
+            case .flirty: return "🌹"
+            case .apology: return "🌊"
+            }
+        }
+
+        var backgroundColor: UIColor {
+            switch self {
+            case .gentle: return Palette.selectedSoft
+            case .funny: return Palette.warmYellow
+            case .flirty: return Palette.roseSoft
+            case .apology: return Palette.navySoft
+            }
+        }
     }
 
     private enum Palette {
@@ -28,6 +46,9 @@ final class KeyboardViewController: UIInputViewController {
         static let border = UIColor(red: 226 / 255, green: 222 / 255, blue: 214 / 255, alpha: 1)
         static let key = UIColor(red: 234 / 255, green: 232 / 255, blue: 226 / 255, alpha: 1)
         static let selectedSoft = UIColor(red: 228 / 255, green: 240 / 255, blue: 229 / 255, alpha: 1)
+        static let warmYellow = UIColor(red: 245 / 255, green: 230 / 255, blue: 184 / 255, alpha: 1)
+        static let roseSoft = UIColor(red: 245 / 255, green: 214 / 255, blue: 220 / 255, alpha: 1)
+        static let navySoft = UIColor(red: 214 / 255, green: 224 / 255, blue: 236 / 255, alpha: 1)
     }
 
     private let rootStack = UIStackView()
@@ -36,6 +57,7 @@ final class KeyboardViewController: UIInputViewController {
     private let styleStack = UIStackView()
 
     private var styleButtons: [UIButton] = []
+    private var styleLabels: [Int: UILabel] = [:]
     private var currentReplies: [String] = []
     private var selectedStyle: ReplyStyle = .gentle
     private var currentMessage = ""
@@ -104,19 +126,57 @@ final class KeyboardViewController: UIInputViewController {
 
     private func makeStyleSelector() -> UIView {
         styleStack.axis = .horizontal
-        styleStack.spacing = 6
+        styleStack.alignment = .center
+        styleStack.spacing = 10
         styleStack.distribution = .fillEqually
+        styleStack.heightAnchor.constraint(equalToConstant: 56).isActive = true
 
         for style in ReplyStyle.allCases {
+            let item = UIStackView()
+            item.axis = .vertical
+            item.alignment = .center
+            item.spacing = 2
+
             let button = UIButton(type: .system)
-            button.setTitle(style.title, for: .normal)
-            button.titleLabel?.font = .systemFont(ofSize: 12, weight: .heavy)
-            button.layer.cornerRadius = 11
-            button.heightAnchor.constraint(equalToConstant: 27).isActive = true
+            button.setTitle(style.emoji, for: .normal)
+            button.titleLabel?.font = .systemFont(ofSize: 22, weight: .bold)
+            button.backgroundColor = style.backgroundColor
+            button.layer.cornerRadius = 22
+            button.widthAnchor.constraint(equalToConstant: 44).isActive = true
+            button.heightAnchor.constraint(equalToConstant: 44).isActive = true
             button.tag = style.rawValue
             button.addTarget(self, action: #selector(styleTapped(_:)), for: .touchUpInside)
+
+            let badge = UILabel()
+            badge.tag = 9001
+            badge.text = "✓"
+            badge.textAlignment = .center
+            badge.font = .systemFont(ofSize: 8, weight: .heavy)
+            badge.textColor = .white
+            badge.backgroundColor = Palette.primary
+            badge.layer.cornerRadius = 6.5
+            badge.clipsToBounds = true
+            badge.translatesAutoresizingMaskIntoConstraints = false
+            button.addSubview(badge)
+            NSLayoutConstraint.activate([
+                badge.widthAnchor.constraint(equalToConstant: 13),
+                badge.heightAnchor.constraint(equalToConstant: 13),
+                badge.trailingAnchor.constraint(equalTo: button.trailingAnchor, constant: -1),
+                badge.bottomAnchor.constraint(equalTo: button.bottomAnchor, constant: -1)
+            ])
+
+            let label = UILabel()
+            label.text = style.title
+            label.textAlignment = .center
+            label.font = .systemFont(ofSize: 9, weight: .semibold)
+            label.textColor = Palette.secondary
+            label.heightAnchor.constraint(equalToConstant: 10).isActive = true
+            styleLabels[style.rawValue] = label
+
             styleButtons.append(button)
-            styleStack.addArrangedSubview(button)
+            item.addArrangedSubview(button)
+            item.addArrangedSubview(label)
+            styleStack.addArrangedSubview(item)
         }
 
         updateStyleButtons()
@@ -126,7 +186,7 @@ final class KeyboardViewController: UIInputViewController {
     private func makeContentArea() -> UIView {
         contentStack.axis = .vertical
         contentStack.spacing = 6
-        contentStack.heightAnchor.constraint(greaterThanOrEqualToConstant: 196).isActive = true
+        contentStack.heightAnchor.constraint(greaterThanOrEqualToConstant: 170).isActive = true
         return contentStack
     }
 
@@ -295,13 +355,20 @@ final class KeyboardViewController: UIInputViewController {
     private func updateStyleButtons() {
         for button in styleButtons {
             let isSelected = button.tag == selectedStyle.rawValue
-            button.backgroundColor = isSelected ? Palette.primary : Palette.card
-            button.setTitleColor(isSelected ? .white : Palette.secondary, for: .normal)
-            if let style = ReplyStyle(rawValue: button.tag) {
-                button.setTitle(isSelected ? "\(style.title) ✓" : style.title, for: .normal)
+            guard let style = ReplyStyle(rawValue: button.tag) else { continue }
+            button.setTitle(style.emoji, for: .normal)
+            button.backgroundColor = style.backgroundColor
+            button.alpha = isSelected ? 1 : 0.72
+            button.transform = isSelected ? CGAffineTransform(scaleX: 1.08, y: 1.08) : .identity
+            button.layer.borderWidth = isSelected ? 2 : 1.5
+            button.layer.borderColor = (isSelected ? Palette.primary : Palette.primary.withAlphaComponent(0.25)).cgColor
+            button.viewWithTag(9001)?.isHidden = !isSelected
+
+            if let label = styleLabels[button.tag] {
+                label.text = style.title
+                label.textColor = isSelected ? Palette.primary : Palette.secondary
+                label.font = .systemFont(ofSize: 9, weight: isSelected ? .heavy : .semibold)
             }
-            button.layer.borderWidth = 1
-            button.layer.borderColor = (isSelected ? Palette.primary : Palette.border).cgColor
         }
     }
 
@@ -311,7 +378,7 @@ final class KeyboardViewController: UIInputViewController {
         card.layer.cornerRadius = 16
         card.layer.borderWidth = 1
         card.layer.borderColor = (isWarning ? Palette.blush.withAlphaComponent(0.28) : Palette.border).cgColor
-        card.heightAnchor.constraint(equalToConstant: 190).isActive = true
+        card.heightAnchor.constraint(equalToConstant: 166).isActive = true
 
         let stack = UIStackView()
         stack.axis = .vertical
