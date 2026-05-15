@@ -16,15 +16,6 @@ final class KeyboardViewController: UIInputViewController {
             }
         }
 
-        var buttonTitle: String {
-            switch self {
-            case .gentle: return "溫柔"
-            case .funny: return "幽默"
-            case .flirty: return "撩人"
-            case .apology: return "道歉"
-            }
-        }
-
         var symbolName: String {
             switch self {
             case .gentle: return "leaf.fill"
@@ -118,6 +109,7 @@ final class KeyboardViewController: UIInputViewController {
     private var styleLabels: [Int: UILabel] = [:]
     private var modeButtons: [UIButton] = []
     private var currentReplies: [String] = []
+    private var displayedReplies: [String] = []
     private var selectedStyle: ReplyStyle = .gentle
     private var selectedMode: KeyboardMode = .reply
     private var currentMessage = ""
@@ -211,29 +203,64 @@ final class KeyboardViewController: UIInputViewController {
 
     private func makeStyleSelector() -> UIView {
         styleStack.axis = .horizontal
-        styleStack.alignment = .fill
-        styleStack.spacing = 6
+        styleStack.alignment = .center
+        styleStack.spacing = 8
         styleStack.distribution = .fillEqually
-        styleStack.heightAnchor.constraint(equalToConstant: 44).isActive = true
+        styleStack.heightAnchor.constraint(equalToConstant: 56).isActive = true
 
         for style in ReplyStyle.allCases {
+            let item = UIStackView()
+            item.axis = .vertical
+            item.alignment = .center
+            item.spacing = 2
+
             let button = UIButton(type: .system)
-            button.setTitle(style.buttonTitle, for: .normal)
-            button.titleLabel?.font = .systemFont(ofSize: 13, weight: .heavy)
-            button.titleLabel?.adjustsFontSizeToFitWidth = true
-            button.titleLabel?.minimumScaleFactor = 0.82
-            button.layer.cornerRadius = 15
+            button.setImage(UIImage(systemName: style.symbolName), for: .normal)
+            button.imageView?.contentMode = .scaleAspectFit
+            button.tintColor = Palette.primary
+            button.backgroundColor = style.backgroundColor
+            button.layer.cornerRadius = 19
             button.layer.borderWidth = 1
             button.layer.shadowColor = UIColor.black.cgColor
-            button.layer.shadowOpacity = 0.035
-            button.layer.shadowRadius = 5
+            button.layer.shadowOpacity = 0.045
+            button.layer.shadowRadius = 6
             button.layer.shadowOffset = CGSize(width: 0, height: 2)
+            button.widthAnchor.constraint(equalToConstant: 38).isActive = true
+            button.heightAnchor.constraint(equalToConstant: 38).isActive = true
             button.tag = style.rawValue
             button.accessibilityLabel = "\(style.title)生成"
             button.addTarget(self, action: #selector(styleTapped(_:)), for: .touchUpInside)
 
+            let badge = UILabel()
+            badge.tag = 9001
+            badge.text = "✓"
+            badge.textAlignment = .center
+            badge.font = .systemFont(ofSize: 8, weight: .heavy)
+            badge.textColor = .white
+            badge.backgroundColor = Palette.primary
+            badge.layer.cornerRadius = 7
+            badge.clipsToBounds = true
+            badge.translatesAutoresizingMaskIntoConstraints = false
+            button.addSubview(badge)
+            NSLayoutConstraint.activate([
+                badge.widthAnchor.constraint(equalToConstant: 14),
+                badge.heightAnchor.constraint(equalToConstant: 14),
+                badge.trailingAnchor.constraint(equalTo: button.trailingAnchor, constant: -1),
+                badge.bottomAnchor.constraint(equalTo: button.bottomAnchor, constant: -1)
+            ])
+
+            let label = UILabel()
+            label.text = style.title
+            label.textAlignment = .center
+            label.font = .systemFont(ofSize: 9.6, weight: .semibold)
+            label.textColor = Palette.secondary
+            label.heightAnchor.constraint(equalToConstant: 11).isActive = true
+            styleLabels[style.rawValue] = label
+
             styleButtons.append(button)
-            styleStack.addArrangedSubview(button)
+            item.addArrangedSubview(button)
+            item.addArrangedSubview(label)
+            styleStack.addArrangedSubview(item)
         }
 
         updateStyleButtons()
@@ -243,7 +270,7 @@ final class KeyboardViewController: UIInputViewController {
     private func makeContentArea() -> UIView {
         contentStack.axis = .vertical
         contentStack.spacing = 6
-        contentStack.heightAnchor.constraint(greaterThanOrEqualToConstant: 212).isActive = true
+        contentStack.heightAnchor.constraint(greaterThanOrEqualToConstant: 224).isActive = true
         return contentStack
     }
 
@@ -422,13 +449,8 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     @objc private func replyTapped(_ sender: UIControl) {
-        guard !currentMessage.isEmpty else {
-            statusMode = .idle
-            renderContent()
-            return
-        }
-        guard sender.tag >= 0 && sender.tag < currentReplies.count else { return }
-        textDocumentProxy.insertText(currentReplies[sender.tag])
+        guard sender.tag >= 0 && sender.tag < displayedReplies.count else { return }
+        textDocumentProxy.insertText(displayedReplies[sender.tag])
         filledIndex = sender.tag
         statusMode = .filled
         renderContent()
@@ -568,7 +590,7 @@ final class KeyboardViewController: UIInputViewController {
     private func replyPanel() -> UIView {
         let panel = UIView()
         panel.backgroundColor = UIColor.clear
-        panel.heightAnchor.constraint(equalToConstant: 136).isActive = true
+        panel.heightAnchor.constraint(equalToConstant: 166).isActive = true
 
         let row = UIStackView()
         row.axis = .horizontal
@@ -577,19 +599,7 @@ final class KeyboardViewController: UIInputViewController {
         row.translatesAutoresizingMaskIntoConstraints = false
         panel.addSubview(row)
 
-        let replies = UIStackView()
-        replies.axis = .vertical
-        replies.spacing = 7
-        replies.distribution = currentReplies.isEmpty ? .fill : .fillEqually
-        row.addArrangedSubview(replies)
-
-        if currentReplies.isEmpty {
-            replies.addArrangedSubview(emptyReplyCard())
-        } else {
-            for (index, reply) in currentReplies.prefix(1).enumerated() {
-                replies.addArrangedSubview(aiReplyCard(reply, index: index))
-            }
-        }
+        row.addArrangedSubview(replyMatrix())
 
         let side = UIStackView()
         side.axis = .vertical
@@ -610,6 +620,183 @@ final class KeyboardViewController: UIInputViewController {
         ])
 
         return panel
+    }
+
+    private func replyMatrix() -> UIStackView {
+        displayedReplies = matrixReplies()
+
+        let grid = UIStackView()
+        grid.axis = .vertical
+        grid.spacing = 7
+        grid.distribution = .fillEqually
+
+        for rowIndex in 0..<3 {
+            let row = UIStackView()
+            row.axis = .horizontal
+            row.spacing = 7
+            row.distribution = .fillEqually
+
+            for columnIndex in 0..<3 {
+                let index = rowIndex * 3 + columnIndex
+                let title = index < displayedReplies.count ? displayedReplies[index] : " "
+                row.addArrangedSubview(matrixReplyButton(title, index: index))
+            }
+
+            grid.addArrangedSubview(row)
+        }
+
+        return grid
+    }
+
+    private func matrixReplyButton(_ title: String, index: Int) -> UIControl {
+        let control = UIControl()
+        let isPrimary = index == 0 && !currentReplies.isEmpty
+        let isFilled = filledIndex == index
+        let isPlaceholder = currentMessage.isEmpty && currentReplies.isEmpty
+        control.tag = index
+        control.backgroundColor = isFilled ? Palette.primary : Palette.card
+        control.layer.cornerRadius = 12
+        control.layer.borderWidth = isPrimary ? 1.2 : 0.8
+        control.layer.borderColor = (isPrimary ? Palette.primary.withAlphaComponent(0.34) : Palette.border).cgColor
+        control.layer.shadowColor = UIColor.black.cgColor
+        control.layer.shadowOpacity = isPrimary ? 0.07 : 0.03
+        control.layer.shadowRadius = isPrimary ? 8 : 4
+        control.layer.shadowOffset = CGSize(width: 0, height: 2)
+        control.alpha = isPlaceholder ? 0.72 : 1
+        if !isPlaceholder {
+            control.addTarget(self, action: #selector(replyTapped(_:)), for: .touchUpInside)
+        }
+
+        let label = UILabel()
+        label.text = title
+        label.textAlignment = .center
+        label.numberOfLines = 2
+        label.lineBreakMode = .byTruncatingTail
+        label.font = .systemFont(ofSize: isPrimary ? 13 : 12.4, weight: isPrimary ? .heavy : .bold)
+        label.textColor = isFilled ? .white : Palette.text
+        label.translatesAutoresizingMaskIntoConstraints = false
+        control.addSubview(label)
+
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: control.leadingAnchor, constant: 7),
+            label.trailingAnchor.constraint(equalTo: control.trailingAnchor, constant: -7),
+            label.topAnchor.constraint(equalTo: control.topAnchor, constant: 5),
+            label.bottomAnchor.constraint(equalTo: control.bottomAnchor, constant: -5)
+        ])
+
+        return control
+    }
+
+    private func matrixReplies() -> [String] {
+        if currentMessage.isEmpty {
+            return [
+                "先複製訊息",
+                "按上方讀取",
+                "再選語氣",
+                "接話",
+                "破冰",
+                "邀約",
+                "安撫",
+                "自訂",
+                "填入聊天"
+            ]
+        }
+
+        if isGenerating {
+            return [
+                "生成中...",
+                "先別急",
+                "我來整理",
+                "接住這題",
+                "自然一點",
+                "別太用力",
+                "換個說法",
+                "保留餘地",
+                "讓她好回"
+            ]
+        }
+
+        var items: [String] = []
+        if let reply = currentReplies.first {
+            items.append(reply)
+        }
+
+        let fallback = makeReplies(for: selectedStyle, mode: selectedMode, message: currentMessage)
+        let fillers = defaultMatrixReplies(for: selectedMode)
+
+        for item in fallback + fillers {
+            let cleaned = cleanReply(item)
+            guard !cleaned.isEmpty, !items.contains(cleaned) else { continue }
+            items.append(cleaned)
+            if items.count == 9 { break }
+        }
+
+        return Array(items.prefix(9))
+    }
+
+    private func defaultMatrixReplies(for mode: KeyboardMode) -> [String] {
+        switch mode {
+        case .reply:
+            return [
+                "我懂你的意思",
+                "那我來安排",
+                "先別急",
+                "你想怎麼做",
+                "我陪你聊",
+                "聽起來不錯",
+                "我先接住這題",
+                "換個方式說",
+                "那我們慢慢來"
+            ]
+        case .opener:
+            return [
+                "最近在忙什麼",
+                "今天過得怎樣",
+                "我想到你",
+                "問你一題",
+                "有空聊一下嗎",
+                "剛看到一件事",
+                "這個適合問你",
+                "想聽你想法",
+                "開個新話題"
+            ]
+        case .invite:
+            return [
+                "我來安排",
+                "週末有空嗎",
+                "一起吃飯嗎",
+                "喝杯咖啡",
+                "改天見面聊",
+                "你選時間",
+                "我配合你",
+                "別太趕",
+                "輕鬆一點"
+            ]
+        case .comfort:
+            return [
+                "你先休息",
+                "我在這裡",
+                "慢慢說就好",
+                "先別想太多",
+                "我陪你",
+                "辛苦了",
+                "不用硬撐",
+                "晚點再說",
+                "我聽你說"
+            ]
+        case .custom:
+            return [
+                "更自然",
+                "更溫柔",
+                "更幽默",
+                "短一點",
+                "有邊界",
+                "像真人",
+                "別太油",
+                "留問題",
+                "再輕鬆點"
+            ]
+        }
     }
 
     private func emptyReplyCard() -> UIControl {
@@ -734,15 +921,23 @@ final class KeyboardViewController: UIInputViewController {
         for button in styleButtons {
             let isSelected = button.tag == selectedStyle.rawValue
             guard let style = ReplyStyle(rawValue: button.tag) else { continue }
-            button.setImage(nil, for: .normal)
-            button.setTitle(style.buttonTitle, for: .normal)
-            button.backgroundColor = isSelected ? Palette.primary : Palette.card
-            button.setTitleColor(isSelected ? .white : Palette.text, for: .normal)
-            button.alpha = isSelected ? 1 : 0.96
+            let config = UIImage.SymbolConfiguration(pointSize: isSelected ? 17 : 16, weight: isSelected ? .bold : .semibold)
+            button.setImage(UIImage(systemName: style.symbolName, withConfiguration: config), for: .normal)
+            button.setTitle(nil, for: .normal)
+            button.tintColor = Palette.primary
+            button.backgroundColor = style.backgroundColor
+            button.alpha = isSelected ? 1 : 0.92
             button.transform = .identity
-            button.layer.borderWidth = isSelected ? 1.2 : 0.8
+            button.layer.borderWidth = isSelected ? 1.8 : 0.9
             button.layer.borderColor = (isSelected ? Palette.primary : Palette.border).cgColor
-            button.layer.shadowOpacity = isSelected ? 0.06 : 0.025
+            button.layer.shadowOpacity = isSelected ? 0.07 : 0.03
+            button.viewWithTag(9001)?.isHidden = !isSelected
+
+            if let label = styleLabels[button.tag] {
+                label.text = style.title
+                label.textColor = isSelected ? Palette.primary : Palette.secondary
+                label.font = .systemFont(ofSize: 9.6, weight: isSelected ? .heavy : .semibold)
+            }
         }
     }
 
@@ -859,7 +1054,7 @@ final class KeyboardViewController: UIInputViewController {
         }
 
         let requestID = generationIndex
-        currentReplies = Array(makeReplies(for: selectedStyle, mode: selectedMode, message: message).prefix(1))
+        currentReplies = []
         isGenerating = true
         aiErrorText = nil
         renderContent()
