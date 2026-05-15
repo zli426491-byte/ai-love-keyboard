@@ -31,10 +31,17 @@ jobs:
           import os
           from pathlib import Path
 
+          key = os.environ.get("OPENAI_API_KEY", "").strip()
+          if not key:
+              raise SystemExit("OPENAI_API_KEY secret is empty; refusing to upload a broken keyboard build.")
+
           path = Path("ios/LoveKeyboard/KeyboardViewController.swift")
           text = path.read_text(encoding="utf-8")
-          text = text.replace("__OPENAI_API_KEY__", os.environ.get("OPENAI_API_KEY", ""))
+          text = text.replace("__OPENAI_API_KEY__", key)
+          if "__OPENAI_API_KEY__" in text:
+              raise SystemExit("OPENAI_API_KEY placeholder was not replaced.")
           path.write_text(text, encoding="utf-8")
+          print("Runtime AI config injected into LoveKeyboard extension.")
           PY
 
       - name: Setup App Store Connect API Key

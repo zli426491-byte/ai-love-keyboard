@@ -1273,10 +1273,21 @@ final class KeyboardViewController: UIInputViewController {
             guard requestID == self.generationIndex else { return }
             self.isGenerating = false
 
-            let cleaned = replies
+            var cleaned = replies
                 .map { self.cleanReply($0) }
                 .filter { !$0.isEmpty }
                 .prefix(1)
+
+            if cleaned.isEmpty {
+                cleaned = self.makeReplies(
+                    for: self.selectedStyle,
+                    mode: self.selectedMode,
+                    message: self.currentMessage
+                )
+                .map { self.cleanReply($0) }
+                .filter { !$0.isEmpty }
+                .prefix(1)
+            }
 
             if !cleaned.isEmpty && self.statusMode != .filled {
                 self.currentReplies = Array(cleaned)
@@ -1295,7 +1306,7 @@ final class KeyboardViewController: UIInputViewController {
         return """
         You are LoveKey, an AI keyboard assistant for dating and everyday chat.
         The user input is a message from the other person, not a question to you.
-        Return only a JSON object with one key "replies" and exactly one string value.
+        Return only a JSON object with one key "replies" and exactly one string item in an array.
 
         Requirements:
         - Reply only in the same language as the user's message. If the message is English, reply in English only. If it is Japanese, reply in Japanese only. If it is Traditional Chinese, use natural Taiwan Traditional Chinese.
@@ -1332,6 +1343,22 @@ final class KeyboardViewController: UIInputViewController {
             let replies = parsed["replies"] as? [String]
         {
             return replies
+        }
+
+        if
+            let jsonData = jsonText.data(using: .utf8),
+            let parsed = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+            let reply = parsed["replies"] as? String
+        {
+            return [reply]
+        }
+
+        if
+            let jsonData = jsonText.data(using: .utf8),
+            let parsed = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+            let reply = parsed["reply"] as? String
+        {
+            return [reply]
         }
 
         if
