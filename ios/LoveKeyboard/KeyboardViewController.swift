@@ -113,10 +113,10 @@ final class KeyboardViewController: UIInputViewController {
 
     private func setupView() {
         view.backgroundColor = Palette.background
-        view.heightAnchor.constraint(greaterThanOrEqualToConstant: 338).isActive = true
+        view.heightAnchor.constraint(greaterThanOrEqualToConstant: 352).isActive = true
 
         rootStack.axis = .vertical
-        rootStack.spacing = 6
+        rootStack.spacing = 5
         rootStack.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(rootStack)
 
@@ -130,6 +130,7 @@ final class KeyboardViewController: UIInputViewController {
         rootStack.addArrangedSubview(makeHeader())
         rootStack.addArrangedSubview(makeModeTabs())
         rootStack.addArrangedSubview(makeContentArea())
+        rootStack.addArrangedSubview(makeStyleSelector())
 
         renderContent()
     }
@@ -181,24 +182,24 @@ final class KeyboardViewController: UIInputViewController {
     private func makeStyleSelector() -> UIView {
         styleStack.axis = .horizontal
         styleStack.alignment = .center
-        styleStack.spacing = 10
+        styleStack.spacing = 8
         styleStack.distribution = .fillEqually
-        styleStack.heightAnchor.constraint(equalToConstant: 56).isActive = true
+        styleStack.heightAnchor.constraint(equalToConstant: 46).isActive = true
 
         for style in ReplyStyle.allCases {
             let item = UIStackView()
             item.axis = .vertical
             item.alignment = .center
-            item.spacing = 2
+            item.spacing = 1
 
             let button = UIButton(type: .system)
             button.setImage(UIImage(systemName: style.symbolName), for: .normal)
             button.imageView?.contentMode = .scaleAspectFit
             button.tintColor = Palette.primary
             button.backgroundColor = style.backgroundColor
-            button.layer.cornerRadius = 22
-            button.widthAnchor.constraint(equalToConstant: 44).isActive = true
-            button.heightAnchor.constraint(equalToConstant: 44).isActive = true
+            button.layer.cornerRadius = 17
+            button.widthAnchor.constraint(equalToConstant: 34).isActive = true
+            button.heightAnchor.constraint(equalToConstant: 34).isActive = true
             button.tag = style.rawValue
             button.addTarget(self, action: #selector(styleTapped(_:)), for: .touchUpInside)
 
@@ -223,9 +224,9 @@ final class KeyboardViewController: UIInputViewController {
             let label = UILabel()
             label.text = style.title
             label.textAlignment = .center
-            label.font = .systemFont(ofSize: 9, weight: .semibold)
+            label.font = .systemFont(ofSize: 8.6, weight: .semibold)
             label.textColor = Palette.secondary
-            label.heightAnchor.constraint(equalToConstant: 10).isActive = true
+            label.heightAnchor.constraint(equalToConstant: 9).isActive = true
             styleLabels[style.rawValue] = label
 
             styleButtons.append(button)
@@ -241,7 +242,7 @@ final class KeyboardViewController: UIInputViewController {
     private func makeContentArea() -> UIView {
         contentStack.axis = .vertical
         contentStack.spacing = 6
-        contentStack.heightAnchor.constraint(greaterThanOrEqualToConstant: 242).isActive = true
+        contentStack.heightAnchor.constraint(greaterThanOrEqualToConstant: 212).isActive = true
         return contentStack
     }
 
@@ -471,7 +472,7 @@ final class KeyboardViewController: UIInputViewController {
         card.layer.cornerRadius = 14
         card.layer.borderWidth = 0.8
         card.layer.borderColor = Palette.border.withAlphaComponent(0.9).cgColor
-        card.heightAnchor.constraint(equalToConstant: 58).isActive = true
+        card.heightAnchor.constraint(equalToConstant: 50).isActive = true
         card.addTarget(self, action: #selector(readClipboardAndGenerate), for: .touchUpInside)
 
         let row = UIStackView()
@@ -490,7 +491,7 @@ final class KeyboardViewController: UIInputViewController {
 
         let label = UILabel()
         label.numberOfLines = 2
-        label.font = .systemFont(ofSize: 13.2, weight: .semibold)
+        label.font = .systemFont(ofSize: 12.6, weight: .semibold)
         label.textColor = Palette.text
 
         switch statusMode {
@@ -520,8 +521,8 @@ final class KeyboardViewController: UIInputViewController {
         NSLayoutConstraint.activate([
             row.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 12),
             row.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -10),
-            row.topAnchor.constraint(equalTo: card.topAnchor, constant: 8),
-            row.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -8)
+            row.topAnchor.constraint(equalTo: card.topAnchor, constant: 6),
+            row.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -6)
         ])
 
         return card
@@ -530,7 +531,7 @@ final class KeyboardViewController: UIInputViewController {
     private func templatePanel() -> UIView {
         let panel = UIView()
         panel.backgroundColor = UIColor.clear
-        panel.heightAnchor.constraint(equalToConstant: 176).isActive = true
+        panel.heightAnchor.constraint(equalToConstant: 156).isActive = true
 
         let row = UIStackView()
         row.axis = .horizontal
@@ -626,7 +627,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func templatesForCurrentMode() -> [String] {
-        let dynamicReplies = currentMessage.isEmpty ? [] : makeReplies(for: .gentle, message: currentMessage)
+        let dynamicReplies = currentMessage.isEmpty ? [] : makeReplies(for: selectedStyle, message: currentMessage)
 
         switch selectedMode {
         case .reply:
@@ -697,20 +698,20 @@ final class KeyboardViewController: UIInputViewController {
         for button in styleButtons {
             let isSelected = button.tag == selectedStyle.rawValue
             guard let style = ReplyStyle(rawValue: button.tag) else { continue }
-            let config = UIImage.SymbolConfiguration(pointSize: isSelected ? 19 : 18, weight: isSelected ? .bold : .semibold)
+            let config = UIImage.SymbolConfiguration(pointSize: isSelected ? 16 : 15, weight: isSelected ? .bold : .semibold)
             button.setImage(UIImage(systemName: style.symbolName, withConfiguration: config), for: .normal)
             button.tintColor = Palette.primary
             button.backgroundColor = style.backgroundColor
-            button.alpha = isSelected ? 1 : 0.72
-            button.transform = isSelected ? CGAffineTransform(scaleX: 1.08, y: 1.08) : .identity
-            button.layer.borderWidth = isSelected ? 2 : 1.5
+            button.alpha = isSelected ? 1 : 0.74
+            button.transform = isSelected ? CGAffineTransform(scaleX: 1.06, y: 1.06) : .identity
+            button.layer.borderWidth = isSelected ? 1.8 : 1.1
             button.layer.borderColor = (isSelected ? Palette.primary : Palette.primary.withAlphaComponent(0.25)).cgColor
             button.viewWithTag(9001)?.isHidden = !isSelected
 
             if let label = styleLabels[button.tag] {
                 label.text = style.title
                 label.textColor = isSelected ? Palette.primary : Palette.secondary
-                label.font = .systemFont(ofSize: 9, weight: isSelected ? .heavy : .semibold)
+                label.font = .systemFont(ofSize: 8.6, weight: isSelected ? .heavy : .semibold)
             }
         }
     }
