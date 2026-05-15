@@ -23,6 +23,20 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Inject runtime AI config
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          path = Path("ios/LoveKeyboard/KeyboardViewController.swift")
+          text = path.read_text(encoding="utf-8")
+          text = text.replace("__OPENAI_API_KEY__", os.environ.get("OPENAI_API_KEY", ""))
+          path.write_text(text, encoding="utf-8")
+          PY
+
       - name: Setup App Store Connect API Key
         run: |
           mkdir -p ~/private_keys

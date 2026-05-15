@@ -77,6 +77,12 @@ final class KeyboardViewController: UIInputViewController {
         case daily
     }
 
+    private enum AiConfig {
+        static let endpoint = URL(string: "https://api.openai.com/v1/chat/completions")!
+        static let apiKey = "__OPENAI_API_KEY__"
+        static let model = "gpt-4.1-mini"
+    }
+
     private enum Palette {
         static let background = UIColor(red: 246 / 255, green: 244 / 255, blue: 238 / 255, alpha: 1)
         static let card = UIColor(red: 255 / 255, green: 254 / 255, blue: 251 / 255, alpha: 1)
@@ -109,6 +115,8 @@ final class KeyboardViewController: UIInputViewController {
     private var statusMode: StatusMode = .idle
     private var generationIndex = 0
     private var filledIndex: Int?
+    private var isGenerating = false
+    private var aiErrorText: String?
 
     private enum StatusMode {
         case idle
@@ -354,6 +362,9 @@ final class KeyboardViewController: UIInputViewController {
             currentMessage = ""
             statusMode = .noFullAccess
             filledIndex = nil
+            currentReplies = []
+            isGenerating = false
+            aiErrorText = nil
             renderContent()
             return
         }
@@ -363,6 +374,9 @@ final class KeyboardViewController: UIInputViewController {
             currentMessage = ""
             statusMode = .emptyClipboard
             filledIndex = nil
+            currentReplies = []
+            isGenerating = false
+            aiErrorText = nil
             renderContent()
             return
         }
@@ -371,7 +385,7 @@ final class KeyboardViewController: UIInputViewController {
         statusMode = .ready
         filledIndex = nil
         generationIndex += 1
-        renderContent()
+        regenerateReplies()
     }
 
     @objc private func styleTapped(_ sender: UIButton) {
@@ -382,8 +396,10 @@ final class KeyboardViewController: UIInputViewController {
         if !currentMessage.isEmpty {
             generationIndex += 1
             statusMode = .ready
+            regenerateReplies()
+        } else {
+            renderContent()
         }
-        renderContent()
     }
 
     @objc private func modeTapped(_ sender: UIButton) {
@@ -392,11 +408,15 @@ final class KeyboardViewController: UIInputViewController {
         filledIndex = nil
         if !currentMessage.isEmpty {
             statusMode = .ready
+            generationIndex += 1
+            regenerateReplies()
         } else if statusMode == .filled || statusMode == .ready {
             statusMode = .idle
+            renderContent()
+        } else {
+            renderContent()
         }
         updateModeButtons()
-        renderContent()
     }
 
     @objc private func replyTapped(_ sender: UIControl) {
@@ -445,19 +465,29 @@ final class KeyboardViewController: UIInputViewController {
 
         updateModeButtons()
 
-        switch statusMode {
-        case .noFullAccess:
-            statusLabel.text = "需要完整取用"
-        case .emptyClipboard:
-            statusLabel.text = "剪貼簿空白"
-        case .filled:
-            statusLabel.text = "已填入"
-        case .idle, .ready:
-            statusLabel.text = selectedMode.status
+        if isGenerating {
+            statusLabel.text = "AI 生成中"
+        } else if let aiErrorText {
+            statusLabel.text = aiErrorText
+        } else {
+            switch statusMode {
+            case .noFullAccess:
+                statusLabel.text = "需要完整取用"
+            case .emptyClipboard:
+                statusLabel.text = "剪貼簿空白"
+            case .filled:
+                statusLabel.text = "已填入"
+            case .idle, .ready:
+                statusLabel.text = selectedMode.status
+            }
         }
 
         contentStack.addArrangedSubview(pasteCard())
-        currentReplies = makeReplies(for: selectedStyle, mode: selectedMode, message: currentMessage)
+        if currentMessage.isEmpty {
+            currentReplies = []
+        } else if currentReplies.isEmpty {
+            currentReplies = makeReplies(for: selectedStyle, mode: selectedMode, message: currentMessage)
+        }
         contentStack.addArrangedSubview(replyPanel())
     }
 
@@ -603,14 +633,16 @@ final class KeyboardViewController: UIInputViewController {
         stack.addArrangedSubview(icon)
 
         let title = UILabel()
-        title.text = "複製對方訊息後點這裡"
+        title.text = isGenerating ? "AI 正在生成" : "複製對方訊息後點這裡"
         title.font = .systemFont(ofSize: 15, weight: .heavy)
         title.textColor = Palette.text
         title.textAlignment = .center
         stack.addArrangedSubview(title)
 
         let subtitle = UILabel()
-        subtitle.text = "AI 會依照上方情境與下方語氣，產生可直接送出的回覆。"
+        subtitle.text = isGenerating
+            ? "通常 1-3 秒完成，完成後會自動更新回覆。"
+            : "AI 會依照上方情境與下方語氣，產生可直接送出的回覆。"
         subtitle.font = .systemFont(ofSize: 11.6, weight: .semibold)
         subtitle.textColor = Palette.secondary
         subtitle.textAlignment = .center
@@ -656,7 +688,7 @@ final class KeyboardViewController: UIInputViewController {
         row.addArrangedSubview(label)
 
         let action = UILabel()
-        action.text = isFilled ? "已填" : (index == 0 ? "主推" : "填入")
+        action.text = isFilled ? "已填" : (isGenerating ? "候補" : (index == 0 ? "主推" : "填入"))
         action.textAlignment = .center
         action.font = .systemFont(ofSize: 10.4, weight: .heavy)
         action.textColor = isFilled ? Palette.primary : .white
@@ -818,6 +850,187 @@ final class KeyboardViewController: UIInputViewController {
         ])
 
         return card
+    }
+
+    private func regenerateReplies() {
+        let message = currentMessage
+        guard !message.isEmpty else {
+            currentReplies = []
+            isGenerating = false
+            aiErrorText = nil
+            renderContent()
+            return
+        }
+
+        let requestID = generationIndex
+        currentReplies = makeReplies(for: selectedStyle, mode: selectedMode, message: message)
+        isGenerating = true
+        aiErrorText = nil
+        renderContent()
+
+        requestAIReplies(
+            message: message,
+            style: selectedStyle,
+            mode: selectedMode,
+            requestID: requestID
+        )
+    }
+
+    private func requestAIReplies(message: String, style: ReplyStyle, mode: KeyboardMode, requestID: Int) {
+        guard !AiConfig.apiKey.isEmpty, !AiConfig.apiKey.contains("__OPENAI_API_KEY__") else {
+            finishAIRequest(requestID: requestID, replies: [], errorText: "AI 尚未設定")
+            return
+        }
+
+        var request = URLRequest(url: AiConfig.endpoint)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 18
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(AiConfig.apiKey)", forHTTPHeaderField: "Authorization")
+
+        let payload: [String: Any] = [
+            "model": AiConfig.model,
+            "messages": [
+                ["role": "system", "content": aiSystemPrompt(style: style, mode: mode)],
+                ["role": "user", "content": message]
+            ],
+            "response_format": ["type": "json_object"],
+            "max_tokens": 360,
+            "temperature": 0.72
+        ]
+
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: payload)
+        } catch {
+            finishAIRequest(requestID: requestID, replies: [], errorText: "AI 暫時不可用")
+            return
+        }
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            guard let self else { return }
+            var replies: [String] = []
+            var errorText: String?
+
+            if error != nil {
+                errorText = "AI 網路失敗"
+            } else if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+                errorText = "AI 服務忙碌"
+            } else if let data {
+                replies = self.parseAIReplies(from: data)
+                if replies.isEmpty {
+                    errorText = "AI 格式錯誤"
+                }
+            } else {
+                errorText = "AI 沒有回覆"
+            }
+
+            self.finishAIRequest(requestID: requestID, replies: replies, errorText: errorText)
+        }.resume()
+    }
+
+    private func finishAIRequest(requestID: Int, replies: [String], errorText: String?) {
+        DispatchQueue.main.async {
+            guard requestID == self.generationIndex else { return }
+            self.isGenerating = false
+
+            let cleaned = replies
+                .map { self.cleanReply($0) }
+                .filter { !$0.isEmpty }
+                .prefix(3)
+
+            if !cleaned.isEmpty && self.statusMode != .filled {
+                self.currentReplies = Array(cleaned)
+                self.aiErrorText = nil
+                self.statusMode = .ready
+            } else if let errorText, self.statusMode != .filled {
+                self.aiErrorText = errorText
+            }
+
+            self.renderContent()
+        }
+    }
+
+    private func aiSystemPrompt(style: ReplyStyle, mode: KeyboardMode) -> String {
+        """
+        You are LoveKey, an AI keyboard assistant for dating and everyday chat.
+        The user input is a message from the other person, not a question to you.
+        Return only a JSON object with one key "replies" and exactly three string values.
+
+        Requirements:
+        - Write in the same language as the user's message. If it is Traditional Chinese, use natural Taiwan Traditional Chinese.
+        - Generate exactly 3 replies that can be pasted directly into a chat app.
+        - Scenario: \(mode.title). Tone: \(style.title).
+        - Each reply must be natural, concise, and context-aware. Do not sound like a template.
+        - Never output placeholder text such as "reply 1", "sentence A", "回覆1", or "句子A".
+        - Avoid manipulation, guilt-tripping, pressure, sexual explicitness, insults, or promises.
+        - Do not mention AI, model, high EQ, prompt, template, or the app.
+        - Do not explain. JSON only. Example shape: {"replies":["actual message","actual message","actual message"]}
+        """
+    }
+
+    private func parseAIReplies(from data: Data) -> [String] {
+        guard
+            let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+            let choices = object["choices"] as? [[String: Any]],
+            let first = choices.first,
+            let message = first["message"] as? [String: Any],
+            let content = message["content"] as? String
+        else {
+            return []
+        }
+
+        let jsonText = extractJSONObject(from: content)
+        if
+            let jsonData = jsonText.data(using: .utf8),
+            let parsed = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+            let replies = parsed["replies"] as? [String]
+        {
+            return replies
+        }
+
+        if
+            let jsonData = jsonText.data(using: .utf8),
+            let parsed = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+            let replies = parsed["replies"] as? [[String: Any]]
+        {
+            return replies.compactMap { $0["text"] as? String }
+        }
+
+        return content
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+    }
+
+    private func extractJSONObject(from text: String) -> String {
+        var cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if cleaned.hasPrefix("```") {
+            cleaned = cleaned.replacingOccurrences(of: "```json", with: "")
+            cleaned = cleaned.replacingOccurrences(of: "```", with: "")
+            cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        guard
+            let start = cleaned.firstIndex(of: "{"),
+            let end = cleaned.lastIndex(of: "}"),
+            start <= end
+        else {
+            return cleaned
+        }
+
+        return String(cleaned[start...end])
+    }
+
+    private func cleanReply(_ text: String) -> String {
+        var cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let prefixes = ["1.", "2.", "3.", "-", "•", "\""]
+        for prefix in prefixes where cleaned.hasPrefix(prefix) {
+            cleaned = String(cleaned.dropFirst(prefix.count)).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        if cleaned.hasSuffix("\"") {
+            cleaned.removeLast()
+        }
+        return cleaned
     }
 
     private func normalizeMessage(_ text: String) -> String {
