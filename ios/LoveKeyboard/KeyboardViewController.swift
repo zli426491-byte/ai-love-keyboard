@@ -650,9 +650,10 @@ final class KeyboardViewController: UIInputViewController {
 
     private func matrixReplyButton(_ title: String, index: Int) -> UIControl {
         let control = UIControl()
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         let isPrimary = index == 0 && !currentReplies.isEmpty
         let isFilled = filledIndex == index
-        let isPlaceholder = currentMessage.isEmpty && currentReplies.isEmpty
+        let isDisabled = trimmedTitle.isEmpty || currentReplies.isEmpty || isGenerating
         control.tag = index
         control.backgroundColor = isFilled ? Palette.primary : Palette.card
         control.layer.cornerRadius = 12
@@ -662,8 +663,9 @@ final class KeyboardViewController: UIInputViewController {
         control.layer.shadowOpacity = isPrimary ? 0.07 : 0.03
         control.layer.shadowRadius = isPrimary ? 8 : 4
         control.layer.shadowOffset = CGSize(width: 0, height: 2)
-        control.alpha = isPlaceholder ? 0.72 : 1
-        if !isPlaceholder {
+        control.alpha = isDisabled ? 0.5 : 1
+        control.isUserInteractionEnabled = !isDisabled
+        if !isDisabled {
             control.addTarget(self, action: #selector(replyTapped(_:)), for: .touchUpInside)
         }
 
@@ -673,7 +675,7 @@ final class KeyboardViewController: UIInputViewController {
         label.numberOfLines = 2
         label.lineBreakMode = .byTruncatingTail
         label.font = .systemFont(ofSize: isPrimary ? 13 : 12.4, weight: isPrimary ? .heavy : .bold)
-        label.textColor = isFilled ? .white : Palette.text
+        label.textColor = isFilled ? .white : (isDisabled ? Palette.secondary : Palette.text)
         label.translatesAutoresizingMaskIntoConstraints = false
         control.addSubview(label)
 
@@ -690,48 +692,57 @@ final class KeyboardViewController: UIInputViewController {
     private func matrixReplies() -> [String] {
         if currentMessage.isEmpty {
             return [
-                "先複製訊息",
-                "按上方讀取",
-                "再選語氣",
-                "接話",
-                "破冰",
-                "邀約",
-                "安撫",
-                "自訂",
-                "填入聊天"
+                "先複製對話",
+                "按讀取",
+                "選語氣",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
             ]
         }
 
         if isGenerating {
             return [
                 "生成中...",
-                "先別急",
-                "我來整理",
-                "接住這題",
-                "自然一點",
-                "別太用力",
-                "換個說法",
-                "保留餘地",
-                "讓她好回"
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
             ]
         }
 
-        var items: [String] = []
         if let reply = currentReplies.first {
-            items.append(reply)
+            return [
+                reply,
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+            ]
         }
 
-        let fallback = makeReplies(for: selectedStyle, mode: selectedMode, message: currentMessage)
-        let fillers = defaultMatrixReplies(for: selectedMode)
-
-        for item in fallback + fillers {
-            let cleaned = cleanReply(item)
-            guard !cleaned.isEmpty, !items.contains(cleaned) else { continue }
-            items.append(cleaned)
-            if items.count == 9 { break }
-        }
-
-        return Array(items.prefix(9))
+        return [
+            aiErrorText == nil ? "按下方語氣生成" : "生成失敗，再按語氣重試",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+        ]
     }
 
     private func defaultMatrixReplies(for mode: KeyboardMode) -> [String] {
