@@ -847,9 +847,17 @@ final class KeyboardViewController: UIInputViewController {
         let isTired = containsAny(lower, ["累", "忙", "煩", "壓力", "不舒服", "睡"])
         let isCold = containsAny(lower, ["嗯", "對", "好", "哈哈", "喔"]) && text.count <= 6
         let isNegative = containsAny(lower, ["算了", "不用", "沒差", "隨便", "生氣", "不爽", "吵", "討厭", "不適合"])
+        let isFamilyLogistics = containsAny(lower, ["煮飯", "收完", "上樓", "小孩", "孩子", "接小孩", "回家", "差不多時間", "家裡", "忙完"])
 
         switch style {
         case .gentle:
+            if isFamilyLogistics {
+                return [
+                    "你先忙完家裡",
+                    "小孩快回來就先顧他們，晚點有空再聊就好。",
+                    "你那邊忙完再說，不急，我等你。"
+                ]
+            }
             if isFood {
                 return [
                     "就吃這個",
@@ -884,6 +892,13 @@ final class KeyboardViewController: UIInputViewController {
                 "要不要慢慢說，我想把你的意思聽完整?"
             ]
         case .funny:
+            if isFamilyLogistics {
+                return [
+                    "先完成家裡任務",
+                    "小孩快回家就是主線任務，我先不吵你。",
+                    "等你忙完再回我就好，我先乖乖等。"
+                ]
+            }
             if isFood {
                 return [
                     "胃先答應了",
@@ -906,11 +921,18 @@ final class KeyboardViewController: UIInputViewController {
                 ]
             }
             return [
-                "我先接住這題",
-                "等我切換高情商模式。",
-                "要不要我交一版不尷尬的答案給你?"
+                "我懂你的意思",
+                "那我先不亂猜，照你現在方便的節奏來。",
+                "你想先聊輕鬆一點，還是我認真陪你想?"
             ]
         case .flirty:
+            if isFamilyLogistics {
+                return [
+                    "那我等妳忙完",
+                    "妳先忙家裡，我晚點再找妳撒嬌。",
+                    "等小孩回家那段先給妳，我等等再把妳的時間偷回來。"
+                ]
+            }
             if isFood {
                 return [
                     "想坐妳旁邊",
@@ -938,6 +960,13 @@ final class KeyboardViewController: UIInputViewController {
                 "要不要晚點聊，我想把今天留一點給妳?"
             ]
         case .apology:
+            if isFamilyLogistics {
+                return [
+                    "那你先忙",
+                    "剛剛是我沒抓好時間，你先處理家裡的事。",
+                    "你忙完再回我就好，我不催你。"
+                ]
+            }
             if isNegative {
                 return [
                     "我剛剛沒做好",
