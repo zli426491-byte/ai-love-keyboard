@@ -11,7 +11,16 @@ final class KeyboardViewController: UIInputViewController {
             switch self {
             case .gentle: return "溫柔"
             case .funny: return "幽默"
-            case .flirty: return "曖昧"
+            case .flirty: return "撩人"
+            case .apology: return "道歉"
+            }
+        }
+
+        var buttonTitle: String {
+            switch self {
+            case .gentle: return "溫柔"
+            case .funny: return "幽默"
+            case .flirty: return "撩人"
             case .apology: return "道歉"
             }
         }
@@ -137,7 +146,7 @@ final class KeyboardViewController: UIInputViewController {
         view.heightAnchor.constraint(greaterThanOrEqualToConstant: 352).isActive = true
 
         rootStack.axis = .vertical
-        rootStack.spacing = 5
+        rootStack.spacing = 6
         rootStack.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(rootStack)
 
@@ -168,7 +177,7 @@ final class KeyboardViewController: UIInputViewController {
         title.textColor = Palette.primary
         row.addArrangedSubview(title)
 
-        statusLabel.font = .systemFont(ofSize: 10, weight: .semibold)
+        statusLabel.font = .systemFont(ofSize: 10.5, weight: .bold)
         statusLabel.textColor = Palette.accent
         statusLabel.textAlignment = .right
         statusLabel.numberOfLines = 1
@@ -202,58 +211,29 @@ final class KeyboardViewController: UIInputViewController {
 
     private func makeStyleSelector() -> UIView {
         styleStack.axis = .horizontal
-        styleStack.alignment = .center
-        styleStack.spacing = 8
+        styleStack.alignment = .fill
+        styleStack.spacing = 6
         styleStack.distribution = .fillEqually
-        styleStack.heightAnchor.constraint(equalToConstant: 46).isActive = true
+        styleStack.heightAnchor.constraint(equalToConstant: 44).isActive = true
 
         for style in ReplyStyle.allCases {
-            let item = UIStackView()
-            item.axis = .vertical
-            item.alignment = .center
-            item.spacing = 1
-
             let button = UIButton(type: .system)
-            button.setImage(UIImage(systemName: style.symbolName), for: .normal)
-            button.imageView?.contentMode = .scaleAspectFit
-            button.tintColor = Palette.primary
-            button.backgroundColor = style.backgroundColor
-            button.layer.cornerRadius = 17
-            button.widthAnchor.constraint(equalToConstant: 34).isActive = true
-            button.heightAnchor.constraint(equalToConstant: 34).isActive = true
+            button.setTitle(style.buttonTitle, for: .normal)
+            button.titleLabel?.font = .systemFont(ofSize: 13, weight: .heavy)
+            button.titleLabel?.adjustsFontSizeToFitWidth = true
+            button.titleLabel?.minimumScaleFactor = 0.82
+            button.layer.cornerRadius = 15
+            button.layer.borderWidth = 1
+            button.layer.shadowColor = UIColor.black.cgColor
+            button.layer.shadowOpacity = 0.035
+            button.layer.shadowRadius = 5
+            button.layer.shadowOffset = CGSize(width: 0, height: 2)
             button.tag = style.rawValue
+            button.accessibilityLabel = "\(style.title)生成"
             button.addTarget(self, action: #selector(styleTapped(_:)), for: .touchUpInside)
 
-            let badge = UILabel()
-            badge.tag = 9001
-            badge.text = "✓"
-            badge.textAlignment = .center
-            badge.font = .systemFont(ofSize: 8, weight: .heavy)
-            badge.textColor = .white
-            badge.backgroundColor = Palette.primary
-            badge.layer.cornerRadius = 6.5
-            badge.clipsToBounds = true
-            badge.translatesAutoresizingMaskIntoConstraints = false
-            button.addSubview(badge)
-            NSLayoutConstraint.activate([
-                badge.widthAnchor.constraint(equalToConstant: 13),
-                badge.heightAnchor.constraint(equalToConstant: 13),
-                badge.trailingAnchor.constraint(equalTo: button.trailingAnchor, constant: -1),
-                badge.bottomAnchor.constraint(equalTo: button.bottomAnchor, constant: -1)
-            ])
-
-            let label = UILabel()
-            label.text = style.title
-            label.textAlignment = .center
-            label.font = .systemFont(ofSize: 8.6, weight: .semibold)
-            label.textColor = Palette.secondary
-            label.heightAnchor.constraint(equalToConstant: 9).isActive = true
-            styleLabels[style.rawValue] = label
-
             styleButtons.append(button)
-            item.addArrangedSubview(button)
-            item.addArrangedSubview(label)
-            styleStack.addArrangedSubview(item)
+            styleStack.addArrangedSubview(button)
         }
 
         updateStyleButtons()
@@ -499,7 +479,9 @@ final class KeyboardViewController: UIInputViewController {
                 statusLabel.text = "剪貼簿空白"
             case .filled:
                 statusLabel.text = "已填入"
-            case .idle, .ready:
+            case .ready:
+                statusLabel.text = currentReplies.isEmpty ? "選語氣生成" : "點回覆填入"
+            case .idle:
                 statusLabel.text = selectedMode.status
             }
         }
@@ -551,13 +533,13 @@ final class KeyboardViewController: UIInputViewController {
 
         switch statusMode {
         case .noFullAccess:
-            label.text = "開啟完整取用後，就能讀取複製的對話"
+            label.text = "允許完整取用，才能讀取複製的對話"
         case .emptyClipboard:
             label.text = "剪貼簿目前沒有文字，先到聊天 App 複製一句"
         case .ready, .filled:
             label.text = preview(currentMessage, limit: 34)
         case .idle:
-            label.text = "先複製對方訊息，讀取後按下方語氣生成"
+            label.text = "對方傳了什麼？先複製一句再按讀取"
         }
 
         row.addArrangedSubview(label)
@@ -653,7 +635,7 @@ final class KeyboardViewController: UIInputViewController {
         stack.addArrangedSubview(icon)
 
         let title = UILabel()
-        title.text = isGenerating ? "AI 正在生成" : (currentMessage.isEmpty ? "先讀取複製的訊息" : "選下方語氣生成")
+        title.text = isGenerating ? "正在幫你想回覆" : (currentMessage.isEmpty ? "先讀取對方訊息" : "選一種語氣生成")
         title.font = .systemFont(ofSize: 15, weight: .heavy)
         title.textColor = Palette.text
         title.textAlignment = .center
@@ -662,7 +644,7 @@ final class KeyboardViewController: UIInputViewController {
         let subtitle = UILabel()
         subtitle.text = isGenerating
             ? "通常 1-3 秒完成，完成後會自動更新回覆。"
-            : (currentMessage.isEmpty ? "先到聊天 App 複製一句，再回來按讀取。" : "每次只生成一種語氣，省 API 也比較不雜。")
+            : (currentMessage.isEmpty ? "先到聊天 App 複製一句，再回來按讀取。" : "每按一次只產生一句，畫面更乾淨。")
         subtitle.font = .systemFont(ofSize: 11.6, weight: .semibold)
         subtitle.textColor = Palette.secondary
         subtitle.textAlignment = .center
@@ -708,11 +690,11 @@ final class KeyboardViewController: UIInputViewController {
         row.addArrangedSubview(label)
 
         let action = UILabel()
-        action.text = isFilled ? "已填" : (isGenerating ? "候補" : (index == 0 ? "主推" : "填入"))
+        action.text = isFilled ? "已填" : "填入"
         action.textAlignment = .center
         action.font = .systemFont(ofSize: 10.4, weight: .heavy)
         action.textColor = isFilled ? Palette.primary : .white
-        action.backgroundColor = isFilled ? Palette.selectedSoft : (index == 0 ? Palette.primary : Palette.accent)
+        action.backgroundColor = isFilled ? Palette.selectedSoft : Palette.primary
         action.layer.cornerRadius = 11
         action.clipsToBounds = true
         action.setContentCompressionResistancePriority(.required, for: .horizontal)
@@ -752,21 +734,15 @@ final class KeyboardViewController: UIInputViewController {
         for button in styleButtons {
             let isSelected = button.tag == selectedStyle.rawValue
             guard let style = ReplyStyle(rawValue: button.tag) else { continue }
-            let config = UIImage.SymbolConfiguration(pointSize: isSelected ? 16 : 15, weight: isSelected ? .bold : .semibold)
-            button.setImage(UIImage(systemName: style.symbolName, withConfiguration: config), for: .normal)
-            button.tintColor = Palette.primary
-            button.backgroundColor = style.backgroundColor
-            button.alpha = isSelected ? 1 : 0.74
-            button.transform = isSelected ? CGAffineTransform(scaleX: 1.06, y: 1.06) : .identity
-            button.layer.borderWidth = isSelected ? 1.8 : 1.1
-            button.layer.borderColor = (isSelected ? Palette.primary : Palette.primary.withAlphaComponent(0.25)).cgColor
-            button.viewWithTag(9001)?.isHidden = !isSelected
-
-            if let label = styleLabels[button.tag] {
-                label.text = style.title
-                label.textColor = isSelected ? Palette.primary : Palette.secondary
-                label.font = .systemFont(ofSize: 8.6, weight: isSelected ? .heavy : .semibold)
-            }
+            button.setImage(nil, for: .normal)
+            button.setTitle(style.buttonTitle, for: .normal)
+            button.backgroundColor = isSelected ? Palette.primary : Palette.card
+            button.setTitleColor(isSelected ? .white : Palette.text, for: .normal)
+            button.alpha = isSelected ? 1 : 0.96
+            button.transform = .identity
+            button.layer.borderWidth = isSelected ? 1.2 : 0.8
+            button.layer.borderColor = (isSelected ? Palette.primary : Palette.border).cgColor
+            button.layer.shadowOpacity = isSelected ? 0.06 : 0.025
         }
     }
 
