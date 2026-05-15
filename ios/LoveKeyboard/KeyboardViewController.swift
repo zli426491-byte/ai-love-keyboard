@@ -71,6 +71,7 @@ final class KeyboardViewController: UIInputViewController {
         case flirting
         case complimentStory
         case choice
+        case casualBanter
         case cold
         case topicDead
         case daily
@@ -867,6 +868,7 @@ final class KeyboardViewController: UIInputViewController {
         let isFlirting = containsAny(lower, ["想你", "想妳", "你猜", "妳猜", "不要", "你很煩", "妳很煩", "壞欸", "討厭啦", "害羞", "想見", "撒嬌"])
         let isComplimentStory = containsAny(lower, ["照片", "自拍", "限動", "穿搭", "好看", "漂亮", "可愛", "風景", "妝", "髮型", "衣服", "裙", "洋裝"])
         let isChoice = containsAny(lower, ["哪個", "哪一個", "選哪", "a還是b", "a 或 b", "a或b", "要不要", "吃什麼", "去哪", "你覺得", "你決定"])
+        let isCasualBanter = containsAny(lower, ["幹", "靠", "笑死", "真的假的", "太扯", "免費", "不用錢", "用的喔", "蛤", "傻眼", "哇靠", "扯欸", "也太"])
         let isCold = containsAny(lower, ["嗯", "對", "好", "哈哈", "喔"]) && text.count <= 6
         let isTopicDead = containsAny(lower, ["哈哈哈", "😂", "🤣", "貼圖", "表情", "已讀", "不知道", "沒事", "還好"])
 
@@ -877,6 +879,7 @@ final class KeyboardViewController: UIInputViewController {
         if isFlirting { return .flirting }
         if isComplimentStory { return .complimentStory }
         if isChoice { return .choice }
+        if isCasualBanter { return .casualBanter }
         if isCold { return .cold }
         if isTopicDead { return .topicDead }
         return .daily
@@ -1077,6 +1080,34 @@ final class KeyboardViewController: UIInputViewController {
                     "我來決定",
                     "剛剛不該讓你一直想，我先選一個。",
                     "你如果不喜歡，我們再換，我不會硬拗。"
+                ]
+            }
+
+        case .casualBanter:
+            switch style {
+            case .gentle:
+                return [
+                    "可以先試看看",
+                    "免費的先用用看，不順再換掉也不虧。",
+                    "你先試，我比較想知道你用起來覺得順不順。"
+                ]
+            case .funny:
+                return [
+                    "免費最香了",
+                    "先試用，不好用我再陪你一起吐槽。",
+                    "免費的先收下，真的雷再把它列入黑名單。"
+                ]
+            case .flirty:
+                return [
+                    "免費是重點嗎",
+                    "免費可以先用，但我比較想知道妳喜不喜歡。",
+                    "妳先試，覺得好用再回來跟我炫耀一下。"
+                ]
+            case .apology:
+                return [
+                    "我剛剛沒講清楚",
+                    "意思是可以先免費試用，不合適再停掉。",
+                    "你先不用有壓力，覺得不好用就不要勉強。"
                 ]
             }
 

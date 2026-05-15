@@ -170,7 +170,7 @@ class _OnboardingTryViewState extends State<OnboardingTryView> {
         if (isNegative) {
           return ['我先收起嘴砲', '這題不能亂答，我認真一點。', '要不要給我一次補考，我想把話講好?'];
         }
-        return ['我先接住這題', '等我切換高情商模式。', '要不要我交一版不尷尬的答案給你?'];
+        return ['我懂你的意思', '那我先不亂猜，照你現在方便的節奏來。', '你想先聊輕鬆一點，還是我認真陪你想?'];
       case '曖昧':
         if (isFood) {
           return ['想坐妳旁邊', '吃什麼都行，重點是跟妳一起。', '要不要我帶妳去那家，妳上次說想吃的?'];
