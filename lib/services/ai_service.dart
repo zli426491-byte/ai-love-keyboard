@@ -7,6 +7,7 @@ import 'package:ai_love_keyboard/models/ai_reply.dart';
 import 'package:ai_love_keyboard/models/chat_analysis.dart';
 import 'package:ai_love_keyboard/models/chat_persona.dart';
 import 'package:ai_love_keyboard/models/reply_style.dart';
+import 'package:ai_love_keyboard/services/api_proxy_service.dart';
 import 'package:ai_love_keyboard/services/content_filter.dart';
 import 'package:ai_love_keyboard/services/privacy_manager.dart';
 import 'package:ai_love_keyboard/services/prompt_templates.dart';
@@ -76,11 +77,9 @@ class AiService extends ChangeNotifier {
   int _heavyModelUsesToday = 0;
   String _heavyModelLastDate = '';
 
-  /// Returns the appropriate model based on feature tier.
-  /// Heavy features (deep analysis) use deepseek-reasoner with daily limit.
-  /// Light features (replies, greetings) use deepseek-chat.
-  String _getModel(bool useHeavy) {
-    if (!useHeavy) return AppConstants.deepSeekModelLight;
+  /// Returns whether this request may use the heavier backend model.
+  bool _canUseHeavyModel(bool useHeavy) {
+    if (!useHeavy) return false;
 
     final today = DateTime.now().toIso8601String().substring(0, 10);
     if (_heavyModelLastDate != today) {
@@ -89,18 +88,19 @@ class AiService extends ChangeNotifier {
     }
 
     if (_heavyModelUsesToday >= AppConstants.heavyModelDailyLimit) {
-      // Fallback to light model when heavy limit reached
-      return AppConstants.deepSeekModelLight;
+      return false;
     }
 
     _heavyModelUsesToday++;
-    return AppConstants.deepSeekModelHeavy;
+    return true;
   }
 
-  /// Calls DeepSeek API and returns the parsed JSON response.
+  /// Calls the backend AI proxy and returns the parsed JSON response.
   Future<Map<String, dynamic>> _callGpt(
-      String systemPrompt, String userMessage,
-      {bool useHeavyModel = false}) async {
+    String systemPrompt,
+    String userMessage, {
+    bool useHeavyModel = false,
+  }) async {
     try {
       // Prepend safety prefix to system prompt
       final safeSystemPrompt = PromptTemplates.withSafety(systemPrompt);
@@ -110,25 +110,17 @@ class AiService extends ChangeNotifier {
 
       // Record data sent
       _privacyManager.recordDataSent(
-        feature: 'deepseek_json',
+        feature: 'ai_proxy_json',
         characterCount: sanitizedMessage.length,
       );
 
-      final response = await http.post(
-        Uri.parse(AppConstants.deepSeekApiUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${AppConstants.deepSeekApiKey}',
-        },
-        body: jsonEncode({
-          'model': _getModel(useHeavyModel),
-          'messages': [
-            {'role': 'system', 'content': safeSystemPrompt},
-            {'role': 'user', 'content': sanitizedMessage},
-          ],
-          'max_tokens': 1024,
-          'temperature': 0.8,
-        }),
+      final response = await ApiProxyService.instance.chatCompletion(
+        systemPrompt: safeSystemPrompt,
+        userMessage: sanitizedMessage,
+        maxTokens: 1024,
+        temperature: 0.8,
+        useHeavyModel: _canUseHeavyModel(useHeavyModel),
+        responseFormatJson: true,
       );
 
       if (response.statusCode != 200) {
@@ -139,8 +131,7 @@ class AiService extends ChangeNotifier {
       }
 
       final body = jsonDecode(response.body);
-      final content =
-          body['choices'][0]['message']['content'] as String;
+      final content = body['choices'][0]['message']['content'] as String;
 
       // Filter AI output
       final safeContent = _sanitizeOutput(content);
@@ -162,10 +153,13 @@ class AiService extends ChangeNotifier {
     }
   }
 
-  /// Calls DeepSeek API and returns the raw text response (no JSON parsing).
+  /// Calls the backend AI proxy and returns the raw text response.
   Future<String> _callGptText(
-      String systemPrompt, String userMessage,
-      {bool useHeavyModel = false, int maxTokens = 1024}) async {
+    String systemPrompt,
+    String userMessage, {
+    bool useHeavyModel = false,
+    int maxTokens = 1024,
+  }) async {
     try {
       // Prepend safety prefix to system prompt
       final safeSystemPrompt = PromptTemplates.withSafety(systemPrompt);
@@ -175,25 +169,16 @@ class AiService extends ChangeNotifier {
 
       // Record data sent
       _privacyManager.recordDataSent(
-        feature: 'deepseek_text',
+        feature: 'ai_proxy_text',
         characterCount: sanitizedMessage.length,
       );
 
-      final response = await http.post(
-        Uri.parse(AppConstants.deepSeekApiUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${AppConstants.deepSeekApiKey}',
-        },
-        body: jsonEncode({
-          'model': _getModel(useHeavyModel),
-          'messages': [
-            {'role': 'system', 'content': safeSystemPrompt},
-            {'role': 'user', 'content': sanitizedMessage},
-          ],
-          'max_tokens': maxTokens,
-          'temperature': 0.8,
-        }),
+      final response = await ApiProxyService.instance.chatCompletion(
+        systemPrompt: safeSystemPrompt,
+        userMessage: sanitizedMessage,
+        maxTokens: maxTokens,
+        temperature: 0.8,
+        useHeavyModel: _canUseHeavyModel(useHeavyModel),
       );
 
       if (response.statusCode != 200) {
@@ -204,8 +189,7 @@ class AiService extends ChangeNotifier {
       }
 
       final body = jsonDecode(response.body);
-      final content =
-          body['choices'][0]['message']['content'] as String;
+      final content = body['choices'][0]['message']['content'] as String;
 
       // Filter AI output
       return _sanitizeOutput(content.trim());
@@ -265,10 +249,13 @@ class AiService extends ChangeNotifier {
     required String sampleMessage,
   }) async {
     try {
-      final systemPrompt =
-          PromptTemplates.personaPreview(persona.toPromptString());
-      final content =
-          await _callGptText(systemPrompt, '對方的訊息：「$sampleMessage」');
+      final systemPrompt = PromptTemplates.personaPreview(
+        persona.toPromptString(),
+      );
+      final content = await _callGptText(
+        systemPrompt,
+        '對方的訊息：「$sampleMessage」',
+      );
       return content;
     } on ContentBlockedException catch (e) {
       throw Exception(e.filterResult.reason ?? '內容已被安全過濾器攔截');
@@ -284,8 +271,10 @@ class AiService extends ChangeNotifier {
 
     try {
       final result = await _callGpt(
-          PromptTemplates.chatAnalysis, '以下是聊天紀錄：\n$chatLog',
-          useHeavyModel: true);
+        PromptTemplates.chatAnalysis,
+        '以下是聊天紀錄：\n$chatLog',
+        useHeavyModel: true,
+      );
 
       _chatAnalysis = ChatAnalysis.fromJson(result);
       _setLoading(false);
@@ -307,17 +296,17 @@ class AiService extends ChangeNotifier {
     _setError(null);
 
     try {
-      final userMsg = context.isEmpty
-          ? '請生成通用的破冰開場白'
-          : '對方的資訊：$context';
+      final userMsg = context.isEmpty ? '請生成通用的破冰開場白' : '對方的資訊：$context';
 
-      final result = await _callGpt(
-          PromptTemplates.openerGeneration, userMsg);
+      final result = await _callGpt(PromptTemplates.openerGeneration, userMsg);
 
       final openersList = result['openers'] as List<dynamic>;
       _openers = openersList
-          .map((o) => (o as Map<String, dynamic>)
-              .map((k, v) => MapEntry(k, v.toString())))
+          .map(
+            (o) => (o as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, v.toString()),
+            ),
+          )
           .toList();
 
       _setLoading(false);
@@ -340,7 +329,9 @@ class AiService extends ChangeNotifier {
 
     try {
       final content = await _callGptText(
-          PromptTemplates.messageInterpreter, '對方傳的訊息：「$message」');
+        PromptTemplates.messageInterpreter,
+        '對方傳的訊息：「$message」',
+      );
 
       _setLoading(false);
       return content;
@@ -357,7 +348,9 @@ class AiService extends ChangeNotifier {
 
   // ── Translate and Reply ───────────────────────────────────────────────
   Future<Map<String, String>?> translateAndReply(
-      String message, String style) async {
+    String message,
+    String style,
+  ) async {
     _setLoading(true);
     _setError(null);
 
@@ -421,8 +414,11 @@ class AiService extends ChangeNotifier {
 
       final emojiList = result['emojis'] as List<dynamic>;
       final suggestions = emojiList
-          .map((e) => (e as Map<String, dynamic>)
-              .map((k, v) => MapEntry(k, v.toString())))
+          .map(
+            (e) => (e as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, v.toString()),
+            ),
+          )
           .toList();
 
       _setLoading(false);
@@ -440,7 +436,9 @@ class AiService extends ChangeNotifier {
 
   // ── Generate Date Invitation ────────────────────────────────────────
   Future<List<Map<String, String>>> generateDateInvitation(
-      String context, String style) async {
+    String context,
+    String style,
+  ) async {
     _setLoading(true);
     _setError(null);
 
@@ -452,8 +450,11 @@ class AiService extends ChangeNotifier {
 
       final invitationList = result['invitations'] as List<dynamic>;
       final invitations = invitationList
-          .map((e) => (e as Map<String, dynamic>)
-              .map((k, v) => MapEntry(k, v.toString())))
+          .map(
+            (e) => (e as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, v.toString()),
+            ),
+          )
           .toList();
 
       _setLoading(false);
@@ -506,8 +507,7 @@ class AiService extends ChangeNotifier {
       );
 
       final greetingsList = result['greetings'] as List<dynamic>;
-      final greetings =
-          greetingsList.map((g) => g.toString()).toList();
+      final greetings = greetingsList.map((g) => g.toString()).toList();
 
       _setLoading(false);
       return greetings;
@@ -550,7 +550,9 @@ class AiService extends ChangeNotifier {
 
   // ── Score Reply ─────────────────────────────────────────────────────
   Future<Map<String, dynamic>?> scoreReply(
-      String theirMessage, String yourReply) async {
+    String theirMessage,
+    String yourReply,
+  ) async {
     _setLoading(true);
     _setError(null);
 
@@ -581,12 +583,17 @@ class AiService extends ChangeNotifier {
 
     try {
       final result = await _callGpt(
-          PromptTemplates.topicSuggestions, '最近的聊天內容：\n$recentChat');
+        PromptTemplates.topicSuggestions,
+        '最近的聊天內容：\n$recentChat',
+      );
 
       final topicsList = result['topics'] as List<dynamic>;
       _topics = topicsList
-          .map((t) => (t as Map<String, dynamic>)
-              .map((k, v) => MapEntry(k, v.toString())))
+          .map(
+            (t) => (t as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, v.toString()),
+            ),
+          )
           .toList();
 
       _setLoading(false);

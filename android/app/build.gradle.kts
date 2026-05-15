@@ -28,6 +28,11 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        buildConfigField(
+            "String",
+            "AI_PROXY_URL",
+            "\"${System.getenv("AI_PROXY_URL") ?: ""}\"",
+        )
     }
 
     buildTypes {

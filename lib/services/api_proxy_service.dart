@@ -6,20 +6,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:ai_love_keyboard/utils/constants.dart';
 
-/// Service layer that prepares for backend proxy.
+/// Service layer for the backend AI proxy.
 ///
-/// Currently wraps direct DeepSeek calls. When [useProxy] is true,
-/// routes requests through our backend server instead.
+/// Model vendor API keys must never be shipped in the app. This service only
+/// talks to our backend proxy, which owns the real model credentials.
 class ApiProxyService {
   ApiProxyService._();
   static final ApiProxyService instance = ApiProxyService._();
-
-  /// Toggle: false = direct DeepSeek, true = via our backend.
-  bool useProxy = false;
-
-  /// Backend URL (used when [useProxy] is true).
-  // TODO: Replace with actual backend URL before production.
-  String backendUrl = 'https://api.ailovekeyboard.com/v1';
 
   /// Device fingerprint for rate limiting.
   String? _deviceFingerprint;
@@ -50,8 +43,10 @@ class ApiProxyService {
   /// Returns how many requests remain in the current hour.
   int remainingRequests() {
     _cleanOldTimestamps();
-    return (maxRequestsPerHour - _requestTimestamps.length)
-        .clamp(0, maxRequestsPerHour);
+    return (maxRequestsPerHour - _requestTimestamps.length).clamp(
+      0,
+      maxRequestsPerHour,
+    );
   }
 
   void _cleanOldTimestamps() {
@@ -90,15 +85,11 @@ class ApiProxyService {
     final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
     final nonce = _generateNonce();
 
-    // TODO: Replace with actual JWT token from auth service.
-    final jwtToken = 'Bearer placeholder_jwt_token';
-
     return {
       'X-Device-Fingerprint': _deviceFingerprint ?? 'unknown',
       'X-Request-Timestamp': timestamp,
       'X-Request-Nonce': nonce,
       'X-Request-Signature': _sign(timestamp, nonce),
-      'Authorization': jwtToken,
     };
   }
 
@@ -118,14 +109,18 @@ class ApiProxyService {
 
   // ── API Call ─────────────────────────────────────────────────────────
 
-  /// Makes a chat completion request, either directly to OpenAI or
-  /// through our proxy backend.
+  /// Makes a chat completion request through our proxy backend.
   Future<http.Response> chatCompletion({
     required String systemPrompt,
     required String userMessage,
     int maxTokens = 1024,
     double temperature = 0.8,
+    bool useHeavyModel = false,
+    bool responseFormatJson = false,
+    bool isPro = true,
   }) async {
+    await _ensureDeviceFingerprint();
+
     // Rate limit check
     if (isRateLimited()) {
       throw Exception('已達到每小時請求上限（$maxRequestsPerHour 次），請稍後再試。');
@@ -133,74 +128,49 @@ class ApiProxyService {
 
     _recordRequest();
 
-    if (useProxy) {
-      return _callViaProxy(
-        systemPrompt: systemPrompt,
-        userMessage: userMessage,
-        maxTokens: maxTokens,
-        temperature: temperature,
-      );
-    } else {
-      return _callDirectDeepSeek(
-        systemPrompt: systemPrompt,
-        userMessage: userMessage,
-        maxTokens: maxTokens,
-        temperature: temperature,
-      );
-    }
-  }
-
-  Future<http.Response> _callDirectDeepSeek({
-    required String systemPrompt,
-    required String userMessage,
-    required int maxTokens,
-    required double temperature,
-  }) async {
-    return http.post(
-      Uri.parse(AppConstants.deepSeekApiUrl),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ${AppConstants.deepSeekApiKey}',
-      },
-      body: jsonEncode({
-        'model': AppConstants.deepSeekModelLight,
-        'messages': [
-          {'role': 'system', 'content': systemPrompt},
-          {'role': 'user', 'content': userMessage},
-        ],
-        'max_tokens': maxTokens,
-        'temperature': temperature,
-      }),
+    return _callViaProxy(
+      systemPrompt: systemPrompt,
+      userMessage: userMessage,
+      maxTokens: maxTokens,
+      temperature: temperature,
+      useHeavyModel: useHeavyModel,
+      responseFormatJson: responseFormatJson,
+      isPro: isPro,
     );
   }
 
-  /// TODO: Implement actual backend proxy endpoint.
-  /// The backend should:
-  /// 1. Validate JWT token
-  /// 2. Verify device fingerprint
-  /// 3. Check request signature to prevent replays
-  /// 4. Enforce server-side rate limiting
-  /// 5. Forward to DeepSeek with server-held API key
-  /// 6. Log usage for billing
   Future<http.Response> _callViaProxy({
     required String systemPrompt,
     required String userMessage,
     required int maxTokens,
     required double temperature,
+    required bool useHeavyModel,
+    required bool responseFormatJson,
+    required bool isPro,
   }) async {
+    final baseUrl = AppConstants.aiProxyBaseUrl.trim();
+    if (baseUrl.isEmpty) {
+      throw Exception('AI Proxy 尚未設定，請先部署 Cloudflare Worker。');
+    }
+
+    final normalizedBase = baseUrl.replaceAll(RegExp(r'/+$'), '');
     final headers = {
       'Content-Type': 'application/json',
       ..._generateRequestHeaders(),
     };
 
     return http.post(
-      Uri.parse('$backendUrl/chat/completions'),
+      Uri.parse('$normalizedBase${AppConstants.aiProxyChatPath}'),
       headers: headers,
       body: jsonEncode({
+        'user_id': _deviceFingerprint,
         'system_prompt': systemPrompt,
         'user_message': userMessage,
         'max_tokens': maxTokens,
         'temperature': temperature,
+        'use_heavy_model': useHeavyModel,
+        'is_pro': isPro,
+        if (responseFormatJson) 'response_format': {'type': 'json_object'},
       }),
     );
   }

@@ -1,19 +1,16 @@
 package com.ailovekeyboard.ai_love_keyboard
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.inputmethodservice.InputMethodService
 import android.os.Handler
 import android.os.Looper
-import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
-import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -179,9 +176,9 @@ class LoveKeyboardService : InputMethodService() {
             return
         }
 
-        val apiKey = getApiKey()
-        if (apiKey.isNullOrEmpty()) {
-            statusText.text = "請先在 App 中設定 API Key"
+        val proxyUrl = BuildConfig.AI_PROXY_URL.trim().trimEnd('/')
+        if (proxyUrl.isEmpty()) {
+            statusText.text = "AI Proxy 尚未設定"
             return
         }
 
@@ -190,7 +187,7 @@ class LoveKeyboardService : InputMethodService() {
 
         executor.execute {
             try {
-                val replies = callOpenAI(apiKey, message, selectedStyle)
+                val replies = callProxy(proxyUrl, message, selectedStyle)
                 mainHandler.post {
                     statusText.text = "點擊回覆即可輸入"
                     showReplies(replies)
@@ -203,34 +200,22 @@ class LoveKeyboardService : InputMethodService() {
         }
     }
 
-    private fun callOpenAI(apiKey: String, message: String, style: String): List<String> {
-        val url = URL("https://api.openai.com/v1/chat/completions")
+    private fun callProxy(proxyUrl: String, message: String, style: String): List<String> {
+        val url = URL("$proxyUrl/v1/keyboard-reply")
         val conn = url.openConnection() as HttpURLConnection
         conn.requestMethod = "POST"
         conn.setRequestProperty("Content-Type", "application/json")
-        conn.setRequestProperty("Authorization", "Bearer $apiKey")
+        conn.setRequestProperty("X-Device-Fingerprint", getDeviceFingerprint())
         conn.doOutput = true
         conn.connectTimeout = 15000
         conn.readTimeout = 30000
 
-        val systemPrompt = """你是一位戀愛訊息助手。根據對方傳來的訊息，用「${style}」的風格生成3個不同的回覆建議。
-每個回覆要自然、有趣，適合在聊天軟體中發送。
-回覆格式：每個回覆用 ||| 分隔，不要加編號或多餘解釋。只輸出回覆內容。"""
-
         val body = JSONObject().apply {
-            put("model", "gpt-4o")
-            put("messages", JSONArray().apply {
-                put(JSONObject().apply {
-                    put("role", "system")
-                    put("content", systemPrompt)
-                })
-                put(JSONObject().apply {
-                    put("role", "user")
-                    put("content", message)
-                })
-            })
-            put("max_tokens", 500)
-            put("temperature", 0.9)
+            put("user_id", getDeviceFingerprint())
+            put("message", message)
+            put("tone", style)
+            put("mode", "接話")
+            put("is_pro", true)
         }
 
         val writer = OutputStreamWriter(conn.outputStream, "UTF-8")
@@ -248,13 +233,8 @@ class LoveKeyboardService : InputMethodService() {
         conn.disconnect()
 
         val json = JSONObject(response)
-        val content = json.getJSONArray("choices")
-            .getJSONObject(0)
-            .getJSONObject("message")
-            .getString("content")
-            .trim()
-
-        return content.split("|||").map { it.trim() }.filter { it.isNotEmpty() }
+        val reply = json.optString("reply", "").trim()
+        return if (reply.isNotEmpty()) listOf(reply) else emptyList()
     }
 
     private fun showReplies(replies: List<String>) {
@@ -279,15 +259,16 @@ class LoveKeyboardService : InputMethodService() {
         }
     }
 
-    private fun getApiKey(): String? {
-        // Read from Flutter SharedPreferences (stored via shared_preferences plugin)
+    private fun getDeviceFingerprint(): String {
         val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-        var key = prefs.getString("flutter.openai_api_key", null)
-        if (key == null) {
-            // Also try without flutter. prefix
-            key = prefs.getString("openai_api_key", null)
+        val existing = prefs.getString("lovekey_keyboard_user_id", null)
+        if (!existing.isNullOrEmpty()) {
+            return existing
         }
-        return key
+
+        val created = java.util.UUID.randomUUID().toString()
+        prefs.edit().putString("lovekey_keyboard_user_id", created).apply()
+        return created
     }
 
     private fun makeSmallButton(label: String, onClick: () -> Unit): Button {

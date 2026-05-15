@@ -78,9 +78,16 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private enum AiConfig {
-        static let endpoint = URL(string: "https://api.openai.com/v1/chat/completions")!
-        static let apiKey = "__OPENAI_API_KEY__"
-        static let model = "gpt-4.1-mini"
+        static let proxyURLString = "__AI_PROXY_URL__"
+        static var keyboardReplyEndpoint: URL? {
+            guard
+                !proxyURLString.isEmpty,
+                !proxyURLString.contains("__AI_PROXY_URL__")
+            else {
+                return nil
+            }
+            return URL(string: proxyURLString.trimmingCharacters(in: CharacterSet(charactersIn: "/")) + "/v1/keyboard-reply")
+        }
     }
 
     private enum Palette {
@@ -1217,26 +1224,25 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func requestAIReplies(message: String, style: ReplyStyle, mode: KeyboardMode, instruction: String?, requestID: Int) {
-        guard !AiConfig.apiKey.isEmpty, !AiConfig.apiKey.contains("__OPENAI_API_KEY__") else {
+        guard let endpoint = AiConfig.keyboardReplyEndpoint else {
             finishAIRequest(requestID: requestID, replies: [], errorText: "AI 尚未設定")
             return
         }
 
-        var request = URLRequest(url: AiConfig.endpoint)
+        let userID = keyboardUserID()
+        var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         request.timeoutInterval = 18
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(AiConfig.apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue(userID, forHTTPHeaderField: "X-Device-Fingerprint")
 
         let payload: [String: Any] = [
-            "model": AiConfig.model,
-            "messages": [
-                ["role": "system", "content": aiSystemPrompt(style: style, mode: mode, instruction: instruction)],
-                ["role": "user", "content": message]
-            ],
-            "response_format": ["type": "json_object"],
-            "max_tokens": 180,
-            "temperature": 0.72
+            "user_id": userID,
+            "message": message,
+            "tone": style.title,
+            "mode": mode.title,
+            "instruction": instruction ?? "",
+            "is_pro": true
         ]
 
         do {
@@ -1326,6 +1332,13 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func parseAIReplies(from data: Data) -> [String] {
+        if
+            let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+            let reply = object["reply"] as? String
+        {
+            return [reply]
+        }
+
         guard
             let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
             let choices = object["choices"] as? [[String: Any]],
@@ -1412,6 +1425,17 @@ final class KeyboardViewController: UIInputViewController {
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
         return lines.joined(separator: " ")
+    }
+
+    private func keyboardUserID() -> String {
+        let key = "lovekey_keyboard_user_id"
+        if let existing = UserDefaults.standard.string(forKey: key), !existing.isEmpty {
+            return existing
+        }
+
+        let created = UUID().uuidString
+        UserDefaults.standard.set(created, forKey: key)
+        return created
     }
 
     private func preview(_ text: String, limit: Int) -> String {

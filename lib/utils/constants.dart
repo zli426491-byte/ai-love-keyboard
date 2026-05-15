@@ -6,17 +6,14 @@ class AppConstants {
   static const String bundleId = 'com.ailovekeyboard.app';
   static const String appVersion = '1.0.0';
 
-  // ── DeepSeek API ────────────────────────────────────────────────────────
-  static const String deepSeekApiUrl =
-      'https://api.deepseek.com/chat/completions';
-  // Light model for most features (cheap: ~$0.00014/request)
-  static const String deepSeekModelLight = 'deepseek-chat';
-  // Heavy model for deep analysis (reasoning model)
-  static const String deepSeekModelHeavy = 'deepseek-reasoner';
-  // Daily limit for heavy model usage
+  // ── AI Backend Proxy ───────────────────────────────────────────────────
+  // Inject at build time:
+  // flutter build ipa --dart-define=AI_PROXY_URL=https://your-worker.workers.dev
+  static const String aiProxyBaseUrl = String.fromEnvironment('AI_PROXY_URL');
+  static const String aiProxyChatPath = '/v1/chat/completions';
+  // Daily limit for heavy model usage in the client UI. The server still owns
+  // the real API key and server-side rate limits.
   static const int heavyModelDailyLimit = 20;
-  // TODO: Move API key to backend server before production release
-  static const String deepSeekApiKey = 'sk-437fa831454e4b42a62a7bdde01d5d07';
 
   // ── Situation Package Product IDs ────────────────────────────────────
   static const String argumentPackageId = 'com.ailovekeyboard.pack.argument';
