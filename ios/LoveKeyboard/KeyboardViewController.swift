@@ -357,7 +357,15 @@ final class KeyboardViewController: UIInputViewController {
         return control
     }
 
+    @objc private func readClipboard() {
+        loadClipboard(generateAfterRead: false)
+    }
+
     @objc private func readClipboardAndGenerate() {
+        loadClipboard(generateAfterRead: true)
+    }
+
+    private func loadClipboard(generateAfterRead: Bool) {
         guard hasFullAccess else {
             currentMessage = ""
             statusMode = .noFullAccess
@@ -384,8 +392,15 @@ final class KeyboardViewController: UIInputViewController {
         currentMessage = normalizeMessage(text)
         statusMode = .ready
         filledIndex = nil
+        currentReplies = []
+        aiErrorText = nil
+        isGenerating = false
         generationIndex += 1
-        regenerateReplies()
+        if generateAfterRead {
+            regenerateReplies()
+        } else {
+            renderContent()
+        }
     }
 
     @objc private func styleTapped(_ sender: UIButton) {
@@ -393,30 +408,37 @@ final class KeyboardViewController: UIInputViewController {
         selectedStyle = style
         updateStyleButtons()
         filledIndex = nil
-        if !currentMessage.isEmpty {
-            generationIndex += 1
-            statusMode = .ready
-            regenerateReplies()
-        } else {
-            renderContent()
-        }
+        generationIndex += 1
+        generateForSelectedStyle()
     }
 
     @objc private func modeTapped(_ sender: UIButton) {
         guard let mode = KeyboardMode(rawValue: sender.tag) else { return }
         selectedMode = mode
         filledIndex = nil
+        generationIndex += 1
+        currentReplies = []
+        isGenerating = false
+        aiErrorText = nil
         if !currentMessage.isEmpty {
             statusMode = .ready
-            generationIndex += 1
-            regenerateReplies()
         } else if statusMode == .filled || statusMode == .ready {
             statusMode = .idle
-            renderContent()
-        } else {
-            renderContent()
         }
         updateModeButtons()
+        renderContent()
+    }
+
+    private func generateForSelectedStyle() {
+        guard !currentMessage.isEmpty else {
+            readClipboardAndGenerate()
+            return
+        }
+
+        statusMode = .ready
+        currentReplies = []
+        aiErrorText = nil
+        regenerateReplies()
     }
 
     @objc private func replyTapped(_ sender: UIControl) {
@@ -485,8 +507,6 @@ final class KeyboardViewController: UIInputViewController {
         contentStack.addArrangedSubview(pasteCard())
         if currentMessage.isEmpty {
             currentReplies = []
-        } else if currentReplies.isEmpty {
-            currentReplies = makeReplies(for: selectedStyle, mode: selectedMode, message: currentMessage)
         }
         contentStack.addArrangedSubview(replyPanel())
     }
@@ -508,7 +528,7 @@ final class KeyboardViewController: UIInputViewController {
         card.layer.borderWidth = 0.8
         card.layer.borderColor = Palette.border.withAlphaComponent(0.9).cgColor
         card.heightAnchor.constraint(equalToConstant: 50).isActive = true
-        card.addTarget(self, action: #selector(readClipboardAndGenerate), for: .touchUpInside)
+        card.addTarget(self, action: #selector(readClipboard), for: .touchUpInside)
 
         let row = UIStackView()
         row.axis = .horizontal
@@ -537,20 +557,20 @@ final class KeyboardViewController: UIInputViewController {
         case .ready, .filled:
             label.text = preview(currentMessage, limit: 34)
         case .idle:
-            label.text = "貼上對方訊息，AI 會依照模式給你可直接送出的句子"
+            label.text = "先複製對方訊息，讀取後按下方語氣生成"
         }
 
         row.addArrangedSubview(label)
 
         let button = UIButton(type: .system)
-        button.setTitle(currentMessage.isEmpty ? "貼上" : "重讀", for: .normal)
+        button.setTitle(currentMessage.isEmpty ? "讀取" : "重讀", for: .normal)
         button.titleLabel?.font = .systemFont(ofSize: 12, weight: .heavy)
         button.setTitleColor(.white, for: .normal)
         button.backgroundColor = statusMode == .noFullAccess ? Palette.blush : Palette.primary
         button.layer.cornerRadius = 12
         button.widthAnchor.constraint(equalToConstant: 54).isActive = true
         button.heightAnchor.constraint(equalToConstant: 30).isActive = true
-        button.addTarget(self, action: #selector(readClipboardAndGenerate), for: .touchUpInside)
+        button.addTarget(self, action: #selector(readClipboard), for: .touchUpInside)
         row.addArrangedSubview(button)
 
         NSLayoutConstraint.activate([
@@ -566,7 +586,7 @@ final class KeyboardViewController: UIInputViewController {
     private func replyPanel() -> UIView {
         let panel = UIView()
         panel.backgroundColor = UIColor.clear
-        panel.heightAnchor.constraint(equalToConstant: 156).isActive = true
+        panel.heightAnchor.constraint(equalToConstant: 136).isActive = true
 
         let row = UIStackView()
         row.axis = .horizontal
@@ -584,7 +604,7 @@ final class KeyboardViewController: UIInputViewController {
         if currentReplies.isEmpty {
             replies.addArrangedSubview(emptyReplyCard())
         } else {
-            for (index, reply) in currentReplies.prefix(3).enumerated() {
+            for (index, reply) in currentReplies.prefix(1).enumerated() {
                 replies.addArrangedSubview(aiReplyCard(reply, index: index))
             }
         }
@@ -616,7 +636,7 @@ final class KeyboardViewController: UIInputViewController {
         card.layer.cornerRadius = 16
         card.layer.borderWidth = 0.8
         card.layer.borderColor = Palette.border.withAlphaComponent(0.9).cgColor
-        card.addTarget(self, action: #selector(readClipboardAndGenerate), for: .touchUpInside)
+        card.addTarget(self, action: #selector(readClipboard), for: .touchUpInside)
 
         let stack = UIStackView()
         stack.axis = .vertical
@@ -633,7 +653,7 @@ final class KeyboardViewController: UIInputViewController {
         stack.addArrangedSubview(icon)
 
         let title = UILabel()
-        title.text = isGenerating ? "AI 正在生成" : "複製對方訊息後點這裡"
+        title.text = isGenerating ? "AI 正在生成" : (currentMessage.isEmpty ? "先讀取複製的訊息" : "選下方語氣生成")
         title.font = .systemFont(ofSize: 15, weight: .heavy)
         title.textColor = Palette.text
         title.textAlignment = .center
@@ -642,7 +662,7 @@ final class KeyboardViewController: UIInputViewController {
         let subtitle = UILabel()
         subtitle.text = isGenerating
             ? "通常 1-3 秒完成，完成後會自動更新回覆。"
-            : "AI 會依照上方情境與下方語氣，產生可直接送出的回覆。"
+            : (currentMessage.isEmpty ? "先到聊天 App 複製一句，再回來按讀取。" : "每次只生成一種語氣，省 API 也比較不雜。")
         subtitle.font = .systemFont(ofSize: 11.6, weight: .semibold)
         subtitle.textColor = Palette.secondary
         subtitle.textAlignment = .center
@@ -787,7 +807,7 @@ final class KeyboardViewController: UIInputViewController {
         button.layer.cornerRadius = 10
         button.heightAnchor.constraint(equalToConstant: 38).isActive = true
         button.widthAnchor.constraint(greaterThanOrEqualToConstant: 174).isActive = true
-        button.addTarget(self, action: #selector(readClipboardAndGenerate), for: .touchUpInside)
+        button.addTarget(self, action: #selector(readClipboard), for: .touchUpInside)
         stack.addArrangedSubview(button)
 
         let hintLabel = UILabel()
@@ -840,7 +860,7 @@ final class KeyboardViewController: UIInputViewController {
         reload.setTitle("重讀", for: .normal)
         reload.titleLabel?.font = .systemFont(ofSize: 11, weight: .bold)
         reload.setTitleColor(Palette.blush, for: .normal)
-        reload.addTarget(self, action: #selector(readClipboardAndGenerate), for: .touchUpInside)
+        reload.addTarget(self, action: #selector(readClipboard), for: .touchUpInside)
         row.addArrangedSubview(reload)
 
         NSLayoutConstraint.activate([
@@ -863,7 +883,7 @@ final class KeyboardViewController: UIInputViewController {
         }
 
         let requestID = generationIndex
-        currentReplies = makeReplies(for: selectedStyle, mode: selectedMode, message: message)
+        currentReplies = Array(makeReplies(for: selectedStyle, mode: selectedMode, message: message).prefix(1))
         isGenerating = true
         aiErrorText = nil
         renderContent()
@@ -895,7 +915,7 @@ final class KeyboardViewController: UIInputViewController {
                 ["role": "user", "content": message]
             ],
             "response_format": ["type": "json_object"],
-            "max_tokens": 360,
+            "max_tokens": 180,
             "temperature": 0.72
         ]
 
@@ -936,7 +956,7 @@ final class KeyboardViewController: UIInputViewController {
             let cleaned = replies
                 .map { self.cleanReply($0) }
                 .filter { !$0.isEmpty }
-                .prefix(3)
+                .prefix(1)
 
             if !cleaned.isEmpty && self.statusMode != .filled {
                 self.currentReplies = Array(cleaned)
@@ -954,11 +974,11 @@ final class KeyboardViewController: UIInputViewController {
         """
         You are LoveKey, an AI keyboard assistant for dating and everyday chat.
         The user input is a message from the other person, not a question to you.
-        Return only a JSON object with one key "replies" and exactly three string values.
+        Return only a JSON object with one key "replies" and exactly one string value.
 
         Requirements:
         - Reply only in the same language as the user's message. If the message is English, reply in English only. If it is Japanese, reply in Japanese only. If it is Traditional Chinese, use natural Taiwan Traditional Chinese.
-        - Generate exactly 3 replies that can be pasted directly into a chat app.
+        - Generate exactly 1 reply that can be pasted directly into a chat app.
         - Scenario: \(mode.title). Tone: \(style.title).
         - Treat the input as the other person's latest chat message. Infer whether it is teasing, tired, cold, angry, inviting, refusing, casual slang, or small talk.
         - Each reply must be natural, concise, and context-aware. Do not sound like a template, customer support, motivational quote, or generic assistant answer.
@@ -968,7 +988,7 @@ final class KeyboardViewController: UIInputViewController {
         - Never output placeholder text such as "reply 1", "sentence A", "回覆1", or "句子A".
         - Avoid manipulation, guilt-tripping, pressure, sexual explicitness, insults, or promises.
         - Do not mention AI, model, high EQ, prompt, template, or the app.
-        - Do not explain. JSON only. Example shape: {"replies":["actual message","actual message","actual message"]}
+        - Do not explain. JSON only. Example shape: {"replies":["actual message"]}
         """
     }
 
