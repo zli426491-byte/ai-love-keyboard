@@ -118,6 +118,7 @@ final class KeyboardViewController: UIInputViewController {
     private var filledIndex: Int?
     private var isGenerating = false
     private var aiErrorText: String?
+    private var generationInstruction: String?
 
     private enum StatusMode {
         case idle
@@ -135,18 +136,18 @@ final class KeyboardViewController: UIInputViewController {
 
     private func setupView() {
         view.backgroundColor = Palette.background
-        view.heightAnchor.constraint(greaterThanOrEqualToConstant: 352).isActive = true
+        view.heightAnchor.constraint(greaterThanOrEqualToConstant: 338).isActive = true
 
         rootStack.axis = .vertical
-        rootStack.spacing = 6
+        rootStack.spacing = 5
         rootStack.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(rootStack)
 
         NSLayoutConstraint.activate([
-            rootStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
-            rootStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10),
-            rootStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 8),
-            rootStack.bottomAnchor.constraint(lessThanOrEqualTo: view.bottomAnchor, constant: -8)
+            rootStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 9),
+            rootStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -9),
+            rootStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 7),
+            rootStack.bottomAnchor.constraint(lessThanOrEqualTo: view.bottomAnchor, constant: -6)
         ])
 
         rootStack.addArrangedSubview(makeHeader())
@@ -181,15 +182,15 @@ final class KeyboardViewController: UIInputViewController {
     private func makeModeTabs() -> UIView {
         modeStack.axis = .horizontal
         modeStack.alignment = .fill
-        modeStack.spacing = 6
+        modeStack.spacing = 5
         modeStack.distribution = .fillEqually
-        modeStack.heightAnchor.constraint(equalToConstant: 34).isActive = true
+        modeStack.heightAnchor.constraint(equalToConstant: 38).isActive = true
 
         for mode in KeyboardMode.allCases {
             let button = UIButton(type: .system)
             button.setTitle(mode.title, for: .normal)
-            button.titleLabel?.font = .systemFont(ofSize: 12.2, weight: .heavy)
-            button.layer.cornerRadius = 12
+            button.titleLabel?.font = .systemFont(ofSize: 12.6, weight: .heavy)
+            button.layer.cornerRadius = 13
             button.layer.borderWidth = 0.8
             button.tag = mode.rawValue
             button.addTarget(self, action: #selector(modeTapped(_:)), for: .touchUpInside)
@@ -206,7 +207,7 @@ final class KeyboardViewController: UIInputViewController {
         styleStack.alignment = .center
         styleStack.spacing = 8
         styleStack.distribution = .fillEqually
-        styleStack.heightAnchor.constraint(equalToConstant: 56).isActive = true
+        styleStack.heightAnchor.constraint(equalToConstant: 53).isActive = true
 
         for style in ReplyStyle.allCases {
             let item = UIStackView()
@@ -219,14 +220,14 @@ final class KeyboardViewController: UIInputViewController {
             button.imageView?.contentMode = .scaleAspectFit
             button.tintColor = Palette.primary
             button.backgroundColor = style.backgroundColor
-            button.layer.cornerRadius = 19
+            button.layer.cornerRadius = 18
             button.layer.borderWidth = 1
             button.layer.shadowColor = UIColor.black.cgColor
             button.layer.shadowOpacity = 0.045
             button.layer.shadowRadius = 6
             button.layer.shadowOffset = CGSize(width: 0, height: 2)
-            button.widthAnchor.constraint(equalToConstant: 38).isActive = true
-            button.heightAnchor.constraint(equalToConstant: 38).isActive = true
+            button.widthAnchor.constraint(equalToConstant: 36).isActive = true
+            button.heightAnchor.constraint(equalToConstant: 36).isActive = true
             button.tag = style.rawValue
             button.accessibilityLabel = "\(style.title)生成"
             button.addTarget(self, action: #selector(styleTapped(_:)), for: .touchUpInside)
@@ -269,8 +270,8 @@ final class KeyboardViewController: UIInputViewController {
 
     private func makeContentArea() -> UIView {
         contentStack.axis = .vertical
-        contentStack.spacing = 6
-        contentStack.heightAnchor.constraint(greaterThanOrEqualToConstant: 224).isActive = true
+        contentStack.spacing = 5
+        contentStack.heightAnchor.constraint(greaterThanOrEqualToConstant: 202).isActive = true
         return contentStack
     }
 
@@ -404,6 +405,7 @@ final class KeyboardViewController: UIInputViewController {
         isGenerating = false
         generationIndex += 1
         if generateAfterRead {
+            generationInstruction = "Use the selected mode and tone. Generate a direct reply for the copied message."
             regenerateReplies()
         } else {
             renderContent()
@@ -416,6 +418,7 @@ final class KeyboardViewController: UIInputViewController {
         updateStyleButtons()
         filledIndex = nil
         generationIndex += 1
+        generationInstruction = "Rewrite based on this tone: \(style.title). Keep it natural and paste-ready."
         generateForSelectedStyle()
     }
 
@@ -427,6 +430,7 @@ final class KeyboardViewController: UIInputViewController {
         currentReplies = []
         isGenerating = false
         aiErrorText = nil
+        generationInstruction = nil
         if !currentMessage.isEmpty {
             statusMode = .ready
         } else if statusMode == .filled || statusMode == .ready {
@@ -450,10 +454,26 @@ final class KeyboardViewController: UIInputViewController {
 
     @objc private func replyTapped(_ sender: UIControl) {
         guard sender.tag >= 0 && sender.tag < displayedReplies.count else { return }
+        if currentReplies.isEmpty || sender.tag > 0 {
+            applyMatrixAction(sender.tag)
+            return
+        }
         textDocumentProxy.insertText(displayedReplies[sender.tag])
         filledIndex = sender.tag
         statusMode = .filled
         renderContent()
+    }
+
+    private func applyMatrixAction(_ index: Int) {
+        guard !currentMessage.isEmpty else {
+            readClipboardAndGenerate()
+            return
+        }
+
+        generationInstruction = matrixInstruction(index: index)
+        filledIndex = nil
+        generationIndex += 1
+        regenerateReplies()
     }
 
     @objc private func deleteBackward() {
@@ -502,7 +522,7 @@ final class KeyboardViewController: UIInputViewController {
             case .filled:
                 statusLabel.text = "已填入"
             case .ready:
-                statusLabel.text = currentReplies.isEmpty ? "選語氣生成" : "點回覆填入"
+                statusLabel.text = currentReplies.isEmpty ? "選一格生成" : "點第一格填入"
             case .idle:
                 statusLabel.text = selectedMode.status
             }
@@ -528,10 +548,10 @@ final class KeyboardViewController: UIInputViewController {
     private func pasteCard() -> UIView {
         let card = UIControl()
         card.backgroundColor = Palette.card
-        card.layer.cornerRadius = 14
+        card.layer.cornerRadius = 13
         card.layer.borderWidth = 0.8
         card.layer.borderColor = Palette.border.withAlphaComponent(0.9).cgColor
-        card.heightAnchor.constraint(equalToConstant: 50).isActive = true
+        card.heightAnchor.constraint(equalToConstant: 44).isActive = true
         card.addTarget(self, action: #selector(readClipboard), for: .touchUpInside)
 
         let row = UIStackView()
@@ -571,17 +591,17 @@ final class KeyboardViewController: UIInputViewController {
         button.titleLabel?.font = .systemFont(ofSize: 12, weight: .heavy)
         button.setTitleColor(.white, for: .normal)
         button.backgroundColor = statusMode == .noFullAccess ? Palette.blush : Palette.primary
-        button.layer.cornerRadius = 12
-        button.widthAnchor.constraint(equalToConstant: 54).isActive = true
-        button.heightAnchor.constraint(equalToConstant: 30).isActive = true
+        button.layer.cornerRadius = 11
+        button.widthAnchor.constraint(equalToConstant: 52).isActive = true
+        button.heightAnchor.constraint(equalToConstant: 28).isActive = true
         button.addTarget(self, action: #selector(readClipboard), for: .touchUpInside)
         row.addArrangedSubview(button)
 
         NSLayoutConstraint.activate([
-            row.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 12),
-            row.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -10),
-            row.topAnchor.constraint(equalTo: card.topAnchor, constant: 6),
-            row.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -6)
+            row.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 11),
+            row.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -9),
+            row.topAnchor.constraint(equalTo: card.topAnchor, constant: 5),
+            row.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -5)
         ])
 
         return card
@@ -590,12 +610,12 @@ final class KeyboardViewController: UIInputViewController {
     private func replyPanel() -> UIView {
         let panel = UIView()
         panel.backgroundColor = UIColor.clear
-        panel.heightAnchor.constraint(equalToConstant: 166).isActive = true
+        panel.heightAnchor.constraint(equalToConstant: 153).isActive = true
 
         let row = UIStackView()
         row.axis = .horizontal
         row.alignment = .fill
-        row.spacing = 7
+        row.spacing = 6
         row.translatesAutoresizingMaskIntoConstraints = false
         panel.addSubview(row)
 
@@ -603,9 +623,9 @@ final class KeyboardViewController: UIInputViewController {
 
         let side = UIStackView()
         side.axis = .vertical
-        side.spacing = 7
+        side.spacing = 6
         side.distribution = .fillEqually
-        side.widthAnchor.constraint(equalToConstant: 46).isActive = true
+        side.widthAnchor.constraint(equalToConstant: 42).isActive = true
         side.addArrangedSubview(sideCommandButton(systemName: "delete.left", title: "刪", action: #selector(deleteBackward)))
         side.addArrangedSubview(sideCommandButton(systemName: "xmark", title: "清", action: #selector(clearInput)))
         side.addArrangedSubview(sideCommandButton(systemName: "return", title: "換", action: #selector(insertReturn)))
@@ -627,13 +647,13 @@ final class KeyboardViewController: UIInputViewController {
 
         let grid = UIStackView()
         grid.axis = .vertical
-        grid.spacing = 7
+        grid.spacing = 6
         grid.distribution = .fillEqually
 
         for rowIndex in 0..<3 {
             let row = UIStackView()
             row.axis = .horizontal
-            row.spacing = 7
+            row.spacing = 6
             row.distribution = .fillEqually
 
             for columnIndex in 0..<3 {
@@ -653,7 +673,8 @@ final class KeyboardViewController: UIInputViewController {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         let isPrimary = index == 0 && !currentReplies.isEmpty
         let isFilled = filledIndex == index
-        let isDisabled = trimmedTitle.isEmpty || currentReplies.isEmpty || isGenerating
+        let isPlaceholder = currentMessage.isEmpty
+        let isDisabled = trimmedTitle.isEmpty || isGenerating || isPlaceholder
         control.tag = index
         control.backgroundColor = isFilled ? Palette.primary : Palette.card
         control.layer.cornerRadius = 12
@@ -674,16 +695,16 @@ final class KeyboardViewController: UIInputViewController {
         label.textAlignment = .center
         label.numberOfLines = 2
         label.lineBreakMode = .byTruncatingTail
-        label.font = .systemFont(ofSize: isPrimary ? 13 : 12.4, weight: isPrimary ? .heavy : .bold)
+        label.font = .systemFont(ofSize: isPrimary ? 12.8 : 12.1, weight: isPrimary ? .heavy : .bold)
         label.textColor = isFilled ? .white : (isDisabled ? Palette.secondary : Palette.text)
         label.translatesAutoresizingMaskIntoConstraints = false
         control.addSubview(label)
 
         NSLayoutConstraint.activate([
-            label.leadingAnchor.constraint(equalTo: control.leadingAnchor, constant: 7),
-            label.trailingAnchor.constraint(equalTo: control.trailingAnchor, constant: -7),
-            label.topAnchor.constraint(equalTo: control.topAnchor, constant: 5),
-            label.bottomAnchor.constraint(equalTo: control.bottomAnchor, constant: -5)
+            label.leadingAnchor.constraint(equalTo: control.leadingAnchor, constant: 6),
+            label.trailingAnchor.constraint(equalTo: control.trailingAnchor, constant: -6),
+            label.topAnchor.constraint(equalTo: control.topAnchor, constant: 4),
+            label.bottomAnchor.constraint(equalTo: control.bottomAnchor, constant: -4)
         ])
 
         return control
@@ -721,79 +742,83 @@ final class KeyboardViewController: UIInputViewController {
         if let reply = currentReplies.first {
             return [
                 reply,
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                ""
+                "更自然",
+                "短一點",
+                "曖昧一點",
+                "溫柔一點",
+                "問回去",
+                "不要太油",
+                "更有邊界",
+                "重新生成"
             ]
         }
 
-        return [
-            aiErrorText == nil ? "按下方語氣生成" : "生成失敗，再按語氣重試",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
-        ]
+        if aiErrorText != nil {
+            return [
+                "重新生成",
+                "更自然",
+                "短一點",
+                "曖昧一點",
+                "溫柔一點",
+                "問回去",
+                "不要太油",
+                "更有邊界",
+                "換個角度"
+            ]
+        }
+
+        return defaultMatrixReplies(for: selectedMode)
     }
 
     private func defaultMatrixReplies(for mode: KeyboardMode) -> [String] {
         switch mode {
         case .reply:
             return [
-                "我懂你的意思",
-                "那我來安排",
-                "先別急",
-                "你想怎麼做",
-                "我陪你聊",
-                "聽起來不錯",
-                "我先接住這題",
-                "換個方式說",
-                "那我們慢慢來"
+                "自然接話",
+                "問回去",
+                "順著情緒",
+                "短一點",
+                "幽默一點",
+                "曖昧一點",
+                "不要太油",
+                "有邊界",
+                "換個角度"
             ]
         case .opener:
             return [
-                "最近在忙什麼",
-                "今天過得怎樣",
-                "我想到你",
-                "問你一題",
-                "有空聊一下嗎",
-                "剛看到一件事",
-                "這個適合問你",
-                "想聽你想法",
-                "開個新話題"
+                "日常開場",
+                "輕鬆破冰",
+                "從近況聊",
+                "有趣提問",
+                "不尷尬",
+                "低壓開頭",
+                "讓她好回",
+                "像熟人",
+                "重新開始"
             ]
         case .invite:
             return [
-                "我來安排",
-                "週末有空嗎",
-                "一起吃飯嗎",
-                "喝杯咖啡",
-                "改天見面聊",
-                "你選時間",
-                "我配合你",
-                "別太趕",
-                "輕鬆一點"
+                "自然邀約",
+                "週末見面",
+                "吃飯提案",
+                "喝咖啡",
+                "不給壓力",
+                "讓她選",
+                "給兩選項",
+                "改天也行",
+                "收尾邀請"
             ]
         case .comfort:
             return [
-                "你先休息",
-                "我在這裡",
-                "慢慢說就好",
-                "先別想太多",
-                "我陪你",
-                "辛苦了",
-                "不用硬撐",
-                "晚點再說",
-                "我聽你說"
+                "先接情緒",
+                "陪她一下",
+                "讓她休息",
+                "不要說教",
+                "更溫柔",
+                "給安全感",
+                "晚點再聊",
+                "輕輕關心",
+                "不急著解決"
             ]
         case .custom:
             return [
@@ -807,6 +832,90 @@ final class KeyboardViewController: UIInputViewController {
                 "留問題",
                 "再輕鬆點"
             ]
+        }
+    }
+
+    private func matrixInstruction(index: Int) -> String {
+        let label = index < displayedReplies.count ? displayedReplies[index] : ""
+        switch label {
+        case "自然接話", "更自然":
+            return "Make the reply sound like a real casual message, not polished or scripted."
+        case "問回去":
+            return "End with a light, easy-to-answer question that keeps the conversation going."
+        case "順著情緒", "先接情緒":
+            return "Acknowledge the other person's emotion first, then reply gently."
+        case "短一點":
+            return "Make it very short, one sentence only."
+        case "幽默一點":
+            return "Make it lightly humorous without being childish or exaggerated."
+        case "曖昧一點":
+            return "Make it subtly flirty, warm, and respectful."
+        case "溫柔一點", "更溫柔":
+            return "Make it warmer, softer, and reassuring."
+        case "不要太油":
+            return "Remove cheesy pickup-line language. Keep it grounded and clean."
+        case "有邊界", "更有邊界":
+            return "Keep respect and boundaries. Do not pressure the other person."
+        case "換個角度":
+            return "Give a fresh angle that does not repeat the previous idea."
+        case "日常開場":
+            return "Write a natural daily opener that feels easy to answer."
+        case "輕鬆破冰":
+            return "Write a low-pressure icebreaker with a relaxed tone."
+        case "從近況聊":
+            return "Open by asking about the other person's recent day or situation."
+        case "有趣提問":
+            return "Ask a playful but mature question that can start a conversation."
+        case "不尷尬":
+            return "Avoid awkwardness. Make the opener smooth and simple."
+        case "低壓開頭":
+            return "Make it very low pressure and easy to ignore or answer."
+        case "讓她好回":
+            return "Make the reply easy for her to respond to, with a simple next step."
+        case "像熟人":
+            return "Make it casual like you already know each other, but not too intimate."
+        case "重新開始", "重新生成":
+            return "Generate a fresh alternative using the selected mode and tone."
+        case "自然邀約":
+            return "Turn the conversation into a natural invitation without pressure."
+        case "週末見面":
+            return "Suggest meeting this weekend in a casual way."
+        case "吃飯提案":
+            return "Suggest a simple meal together without sounding needy."
+        case "喝咖啡":
+            return "Suggest a coffee date in a light, casual tone."
+        case "不給壓力":
+            return "Invite without pressure, making it easy for the other person to decline."
+        case "讓她選":
+            return "Let the other person choose the timing or option."
+        case "給兩選項":
+            return "Offer two simple choices to reduce decision effort."
+        case "改天也行":
+            return "Invite while making it clear another day is fine too."
+        case "收尾邀請":
+            return "Close the current topic with a smooth invitation."
+        case "陪她一下":
+            return "Be present and supportive without trying to fix everything."
+        case "讓她休息":
+            return "Encourage rest gently and show care."
+        case "不要說教":
+            return "Do not lecture. Validate first and keep it human."
+        case "給安全感":
+            return "Give reassurance and emotional safety."
+        case "晚點再聊":
+            return "Suggest talking later while still showing care."
+        case "輕輕關心":
+            return "Show gentle concern without overdoing it."
+        case "不急著解決":
+            return "Do not rush to solve the problem; just accompany the person."
+        case "像真人":
+            return "Make it sound like a real person typing, not an assistant."
+        case "留問題":
+            return "Leave one simple question at the end."
+        case "再輕鬆點":
+            return "Make it more relaxed and less serious."
+        default:
+            return "Use the selected mode and tone. Generate one paste-ready reply."
         }
     }
 
@@ -1074,11 +1183,12 @@ final class KeyboardViewController: UIInputViewController {
             message: message,
             style: selectedStyle,
             mode: selectedMode,
+            instruction: generationInstruction,
             requestID: requestID
         )
     }
 
-    private func requestAIReplies(message: String, style: ReplyStyle, mode: KeyboardMode, requestID: Int) {
+    private func requestAIReplies(message: String, style: ReplyStyle, mode: KeyboardMode, instruction: String?, requestID: Int) {
         guard !AiConfig.apiKey.isEmpty, !AiConfig.apiKey.contains("__OPENAI_API_KEY__") else {
             finishAIRequest(requestID: requestID, replies: [], errorText: "AI 尚未設定")
             return
@@ -1093,7 +1203,7 @@ final class KeyboardViewController: UIInputViewController {
         let payload: [String: Any] = [
             "model": AiConfig.model,
             "messages": [
-                ["role": "system", "content": aiSystemPrompt(style: style, mode: mode)],
+                ["role": "system", "content": aiSystemPrompt(style: style, mode: mode, instruction: instruction)],
                 ["role": "user", "content": message]
             ],
             "response_format": ["type": "json_object"],
@@ -1152,7 +1262,8 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
-    private func aiSystemPrompt(style: ReplyStyle, mode: KeyboardMode) -> String {
+    private func aiSystemPrompt(style: ReplyStyle, mode: KeyboardMode, instruction: String?) -> String {
+        let extraInstruction = instruction.map { "\n        - Extra user-selected action: \($0)" } ?? ""
         """
         You are LoveKey, an AI keyboard assistant for dating and everyday chat.
         The user input is a message from the other person, not a question to you.
@@ -1163,6 +1274,7 @@ final class KeyboardViewController: UIInputViewController {
         - Generate exactly 1 reply that can be pasted directly into a chat app.
         - Scenario: \(mode.title). Tone: \(style.title).
         - Treat the input as the other person's latest chat message. Infer whether it is teasing, tired, cold, angry, inviting, refusing, casual slang, or small talk.
+        \(extraInstruction)
         - Each reply must be natural, concise, and context-aware. Do not sound like a template, customer support, motivational quote, or generic assistant answer.
         - Do not invent specific past facts, places, restaurants, movies, promises, or plans unless the user's message already mentions them.
         - For casual slang or profanity, keep the reply relaxed and socially natural. Do not over-explain or moralize.
