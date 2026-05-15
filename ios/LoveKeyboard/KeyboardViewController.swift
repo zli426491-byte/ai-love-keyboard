@@ -1264,7 +1264,7 @@ final class KeyboardViewController: UIInputViewController {
 
     private func aiSystemPrompt(style: ReplyStyle, mode: KeyboardMode, instruction: String?) -> String {
         let extraInstruction = instruction.map { "\n        - Extra user-selected action: \($0)" } ?? ""
-        """
+        return """
         You are LoveKey, an AI keyboard assistant for dating and everyday chat.
         The user input is a message from the other person, not a question to you.
         Return only a JSON object with one key "replies" and exactly one string value.
