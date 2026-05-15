@@ -103,7 +103,6 @@ final class KeyboardViewController: UIInputViewController {
     private var styleLabels: [Int: UILabel] = [:]
     private var modeButtons: [UIButton] = []
     private var currentReplies: [String] = []
-    private var currentTemplates: [String] = []
     private var selectedStyle: ReplyStyle = .gentle
     private var selectedMode: KeyboardMode = .reply
     private var currentMessage = ""
@@ -413,14 +412,6 @@ final class KeyboardViewController: UIInputViewController {
         renderContent()
     }
 
-    @objc private func templateTapped(_ sender: UIControl) {
-        guard sender.tag >= 0 && sender.tag < currentTemplates.count else { return }
-        textDocumentProxy.insertText(currentTemplates[sender.tag])
-        filledIndex = sender.tag
-        statusMode = .filled
-        renderContent()
-    }
-
     @objc private func deleteBackward() {
         textDocumentProxy.deleteBackward()
     }
@@ -466,8 +457,8 @@ final class KeyboardViewController: UIInputViewController {
         }
 
         contentStack.addArrangedSubview(pasteCard())
-        currentTemplates = templatesForCurrentMode()
-        contentStack.addArrangedSubview(templatePanel())
+        currentReplies = makeReplies(for: selectedStyle, mode: selectedMode, message: currentMessage)
+        contentStack.addArrangedSubview(replyPanel())
     }
 
     private func updateModeButtons() {
@@ -542,7 +533,7 @@ final class KeyboardViewController: UIInputViewController {
         return card
     }
 
-    private func templatePanel() -> UIView {
+    private func replyPanel() -> UIView {
         let panel = UIView()
         panel.backgroundColor = UIColor.clear
         panel.heightAnchor.constraint(equalToConstant: 156).isActive = true
@@ -554,23 +545,18 @@ final class KeyboardViewController: UIInputViewController {
         row.translatesAutoresizingMaskIntoConstraints = false
         panel.addSubview(row)
 
-        let grid = UIStackView()
-        grid.axis = .vertical
-        grid.spacing = 7
-        grid.distribution = .fillEqually
-        row.addArrangedSubview(grid)
+        let replies = UIStackView()
+        replies.axis = .vertical
+        replies.spacing = 7
+        replies.distribution = currentReplies.isEmpty ? .fill : .fillEqually
+        row.addArrangedSubview(replies)
 
-        for rowIndex in 0..<3 {
-            let templateRow = UIStackView()
-            templateRow.axis = .horizontal
-            templateRow.spacing = 7
-            templateRow.distribution = .fillEqually
-            for columnIndex in 0..<3 {
-                let index = rowIndex * 3 + columnIndex
-                let title = index < currentTemplates.count ? currentTemplates[index] : ""
-                templateRow.addArrangedSubview(templateButton(title, index: index))
+        if currentReplies.isEmpty {
+            replies.addArrangedSubview(emptyReplyCard())
+        } else {
+            for (index, reply) in currentReplies.prefix(3).enumerated() {
+                replies.addArrangedSubview(aiReplyCard(reply, index: index))
             }
-            grid.addArrangedSubview(templateRow)
         }
 
         let side = UIStackView()
@@ -594,29 +580,99 @@ final class KeyboardViewController: UIInputViewController {
         return panel
     }
 
-    private func templateButton(_ title: String, index: Int) -> UIControl {
+    private func emptyReplyCard() -> UIControl {
+        let card = UIControl()
+        card.backgroundColor = Palette.card
+        card.layer.cornerRadius = 16
+        card.layer.borderWidth = 0.8
+        card.layer.borderColor = Palette.border.withAlphaComponent(0.9).cgColor
+        card.addTarget(self, action: #selector(readClipboardAndGenerate), for: .touchUpInside)
+
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.alignment = .center
+        stack.spacing = 9
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(stack)
+
+        let icon = UIImageView(image: UIImage(systemName: "sparkles"))
+        icon.tintColor = Palette.primary
+        icon.contentMode = .scaleAspectFit
+        icon.widthAnchor.constraint(equalToConstant: 24).isActive = true
+        icon.heightAnchor.constraint(equalToConstant: 24).isActive = true
+        stack.addArrangedSubview(icon)
+
+        let title = UILabel()
+        title.text = "複製對方訊息後點這裡"
+        title.font = .systemFont(ofSize: 15, weight: .heavy)
+        title.textColor = Palette.text
+        title.textAlignment = .center
+        stack.addArrangedSubview(title)
+
+        let subtitle = UILabel()
+        subtitle.text = "AI 會依照上方情境與下方語氣，產生可直接送出的回覆。"
+        subtitle.font = .systemFont(ofSize: 11.6, weight: .semibold)
+        subtitle.textColor = Palette.secondary
+        subtitle.textAlignment = .center
+        subtitle.numberOfLines = 2
+        stack.addArrangedSubview(subtitle)
+
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
+            stack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
+            stack.centerYAnchor.constraint(equalTo: card.centerYAnchor)
+        ])
+
+        return card
+    }
+
+    private func aiReplyCard(_ title: String, index: Int) -> UIControl {
         let control = UIControl()
         let isFilled = filledIndex == index
         control.backgroundColor = isFilled ? Palette.primary : Palette.card
-        control.layer.cornerRadius = 12
-        control.layer.borderWidth = 0.8
-        control.layer.borderColor = (isFilled ? Palette.primary : Palette.border).cgColor
+        control.layer.cornerRadius = 14
+        control.layer.borderWidth = index == 0 ? 1.2 : 0.8
+        control.layer.borderColor = (isFilled ? Palette.primary : (index == 0 ? Palette.primary.withAlphaComponent(0.34) : Palette.border)).cgColor
+        control.layer.shadowColor = UIColor.black.cgColor
+        control.layer.shadowOpacity = index == 0 ? 0.07 : 0.035
+        control.layer.shadowRadius = index == 0 ? 8 : 5
+        control.layer.shadowOffset = CGSize(width: 0, height: 3)
         control.tag = index
-        control.addTarget(self, action: #selector(templateTapped(_:)), for: .touchUpInside)
+        control.addTarget(self, action: #selector(replyTapped(_:)), for: .touchUpInside)
+
+        let row = UIStackView()
+        row.axis = .horizontal
+        row.alignment = .center
+        row.spacing = 9
+        row.translatesAutoresizingMaskIntoConstraints = false
+        control.addSubview(row)
 
         let label = UILabel()
         label.text = title
-        label.textAlignment = .center
+        label.textAlignment = .left
         label.numberOfLines = 2
-        label.font = .systemFont(ofSize: 13.2, weight: .bold)
+        label.font = .systemFont(ofSize: 13.4, weight: index == 0 ? .heavy : .bold)
         label.textColor = isFilled ? .white : Palette.text
-        label.translatesAutoresizingMaskIntoConstraints = false
-        control.addSubview(label)
+        row.addArrangedSubview(label)
+
+        let action = UILabel()
+        action.text = isFilled ? "已填" : (index == 0 ? "主推" : "填入")
+        action.textAlignment = .center
+        action.font = .systemFont(ofSize: 10.4, weight: .heavy)
+        action.textColor = isFilled ? Palette.primary : .white
+        action.backgroundColor = isFilled ? Palette.selectedSoft : (index == 0 ? Palette.primary : Palette.accent)
+        action.layer.cornerRadius = 11
+        action.clipsToBounds = true
+        action.setContentCompressionResistancePriority(.required, for: .horizontal)
+        action.widthAnchor.constraint(greaterThanOrEqualToConstant: 42).isActive = true
+        action.heightAnchor.constraint(equalToConstant: 22).isActive = true
+        row.addArrangedSubview(action)
 
         NSLayoutConstraint.activate([
-            label.leadingAnchor.constraint(equalTo: control.leadingAnchor, constant: 7),
-            label.trailingAnchor.constraint(equalTo: control.trailingAnchor, constant: -7),
-            label.centerYAnchor.constraint(equalTo: control.centerYAnchor)
+            row.leadingAnchor.constraint(equalTo: control.leadingAnchor, constant: 12),
+            row.trailingAnchor.constraint(equalTo: control.trailingAnchor, constant: -10),
+            row.topAnchor.constraint(equalTo: control.topAnchor, constant: 7),
+            row.bottomAnchor.constraint(equalTo: control.bottomAnchor, constant: -7)
         ])
 
         return control
@@ -638,74 +694,6 @@ final class KeyboardViewController: UIInputViewController {
         button.titleEdgeInsets = UIEdgeInsets(top: 18, left: -12, bottom: 0, right: 0)
         button.addTarget(self, action: action, for: .touchUpInside)
         return button
-    }
-
-    private func templatesForCurrentMode() -> [String] {
-        let dynamicReplies = currentMessage.isEmpty ? [] : makeReplies(for: selectedStyle, message: currentMessage)
-
-        switch selectedMode {
-        case .reply:
-            let fallback = [
-                "我懂你的意思",
-                "那我來安排",
-                "先別急",
-                "你想怎麼做",
-                "我陪你聊",
-                "聽起來不錯",
-                "可以啊",
-                "我認真回你",
-                "換個說法"
-            ]
-            return Array((dynamicReplies + fallback).prefix(9))
-        case .opener:
-            return [
-                "剛忙完",
-                "今天順利嗎",
-                "想到你",
-                "有空聊嗎",
-                "分享一件事",
-                "你在幹嘛",
-                "早安",
-                "晚安",
-                "今天好嗎"
-            ]
-        case .invite:
-            return [
-                "週末有空嗎",
-                "一起吃飯",
-                "喝咖啡嗎",
-                "去散步",
-                "看電影",
-                "下班見",
-                "我去接你",
-                "改天約",
-                "想見你"
-            ]
-        case .comfort:
-            return [
-                "辛苦了",
-                "我在",
-                "先休息",
-                "慢慢說",
-                "別硬撐",
-                "我聽你說",
-                "抱一下",
-                "不急",
-                "你很棒"
-            ]
-        case .custom:
-            return [
-                "我換個說法",
-                "先不急著回",
-                "這句我懂",
-                "短一點",
-                "我認真回",
-                "你說得對",
-                "我先道歉",
-                "這樣比較好",
-                "可愛一點說"
-            ]
-        }
     }
 
     private func updateStyleButtons() {
@@ -845,18 +833,144 @@ final class KeyboardViewController: UIInputViewController {
         return String(text.prefix(limit)) + "..."
     }
 
-    private func makeReplies(for style: ReplyStyle, message: String) -> [String] {
+    private func makeReplies(for style: ReplyStyle, mode: KeyboardMode, message: String) -> [String] {
         let text = message.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {
-            return [
-                "先複製對方訊息，再點上方「讀取對話」。",
-                "讀到對話後，我會給你能直接送出的回覆。",
-                "點任一回覆，文字會自動填進輸入框。"
-            ]
+            return []
+        }
+
+        switch mode {
+        case .reply:
+            break
+        case .opener:
+            return openerReplies(for: style, message: text)
+        case .invite:
+            return inviteReplies(for: style, message: text)
+        case .comfort:
+            return comfortReplies(for: style, message: text)
+        case .custom:
+            return rewriteReplies(for: style, message: text)
         }
 
         let intent = detectIntent(in: text)
         return replies(for: intent, style: style)
+    }
+
+    private func openerReplies(for style: ReplyStyle, message: String) -> [String] {
+        switch style {
+        case .gentle:
+            return [
+                "剛看到你這句，想問你現在還好嗎？",
+                "我先不亂接話，想聽你多說一點。",
+                "你剛剛那句讓我有點在意，可以聊聊嗎？"
+            ]
+        case .funny:
+            return [
+                "我腦袋剛重新開機，先讓我接住這句。",
+                "這句有點難，我先用不尷尬模式回你。",
+                "我本來想裝懂，但還是想認真問一下。"
+            ]
+        case .flirty:
+            return [
+                "看到你這句，我突然很想多跟妳聊一下。",
+                "妳這樣講，我會忍不住想接近一點。",
+                "我先承認，我有被妳這句吸引到。"
+            ]
+        case .apology:
+            return [
+                "我先確認一下，我是不是剛剛沒有理解好？",
+                "如果我剛剛接得不好，我想重新回你。",
+                "我不想敷衍你，這句我想好好接。"
+            ]
+        }
+    }
+
+    private func inviteReplies(for style: ReplyStyle, message: String) -> [String] {
+        switch style {
+        case .gentle:
+            return [
+                "那找個你舒服的時間，我們一起去放鬆一下。",
+                "如果你願意，我可以安排一個不趕的地方。",
+                "我們改天見面慢慢聊，應該會比打字更好。"
+            ]
+        case .funny:
+            return [
+                "這題適合面對面解，我負責找地方，你負責出現。",
+                "不如把這段聊天升級成吃飯任務？",
+                "我覺得我們需要一杯飲料來協助破案。"
+            ]
+        case .flirty:
+            return [
+                "那我想約妳出來，把這句話當面聽完。",
+                "給我一個機會，帶妳去一個適合慢慢聊的地方。",
+                "比起一直打字，我更想坐在妳旁邊聽妳說。"
+            ]
+        case .apology:
+            return [
+                "如果你願意，我想找時間當面把話說清楚。",
+                "我不想只靠訊息補救，想認真跟你聊一次。",
+                "找個你方便的時間，我好好跟你說。"
+            ]
+        }
+    }
+
+    private func comfortReplies(for style: ReplyStyle, message: String) -> [String] {
+        switch style {
+        case .gentle:
+            return [
+                "你先不用急著回，我在這裡。",
+                "今天已經夠累了，先照顧好自己。",
+                "想說我就聽，不想說我也陪你安靜一下。"
+            ]
+        case .funny:
+            return [
+                "今天先把自己放第一順位，其他等等再說。",
+                "壞心情先暫停，我幫你守一下出口。",
+                "你先休息，我晚點負責講點不太爛的話。"
+            ]
+        case .flirty:
+            return [
+                "妳不用一直很堅強，在我這裡可以放鬆一點。",
+                "如果可以，我現在會想抱妳一下。",
+                "妳先把情緒放下來，我陪妳慢慢整理。"
+            ]
+        case .apology:
+            return [
+                "我剛剛沒有顧到你的感受，抱歉。",
+                "你現在不舒服，我先不逼你回我。",
+                "我會把語氣放慢一點，先陪你把心情穩住。"
+            ]
+        }
+    }
+
+    private func rewriteReplies(for style: ReplyStyle, message: String) -> [String] {
+        let shortText = preview(message, limit: 18)
+        switch style {
+        case .gentle:
+            return [
+                "我懂你的意思，我們慢慢來就好。",
+                "我想把這句說得溫柔一點：\(shortText)",
+                "先不急著下結論，我想聽你真正的想法。"
+            ]
+        case .funny:
+            return [
+                "這句我幫你換成比較不尷尬的版本。",
+                "我先把氣氛救回來：\(shortText)",
+                "我認真回，但盡量不要讓場面太硬。"
+            ]
+        case .flirty:
+            return [
+                "我想把這句說得更靠近你一點。",
+                "如果是對妳，我會這樣說：\(shortText)",
+                "這句我不想太普通，想讓妳感覺到我在意。"
+            ]
+        case .apology:
+            return [
+                "我換個方式說，剛剛那句可能不夠好。",
+                "我想重新表達一次，不讓你誤會。",
+                "如果我剛剛說重了，我先收回，重新講。"
+            ]
+        }
     }
 
     private func detectIntent(in text: String) -> ChatIntent {
