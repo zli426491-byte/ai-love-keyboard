@@ -957,10 +957,14 @@ final class KeyboardViewController: UIInputViewController {
         Return only a JSON object with one key "replies" and exactly three string values.
 
         Requirements:
-        - Write in the same language as the user's message. If it is Traditional Chinese, use natural Taiwan Traditional Chinese.
+        - Reply only in the same language as the user's message. If the message is English, reply in English only. If it is Japanese, reply in Japanese only. If it is Traditional Chinese, use natural Taiwan Traditional Chinese.
         - Generate exactly 3 replies that can be pasted directly into a chat app.
         - Scenario: \(mode.title). Tone: \(style.title).
-        - Each reply must be natural, concise, and context-aware. Do not sound like a template.
+        - Treat the input as the other person's latest chat message. Infer whether it is teasing, tired, cold, angry, inviting, refusing, casual slang, or small talk.
+        - Each reply must be natural, concise, and context-aware. Do not sound like a template, customer support, motivational quote, or generic assistant answer.
+        - Do not invent specific past facts, places, restaurants, movies, promises, or plans unless the user's message already mentions them.
+        - For casual slang or profanity, keep the reply relaxed and socially natural. Do not over-explain or moralize.
+        - Prefer replies that keep the conversation moving with a light question or an easy next step.
         - Never output placeholder text such as "reply 1", "sentence A", "回覆1", or "句子A".
         - Avoid manipulation, guilt-tripping, pressure, sexual explicitness, insults, or promises.
         - Do not mention AI, model, high EQ, prompt, template, or the app.
