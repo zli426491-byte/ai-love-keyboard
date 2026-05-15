@@ -63,6 +63,19 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
+    private enum ChatIntent {
+        case conflict
+        case emotionalLow
+        case logistics
+        case foodOrDate
+        case flirting
+        case complimentStory
+        case choice
+        case cold
+        case topicDead
+        case daily
+    }
+
     private enum Palette {
         static let background = UIColor(red: 246 / 255, green: 244 / 255, blue: 238 / 255, alpha: 1)
         static let card = UIColor(red: 255 / 255, green: 254 / 255, blue: 251 / 255, alpha: 1)
@@ -841,144 +854,315 @@ final class KeyboardViewController: UIInputViewController {
             ]
         }
 
-        let lower = text.lowercased()
-        let isQuestion = containsAny(lower, ["?", "？", "嗎", "是不是", "要不要", "可不可以", "怎麼", "哪", "什麼"])
-        let isFood = containsAny(lower, ["吃", "喝", "火鍋", "餐廳", "宵夜", "晚餐", "午餐", "咖啡"])
-        let isTired = containsAny(lower, ["累", "忙", "煩", "壓力", "不舒服", "睡"])
-        let isCold = containsAny(lower, ["嗯", "對", "好", "哈哈", "喔"]) && text.count <= 6
-        let isNegative = containsAny(lower, ["算了", "不用", "沒差", "隨便", "生氣", "不爽", "吵", "討厭", "不適合"])
-        let isFamilyLogistics = containsAny(lower, ["煮飯", "收完", "上樓", "小孩", "孩子", "接小孩", "回家", "差不多時間", "家裡", "忙完"])
+        let intent = detectIntent(in: text)
+        return replies(for: intent, style: style)
+    }
 
-        switch style {
-        case .gentle:
-            if isFamilyLogistics {
+    private func detectIntent(in text: String) -> ChatIntent {
+        let lower = text.lowercased()
+        let isConflict = containsAny(lower, ["算了", "不用", "沒差", "隨便", "生氣", "不爽", "吵", "討厭", "不想理", "你每次", "又來", "失望", "不適合"])
+        let isEmotionalLow = containsAny(lower, ["好累", "很累", "心情不好", "壓力", "煩", "不舒服", "想哭", "崩潰", "不想說話", "沒力", "好難過"])
+        let isLogistics = containsAny(lower, ["煮飯", "收完", "上樓", "小孩", "孩子", "接小孩", "回家", "差不多時間", "家裡", "忙完", "開會", "在路上", "等等回", "晚點回"])
+        let isFoodOrDate = containsAny(lower, ["吃", "喝", "火鍋", "餐廳", "宵夜", "晚餐", "午餐", "咖啡", "無聊", "出去", "週末", "放假", "逛", "電影", "見面"])
+        let isFlirting = containsAny(lower, ["想你", "想妳", "你猜", "妳猜", "不要", "你很煩", "妳很煩", "壞欸", "討厭啦", "害羞", "想見", "撒嬌"])
+        let isComplimentStory = containsAny(lower, ["照片", "自拍", "限動", "穿搭", "好看", "漂亮", "可愛", "風景", "妝", "髮型", "衣服", "裙", "洋裝"])
+        let isChoice = containsAny(lower, ["哪個", "哪一個", "選哪", "a還是b", "a 或 b", "a或b", "要不要", "吃什麼", "去哪", "你覺得", "你決定"])
+        let isCold = containsAny(lower, ["嗯", "對", "好", "哈哈", "喔"]) && text.count <= 6
+        let isTopicDead = containsAny(lower, ["哈哈哈", "😂", "🤣", "貼圖", "表情", "已讀", "不知道", "沒事", "還好"])
+
+        if isConflict { return .conflict }
+        if isEmotionalLow { return .emotionalLow }
+        if isLogistics { return .logistics }
+        if isFoodOrDate { return .foodOrDate }
+        if isFlirting { return .flirting }
+        if isComplimentStory { return .complimentStory }
+        if isChoice { return .choice }
+        if isCold { return .cold }
+        if isTopicDead { return .topicDead }
+        return .daily
+    }
+
+    private func replies(for intent: ChatIntent, style: ReplyStyle) -> [String] {
+        switch intent {
+        case .conflict:
+            switch style {
+            case .gentle:
                 return [
-                    "你先忙完家裡",
-                    "小孩快回來就先顧他們，晚點有空再聊就好。",
-                    "你那邊忙完再說，不急，我等你。"
+                    "我先聽你說",
+                    "我不想跟你硬碰硬，先把你的感受聽完整。",
+                    "如果剛剛讓你不舒服，是我沒處理好，我想重新說。"
                 ]
-            }
-            if isFood {
+            case .funny:
                 return [
-                    "就吃這個",
-                    "我來找時間，今天不用你費心。",
-                    "那我們吃完再散步一下，好不好?"
+                    "我先閉嘴三秒",
+                    "這題我不能嘴硬，不然等等我會輸得更慘。",
+                    "給我一次重答機會，我這次不用爛答案敷衍你。"
                 ]
-            }
-            if isTired {
+            case .flirty:
                 return [
-                    "先休息，我在",
-                    "今天別硬撐，把力氣留給自己。",
-                    "晚點想說話的時候，我陪你慢慢聊好嗎?"
+                    "我不想惹妳氣",
+                    "妳生氣我會緊張，但我更想把妳哄好。",
+                    "先別判我死刑，讓我好好補償妳一次。"
                 ]
-            }
-            if isQuestion {
-                return [
-                    "我認真想了",
-                    "這題我會先照顧你的感受。",
-                    "要不要我先說我的想法，再一起決定?"
-                ]
-            }
-            if isCold {
-                return [
-                    "我懂你的意思",
-                    "你不用急著多說，我先陪著。",
-                    "等你想聊時再丟給我，我都會接住好嗎?"
-                ]
-            }
-            return [
-                "我有放在心上",
-                "這句我不會隨便帶過。",
-                "要不要慢慢說，我想把你的意思聽完整?"
-            ]
-        case .funny:
-            if isFamilyLogistics {
-                return [
-                    "先完成家裡任務",
-                    "小孩快回家就是主線任務，我先不吵你。",
-                    "等你忙完再回我就好，我先乖乖等。"
-                ]
-            }
-            if isFood {
-                return [
-                    "胃先答應了",
-                    "今天讓晚餐替我們主持公道。",
-                    "要不要直接出發，我負責不讓氣氛冷掉?"
-                ]
-            }
-            if isTired {
-                return [
-                    "先開省電模式",
-                    "你今天唯一任務是躺平。",
-                    "要不要先休息，我晚點再帶笑話來報到?"
-                ]
-            }
-            if isNegative {
-                return [
-                    "我先收起嘴砲",
-                    "這題不能亂答，我認真一點。",
-                    "要不要給我一次補考，我想把話講好?"
-                ]
-            }
-            return [
-                "我懂你的意思",
-                "那我先不亂猜，照你現在方便的節奏來。",
-                "你想先聊輕鬆一點，還是我認真陪你想?"
-            ]
-        case .flirty:
-            if isFamilyLogistics {
-                return [
-                    "那我等妳忙完",
-                    "妳先忙家裡，我晚點再找妳撒嬌。",
-                    "等小孩回家那段先給妳，我等等再把妳的時間偷回來。"
-                ]
-            }
-            if isFood {
-                return [
-                    "想坐妳旁邊",
-                    "吃什麼都行，重點是跟妳一起。",
-                    "要不要我帶妳去那家，妳上次說想吃的?"
-                ]
-            }
-            if isTired {
-                return [
-                    "靠近一點吧",
-                    "今天別撐了，我想接走妳的壞心情。",
-                    "要不要休息一下，我晚點再溫柔地吵妳?"
-                ]
-            }
-            if isQuestion {
-                return [
-                    "如果是妳我願意",
-                    "妳這樣問，我會忍不住多想。",
-                    "要不要讓我用行動回答，比文字更清楚?"
-                ]
-            }
-            return [
-                "有點想妳了",
-                "妳一句話就把我的注意力帶走。",
-                "要不要晚點聊，我想把今天留一點給妳?"
-            ]
-        case .apology:
-            if isFamilyLogistics {
-                return [
-                    "那你先忙",
-                    "剛剛是我沒抓好時間，你先處理家裡的事。",
-                    "你忙完再回我就好，我不催你。"
-                ]
-            }
-            if isNegative {
+            case .apology:
                 return [
                     "我剛剛沒做好",
                     "先不辯解，我想把你的感受聽完。",
-                    "要不要給我一點時間，我會把態度改給你看?"
+                    "如果是我讓你失望，我會改，不是只說說。"
                 ]
             }
-            return [
-                "是我沒顧好",
-                "我想把話說清楚，也顧到你。",
-                "要不要讓我重新說一次，這次我會更小心?"
-            ]
+
+        case .emotionalLow:
+            switch style {
+            case .gentle:
+                return [
+                    "先別硬撐",
+                    "今天已經夠累了，先把自己照顧好。",
+                    "你想安靜一下也可以，我在這裡陪你。"
+                ]
+            case .funny:
+                return [
+                    "今天先省電",
+                    "你今天的任務只剩活著和好好休息。",
+                    "壞心情先丟旁邊，我負責晚點逗你一下。"
+                ]
+            case .flirty:
+                return [
+                    "想抱一下妳",
+                    "今天辛苦妳了，壞心情先交給我保管。",
+                    "妳不用一直很堅強，在我這裡可以放鬆一點。"
+                ]
+            case .apology:
+                return [
+                    "我剛剛沒注意到",
+                    "你已經很累了，我不該再讓你有壓力。",
+                    "你先休息，我會把節奏放慢一點。"
+                ]
+            }
+
+        case .logistics:
+            switch style {
+            case .gentle:
+                return [
+                    "你先忙完",
+                    "家裡的事先處理，晚點有空再回我就好。",
+                    "不急，我等你忙完再聊。"
+                ]
+            case .funny:
+                return [
+                    "先解主線任務",
+                    "你先處理現實副本，我先在旁邊乖乖掛機。",
+                    "等你忙完再回我，我不搶小孩和家務的順位。"
+                ]
+            case .flirty:
+                return [
+                    "那我等妳忙完",
+                    "妳先忙家裡，我晚點再找妳撒嬌。",
+                    "等妳空下來，我再把妳的時間偷一點走。"
+                ]
+            case .apology:
+                return [
+                    "那你先忙",
+                    "剛剛是我沒抓好時間，你先處理手邊的事。",
+                    "你忙完再回我就好，我不催你。"
+                ]
+            }
+
+        case .foodOrDate:
+            switch style {
+            case .gentle:
+                return [
+                    "我來安排",
+                    "你不用想太多，我找個舒服一點的地方。",
+                    "我們吃完可以慢慢散步，不用趕行程。"
+                ]
+            case .funny:
+                return [
+                    "胃已經投票了",
+                    "我覺得現在最該解決的是我們的晚餐危機。",
+                    "要不要交給我選，選難吃我負責被你唸。"
+                ]
+            case .flirty:
+                return [
+                    "想坐妳旁邊",
+                    "吃什麼都可以，重點是跟妳一起。",
+                    "要不要我帶妳去一家，我覺得很適合妳的店。"
+                ]
+            case .apology:
+                return [
+                    "我來決定",
+                    "剛剛不該一直丟給你選，我來安排就好。",
+                    "這次我負責找地方，你只要舒服出門就好。"
+                ]
+            }
+
+        case .flirting:
+            switch style {
+            case .gentle:
+                return [
+                    "你這樣說我會想很多",
+                    "我先不亂猜，但你這句真的有點可愛。",
+                    "那我可以把這句當成你有一點想我嗎?"
+                ]
+            case .funny:
+                return [
+                    "這句有陷阱",
+                    "你這樣講我會誤會，而且是自願誤會的那種。",
+                    "我先記下來，等等當成你偷偷想我。"
+                ]
+            case .flirty:
+                return [
+                    "有點犯規",
+                    "妳這樣說，我會忍不住更想靠近妳。",
+                    "那妳要不要承認，其實也有一點想我?"
+                ]
+            case .apology:
+                return [
+                    "我剛剛太急了",
+                    "如果我撩得太快，你跟我說，我會放慢。",
+                    "我想靠近你，但不想讓你有壓力。"
+                ]
+            }
+
+        case .complimentStory:
+            switch style {
+            case .gentle:
+                return [
+                    "這張很好看",
+                    "你今天的狀態看起來很舒服，很自然。",
+                    "這種感覺很適合你，不會太刻意但很有氣質。"
+                ]
+            case .funny:
+                return [
+                    "這張有加分",
+                    "這張照片有點危險，會讓人多看兩眼。",
+                    "我本來想滑走，結果被你這張攔住了。"
+                ]
+            case .flirty:
+                return [
+                    "妳今天很好看",
+                    "這張有點犯規，我看完會想見妳。",
+                    "妳這樣出現，我很難假裝沒被吸引。"
+                ]
+            case .apology:
+                return [
+                    "我剛剛沒誇到重點",
+                    "不是敷衍，你這張真的很好看。",
+                    "我應該直接說，你今天很有魅力。"
+                ]
+            }
+
+        case .choice:
+            switch style {
+            case .gentle:
+                return [
+                    "我選第一個",
+                    "我覺得第一個比較適合你，舒服又不容易出錯。",
+                    "如果你想輕鬆一點，我會選比較不累的那個。"
+                ]
+            case .funny:
+                return [
+                    "我投第一個",
+                    "我選第一個，錯了我負責被你笑。",
+                    "不要再讓選擇困難霸凌我們了，我先選。"
+                ]
+            case .flirty:
+                return [
+                    "我選跟妳一起",
+                    "選哪個都可以，但我比較想選能多陪妳的那個。",
+                    "如果是跟妳，我其實兩個都願意。"
+                ]
+            case .apology:
+                return [
+                    "我來決定",
+                    "剛剛不該讓你一直想，我先選一個。",
+                    "你如果不喜歡，我們再換，我不會硬拗。"
+                ]
+            }
+
+        case .cold:
+            switch style {
+            case .gentle:
+                return [
+                    "我懂",
+                    "你如果現在不想多說也沒關係。",
+                    "那我先不吵你，等你想聊我再陪你。"
+                ]
+            case .funny:
+                return [
+                    "收到一個字",
+                    "這個回覆很精簡，我先合理懷疑你在省電。",
+                    "那我先派一個輕鬆話題來救場。"
+                ]
+            case .flirty:
+                return [
+                    "妳好冷淡喔",
+                    "只回一個字，我會忍不住想多討一點注意。",
+                    "那我晚點再來煩妳一下，讓妳多回幾個字。"
+                ]
+            case .apology:
+                return [
+                    "是不是我剛剛太煩",
+                    "如果我剛剛講得不對，你可以直接跟我說。",
+                    "我先放慢一點，不逼你現在回。"
+                ]
+            }
+
+        case .topicDead:
+            switch style {
+            case .gentle:
+                return [
+                    "換個輕鬆的",
+                    "那我問你一個不用動腦的問題。",
+                    "今天有沒有一件小事，讓你覺得還不錯?"
+                ]
+            case .funny:
+                return [
+                    "我來救場",
+                    "這個話題好像快陣亡了，我先換一個。",
+                    "快問快答：今天心情是幾分?"
+                ]
+            case .flirty:
+                return [
+                    "那我換個問題",
+                    "如果晚點只能跟一個人聊天，妳會選誰?",
+                    "我先自薦一下，陪妳聊到不無聊。"
+                ]
+            case .apology:
+                return [
+                    "我剛剛接得不好",
+                    "這個話題有點乾，我換個自然一點的。",
+                    "你今天比較想聊輕鬆的，還是想安靜一下?"
+                ]
+            }
+
+        case .daily:
+            switch style {
+            case .gentle:
+                return [
+                    "今天還順利嗎",
+                    "我剛剛想到你，就想問你今天過得怎麼樣。",
+                    "如果今天有點累，晚點可以慢慢跟我說。"
+                ]
+            case .funny:
+                return [
+                    "今天戰況如何",
+                    "我來例行關心一下，你今天有沒有被生活追著跑?",
+                    "如果今天很累，我可以先提供精神鼓掌服務。"
+                ]
+            case .flirty:
+                return [
+                    "有點想妳",
+                    "今天忙歸忙，但我還是有想到妳。",
+                    "妳今天過得好不好，我想聽妳親口說。"
+                ]
+            case .apology:
+                return [
+                    "我剛剛回慢了",
+                    "不是不想回你，是剛剛真的卡住了。",
+                    "現在有空了，我想好好跟你聊。"
+                ]
+            }
         }
     }
 
