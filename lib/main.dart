@@ -16,6 +16,7 @@ import 'package:ai_love_keyboard/services/privacy_manager.dart';
 import 'package:ai_love_keyboard/services/prompt_templates.dart';
 import 'package:ai_love_keyboard/services/package_manager.dart';
 import 'package:ai_love_keyboard/services/referral_service.dart';
+import 'package:ai_love_keyboard/services/revenuecat_service.dart';
 import 'package:ai_love_keyboard/services/seasonal_service.dart';
 import 'package:ai_love_keyboard/services/usage_service.dart';
 import 'package:ai_love_keyboard/utils/app_theme.dart';
@@ -73,6 +74,12 @@ void main() async {
   } catch (_) {}
   try {
     await usageService.init();
+  } catch (_) {}
+  try {
+    final subscribed = await RevenueCatService.instance.init();
+    if (subscribed) {
+      await usageService.setSubscribed(true);
+    }
   } catch (_) {}
   try {
     await localeService.init();
@@ -201,6 +208,7 @@ class AiLoveKeyboardApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AiService()),
         ChangeNotifierProvider.value(value: usageService),
+        ChangeNotifierProvider.value(value: RevenueCatService.instance),
         ChangeNotifierProvider.value(value: localeService),
         ChangeNotifierProvider.value(value: privacyManager),
         ChangeNotifierProvider.value(value: packageManager),

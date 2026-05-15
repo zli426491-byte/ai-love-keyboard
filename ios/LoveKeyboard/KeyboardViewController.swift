@@ -84,19 +84,19 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private enum Palette {
-        static let background = UIColor(red: 246 / 255, green: 244 / 255, blue: 238 / 255, alpha: 1)
-        static let card = UIColor(red: 255 / 255, green: 254 / 255, blue: 251 / 255, alpha: 1)
-        static let primary = UIColor(red: 18 / 255, green: 67 / 255, blue: 48 / 255, alpha: 1)
-        static let accent = UIColor(red: 139 / 255, green: 111 / 255, blue: 71 / 255, alpha: 1)
-        static let blush = UIColor(red: 184 / 255, green: 67 / 255, blue: 92 / 255, alpha: 1)
-        static let text = UIColor(red: 28 / 255, green: 28 / 255, blue: 28 / 255, alpha: 1)
-        static let secondary = UIColor(red: 105 / 255, green: 96 / 255, blue: 88 / 255, alpha: 1)
-        static let border = UIColor(red: 226 / 255, green: 222 / 255, blue: 214 / 255, alpha: 1)
-        static let key = UIColor(red: 234 / 255, green: 232 / 255, blue: 226 / 255, alpha: 1)
-        static let selectedSoft = UIColor(red: 228 / 255, green: 240 / 255, blue: 229 / 255, alpha: 1)
-        static let warmYellow = UIColor(red: 245 / 255, green: 230 / 255, blue: 184 / 255, alpha: 1)
-        static let roseSoft = UIColor(red: 245 / 255, green: 214 / 255, blue: 220 / 255, alpha: 1)
-        static let navySoft = UIColor(red: 214 / 255, green: 224 / 255, blue: 236 / 255, alpha: 1)
+        static let background = UIColor(red: 255 / 255, green: 246 / 255, blue: 251 / 255, alpha: 1)
+        static let card = UIColor(red: 255 / 255, green: 255 / 255, blue: 255 / 255, alpha: 1)
+        static let primary = UIColor(red: 124 / 255, green: 58 / 255, blue: 237 / 255, alpha: 1)
+        static let accent = UIColor(red: 190 / 255, green: 24 / 255, blue: 93 / 255, alpha: 1)
+        static let blush = UIColor(red: 236 / 255, green: 72 / 255, blue: 153 / 255, alpha: 1)
+        static let text = UIColor(red: 25 / 255, green: 19 / 255, blue: 31 / 255, alpha: 1)
+        static let secondary = UIColor(red: 122 / 255, green: 111 / 255, blue: 130 / 255, alpha: 1)
+        static let border = UIColor(red: 234 / 255, green: 215 / 255, blue: 233 / 255, alpha: 1)
+        static let key = UIColor(red: 246 / 255, green: 232 / 255, blue: 255 / 255, alpha: 1)
+        static let selectedSoft = UIColor(red: 237 / 255, green: 233 / 255, blue: 254 / 255, alpha: 1)
+        static let warmYellow = UIColor(red: 255 / 255, green: 230 / 255, blue: 246 / 255, alpha: 1)
+        static let roseSoft = UIColor(red: 255 / 255, green: 216 / 255, blue: 234 / 255, alpha: 1)
+        static let navySoft = UIColor(red: 240 / 255, green: 232 / 255, blue: 255 / 255, alpha: 1)
     }
 
     private let rootStack = UIStackView()

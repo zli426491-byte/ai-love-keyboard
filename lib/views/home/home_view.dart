@@ -1,46 +1,14 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 
-import 'package:ai_love_keyboard/config/ad_tracking_config.dart';
-import 'package:ai_love_keyboard/models/chat_persona.dart';
 import 'package:ai_love_keyboard/models/reply_style.dart';
 import 'package:ai_love_keyboard/services/ai_service.dart';
-import 'package:ai_love_keyboard/services/analytics_service.dart';
+import 'package:ai_love_keyboard/services/revenuecat_service.dart';
 import 'package:ai_love_keyboard/services/usage_service.dart';
-import 'package:ai_love_keyboard/utils/app_theme.dart';
-import 'package:ai_love_keyboard/utils/constants.dart';
-import 'package:ai_love_keyboard/views/analysis/chat_analysis_view.dart';
-import 'package:ai_love_keyboard/views/characters/character_market_view.dart';
-import 'package:ai_love_keyboard/views/components/intimacy_selector.dart';
-import 'package:ai_love_keyboard/views/components/usage_indicator.dart';
-import 'package:ai_love_keyboard/views/components/particle_background.dart';
-import 'package:ai_love_keyboard/views/opener/opener_view.dart';
+import 'package:ai_love_keyboard/views/keyboard/keyboard_guide_view.dart';
 import 'package:ai_love_keyboard/views/paywall/paywall_view.dart';
 import 'package:ai_love_keyboard/views/reply/reply_cards_view.dart';
-import 'package:ai_love_keyboard/views/argument/argument_resolve_view.dart';
-import 'package:ai_love_keyboard/views/coach/timing_coach_view.dart';
-import 'package:ai_love_keyboard/views/components/emoji_suggester.dart';
-import 'package:ai_love_keyboard/views/components/reply_scorer.dart';
-import 'package:ai_love_keyboard/views/culture/culture_tips_view.dart';
-import 'package:ai_love_keyboard/views/date/date_invitation_view.dart';
-import 'package:ai_love_keyboard/views/greetings/greetings_view.dart';
-import 'package:ai_love_keyboard/views/keyboard/keyboard_guide_view.dart';
 import 'package:ai_love_keyboard/views/settings/settings_view.dart';
-import 'package:ai_love_keyboard/views/topics/topic_suggestions_view.dart';
-import 'package:ai_love_keyboard/views/translate/translate_reply_view.dart';
-import 'package:ai_love_keyboard/models/situation_package.dart';
-import 'package:ai_love_keyboard/services/achievement_service.dart';
-import 'package:ai_love_keyboard/services/seasonal_service.dart';
-import 'package:ai_love_keyboard/services/situation_detector.dart';
-import 'package:ai_love_keyboard/services/package_manager.dart';
-import 'package:ai_love_keyboard/views/achievements/achievements_view.dart';
-import 'package:ai_love_keyboard/views/components/situation_package_dialog.dart';
-import 'package:ai_love_keyboard/views/components/coin_balance_widget.dart';
-import 'package:ai_love_keyboard/views/emergency/emergency_coach_view.dart';
-import 'package:ai_love_keyboard/views/packages/seasonal_packages_view.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -50,76 +18,44 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
+  static const _bg = Color(0xFFFFF6FB);
+  static const _surface = Color(0xFFFFFFFF);
+  static const _ink = Color(0xFF19131F);
+  static const _muted = Color(0xFF7A6F82);
+  static const _line = Color(0xFFEAD7E9);
+  static const _primary = Color(0xFF7C3AED);
+  static const _pink = Color(0xFFEC4899);
+  static const _soft = Color(0xFFF6E8FF);
+
   final _messageController = TextEditingController();
-  ReplyStyle _selectedStyle = ReplyStyle.humorous;
-  String _selectedPlatform = '交友App';
-  static const _platforms = ['交友App', 'LINE', 'IG'];
-  bool _keyboardBannerDismissed = false;
-  ChatPersona? _selectedPersona;
-  int _intimacyLevel = 3;
-  bool _showAllStyles = false;
-  final FocusNode _inputFocusNode = FocusNode();
-  bool _inputFocused = false;
+  ReplyStyle _selectedStyle = ReplyStyle.warm;
+  int _selectedMode = 0;
 
-  // Main 4 styles + 6 more
-  static const _mainStyleCount = 4;
-  static const _cream = Color(0xFFFAF7F2);
-  static const _card = Color(0xFFFFFEFB);
-  static const _ink = Color(0xFF171717);
-  static const _muted = Color(0xFF6B6B6B);
-  static const _line = Color(0xFFE7DDD0);
-  static const _forest = Color(0xFF1F3A2E);
-  static const _sage = Color(0xFFE7EFE8);
-  static const _rose = Color(0xFFC8385C);
-  static const _sand = Color(0xFFF1E9DC);
-  static const _softRose = Color(0xFFFFE8ED);
+  static const _modes = [
+    _ModeItem('接話', Icons.chat_bubble_rounded),
+    _ModeItem('破冰', Icons.auto_awesome_rounded),
+    _ModeItem('邀約', Icons.calendar_month_rounded),
+    _ModeItem('安撫', Icons.favorite_rounded),
+    _ModeItem('自訂', Icons.tune_rounded),
+  ];
 
-  @override
-  void initState() {
-    super.initState();
-    _messageController.addListener(_onMessageChanged);
-    _inputFocusNode.addListener(() {
-      setState(() => _inputFocused = _inputFocusNode.hasFocus);
-    });
-  }
+  static const _styles = [
+    _ToneItem(ReplyStyle.warm, '溫柔', Icons.spa_rounded),
+    _ToneItem(ReplyStyle.humorous, '幽默', Icons.wb_sunny_rounded),
+    _ToneItem(ReplyStyle.flirty, '曖昧', Icons.local_florist_rounded),
+    _ToneItem(ReplyStyle.romantic, '深情', Icons.favorite_rounded),
+  ];
 
   @override
   void dispose() {
-    _messageController.removeListener(_onMessageChanged);
     _messageController.dispose();
-    _inputFocusNode.dispose();
     super.dispose();
-  }
-
-  int _lastCheckedLength = 0;
-
-  void _onMessageChanged() {
-    final text = _messageController.text.trim();
-    if (text.length < 4 || (text.length - _lastCheckedLength).abs() < 4) {
-      return;
-    }
-    _lastCheckedLength = text.length;
-
-    final detected = SituationDetector.instance.detect(text);
-    if (detected == null) return;
-
-    final packageManager = context.read<PackageManager>();
-    if (!packageManager.shouldShowDialog(detected)) return;
-
-    final pkg = SituationPackage.getPackage(detected);
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted && _messageController.text.trim() == text) {
-        SituationPackageDialog.show(context, pkg);
-      }
-    });
   }
 
   Future<void> _generateReplies() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('請先輸入對方的訊息')));
+      _showSnack('先貼上一句對方訊息');
       return;
     }
 
@@ -130,25 +66,24 @@ class _HomeViewState extends State<HomeView> {
     }
 
     final ai = context.read<AiService>();
-    final replies = await ai.generateReplies(
-      text,
-      _selectedStyle,
-      persona: _selectedPersona,
-      intimacyLevel: _intimacyLevel,
-    );
+    final replies = await ai.generateReplies(text, _selectedStyle);
+    if (!mounted) return;
 
-    if (replies.isNotEmpty) {
-      await usage.recordUsage();
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-                ReplyCardsView(originalMessage: text, style: _selectedStyle),
-          ),
-        );
-      }
+    if (replies.isEmpty) {
+      _showSnack('暫時沒有產生成功，請換一句再試');
+      return;
     }
+
+    await usage.recordUsage();
+    if (!mounted) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            ReplyCardsView(originalMessage: text, style: _selectedStyle),
+      ),
+    );
   }
 
   void _showPaywall() {
@@ -160,763 +95,125 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: _ink,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final ai = context.watch<AiService>();
-    if (MediaQuery.sizeOf(context).width >= 0) {
-      return _buildLoveAssistStyleHome(ai);
-    }
+    final usage = context.watch<UsageService>();
+    final revenueCat = context.watch<RevenueCatService>();
 
     return Scaffold(
-      backgroundColor: AppTheme.bgDark,
+      backgroundColor: _bg,
       body: SafeArea(
         child: Stack(
           children: [
-            // ── Gradient glow at top ──────────────────────────────
-            Positioned(
-              top: -100,
-              left: -50,
-              right: -50,
-              height: 300,
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: RadialGradient(
-                    center: Alignment.topCenter,
-                    radius: 1.2,
-                    colors: [
-                      Color(0x40AB47BC),
-                      Color(0x20FF80AB),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
+            const Positioned(
+              top: -120,
+              right: -90,
+              child: _Glow(size: 260, color: Color(0x33EC4899)),
             ),
-
-            // ── Particle background ───────────────────────────────
-            const ParticleBackground(),
-
-            // ── Main content ──────────────────────────────────────
-            CustomScrollView(
-              slivers: [
-                // ── App Bar ───────────────────────────────────────
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppTheme.spacingMd,
-                      AppTheme.spacingMd,
-                      AppTheme.spacingMd,
-                      0,
-                    ),
-                    child: Row(
-                      children: [
-                        const Text(
-                          '\u{2728} AI \u{6200}\u{611B}\u{9375}\u{76E4}',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        // Free build badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            gradient: AppTheme.romanticGradient,
-                            borderRadius: BorderRadius.circular(
-                              AppTheme.radiusFull,
-                            ),
-                          ),
-                          child: const Text(
-                            'FREE',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                        const Spacer(),
-                        const CoinBalanceWidget(),
-                        const SizedBox(width: 4),
-                        const UsageIndicator(),
-                        const SizedBox(width: 4),
-                        Consumer<AchievementService>(
-                          builder: (_, achievementSvc, child) {
-                            final unclaimed = achievementSvc.unclaimedCount;
-                            return Stack(
-                              children: [
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.emoji_events_rounded,
-                                    color: AppTheme.textSecondary,
-                                  ),
-                                  tooltip: '成就',
-                                  onPressed: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const AchievementsView(),
-                                    ),
-                                  ),
-                                ),
-                                if (unclaimed > 0)
-                                  Positioned(
-                                    right: 6,
-                                    top: 6,
-                                    child: Container(
-                                      width: 16,
-                                      height: 16,
-                                      decoration: const BoxDecoration(
-                                        color: AppTheme.error,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          '$unclaimed',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            );
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.settings_outlined,
-                            color: AppTheme.textSecondary,
-                          ),
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const SettingsView(),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // ── Keyboard Setup Banner ─────────────────────────
-                if (!_keyboardBannerDismissed)
-                  SliverToBoxAdapter(
-                    child:
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(
-                            AppTheme.spacingMd,
-                            AppTheme.spacingMd,
-                            AppTheme.spacingMd,
-                            0,
-                          ),
-                          child: GestureDetector(
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const KeyboardGuideView(),
-                              ),
-                            ),
-                            child: Container(
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFAF7F2),
-                                borderRadius: BorderRadius.circular(
-                                  AppTheme.radiusLg,
-                                ),
-                                border: Border.all(
-                                  color: const Color(0xFFE7DDD0),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.16),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 10),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 44,
-                                    height: 44,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFE7EFE8),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: const Icon(
-                                      Icons.keyboard_rounded,
-                                      color: Color(0xFF1F3A2E),
-                                      size: 26,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  const Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          '先開啟 AI 鍵盤',
-                                          style: TextStyle(
-                                            color: Color(0xFF1A1A1A),
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w900,
-                                          ),
-                                        ),
-                                        SizedBox(height: 2),
-                                        Text(
-                                          '3 步教你在 LINE、IG 裡直接填入回覆',
-                                          style: TextStyle(
-                                            color: Color(0xFF6B6B6B),
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 7,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Color(0xFFE7EFE8),
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                    child: const Text(
-                                      '看教學',
-                                      style: TextStyle(
-                                        color: Color(0xFF1F3A2E),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                    ),
-                                  ),
-                                  GestureDetector(
-                                    onTap: () => setState(
-                                      () => _keyboardBannerDismissed = true,
-                                    ),
-                                    child: const Icon(
-                                      Icons.close_rounded,
-                                      color: Color(0xFF8B6F47),
-                                      size: 20,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ).animate().fadeIn(
-                          duration: const Duration(milliseconds: 500),
-                        ),
-                  ),
-
-                // ── Seasonal Package Banner ──────────────────────
-                Consumer<SeasonalService>(
-                  builder: (_, seasonalSvc, child) {
-                    final banner = seasonalSvc.bannerPackage;
-                    if (banner == null) {
-                      return const SliverToBoxAdapter(child: SizedBox.shrink());
-                    }
-                    return SliverToBoxAdapter(
-                      child:
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(
-                              AppTheme.spacingMd,
-                              AppTheme.spacingMd,
-                              AppTheme.spacingMd,
-                              0,
-                            ),
-                            child: GestureDetector(
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const SeasonalPackagesView(),
-                                ),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(
-                                  AppTheme.radiusLg,
-                                ),
-                                child: BackdropFilter(
-                                  filter: ImageFilter.blur(
-                                    sigmaX: 10,
-                                    sigmaY: 10,
-                                  ),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(14),
-                                    decoration: BoxDecoration(
-                                      gradient: banner.gradient,
-                                      borderRadius: BorderRadius.circular(
-                                        AppTheme.radiusLg,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: banner.primaryColor.withValues(
-                                            alpha: 0.25,
-                                          ),
-                                          blurRadius: 12,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Text(
-                                          banner.emoji,
-                                          style: const TextStyle(fontSize: 28),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                '${banner.name} 免費開放',
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 15,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                '剩餘 ${banner.daysRemaining} 天 | 免費使用',
-                                                style: const TextStyle(
-                                                  color: Colors.white70,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        GestureDetector(
-                                          onTap: () => seasonalSvc
-                                              .dismissBanner(banner.id),
-                                          child: const Icon(
-                                            Icons.close_rounded,
-                                            color: Colors.white54,
-                                            size: 20,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ).animate().fadeIn(
-                            duration: const Duration(milliseconds: 500),
-                          ),
-                    );
-                  },
-                ),
-
-                // ── Persona Pill ──────────────────────────────────
-                SliverToBoxAdapter(
-                  child:
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          AppTheme.spacingMd,
-                          AppTheme.spacingMd,
-                          AppTheme.spacingMd,
-                          0,
-                        ),
-                        child: GestureDetector(
-                          onTap: () async {
-                            final persona = await Navigator.push<ChatPersona?>(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => CharacterMarketView(
-                                  currentPersona: _selectedPersona,
-                                ),
-                              ),
-                            );
-                            if (mounted) {
-                              setState(() => _selectedPersona = persona);
-                            }
-                          },
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(
-                              AppTheme.radiusFull,
-                            ),
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 10,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.08),
-                                  borderRadius: BorderRadius.circular(
-                                    AppTheme.radiusFull,
-                                  ),
-                                  border: Border.all(
-                                    color: _selectedPersona != null
-                                        ? AppTheme.accent.withValues(alpha: 0.4)
-                                        : Colors.white.withValues(alpha: 0.1),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      _selectedPersona?.emoji ?? '\u{1F3AD}',
-                                      style: const TextStyle(fontSize: 20),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      _selectedPersona != null
-                                          ? '角色：${_selectedPersona!.name}'
-                                          : '選擇 AI 角色',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: _selectedPersona != null
-                                            ? AppTheme.accent
-                                            : AppTheme.textSecondary,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Icon(
-                                      Icons.chevron_right_rounded,
-                                      color: AppTheme.textHint,
-                                      size: 18,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ).animate().fadeIn(
-                        duration: const Duration(milliseconds: 400),
-                      ),
-                ),
-
-                // ── Intimacy hearts ───────────────────────────────
-                SliverToBoxAdapter(
-                  child:
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          AppTheme.spacingMd,
-                          AppTheme.spacingMd,
-                          AppTheme.spacingMd,
-                          0,
-                        ),
-                        child: IntimacySelector(
-                          selectedLevel: _intimacyLevel,
-                          onChanged: (level) =>
-                              setState(() => _intimacyLevel = level),
-                        ),
-                      ).animate().fadeIn(
-                        duration: const Duration(milliseconds: 400),
-                      ),
-                ),
-
-                // ── Platform Chips ────────────────────────────────
-                SliverToBoxAdapter(
-                  child:
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          AppTheme.spacingMd,
-                          AppTheme.spacingMd,
-                          AppTheme.spacingMd,
-                          0,
-                        ),
-                        child: Row(
-                          children: _platforms.map((platform) {
-                            final isSelected = platform == _selectedPlatform;
-                            final emoji = platform == '交友App'
-                                ? '\u{1F498}'
-                                : platform == 'LINE'
-                                ? '\u{1F4AC}'
-                                : '\u{1F4F8}';
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: GestureDetector(
-                                onTap: () => setState(
-                                  () => _selectedPlatform = platform,
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(
-                                    AppTheme.radiusFull,
-                                  ),
-                                  child: BackdropFilter(
-                                    filter: ImageFilter.blur(
-                                      sigmaX: 8,
-                                      sigmaY: 8,
-                                    ),
-                                    child: AnimatedContainer(
-                                      duration: const Duration(
-                                        milliseconds: 250,
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 10,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isSelected
-                                            ? AppTheme.primary.withValues(
-                                                alpha: 0.25,
-                                              )
-                                            : Colors.white.withValues(
-                                                alpha: 0.06,
-                                              ),
-                                        borderRadius: BorderRadius.circular(
-                                          AppTheme.radiusFull,
-                                        ),
-                                        border: Border.all(
-                                          color: isSelected
-                                              ? AppTheme.accent.withValues(
-                                                  alpha: 0.5,
-                                                )
-                                              : Colors.white.withValues(
-                                                  alpha: 0.1,
-                                                ),
-                                          width: isSelected ? 1.5 : 1,
-                                        ),
-                                        boxShadow: isSelected
-                                            ? [
-                                                BoxShadow(
-                                                  color: AppTheme.accent
-                                                      .withValues(alpha: 0.2),
-                                                  blurRadius: 8,
-                                                ),
-                                              ]
-                                            : null,
-                                      ),
-                                      child: Text(
-                                        '$emoji $platform',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: isSelected
-                                              ? FontWeight.w700
-                                              : FontWeight.w500,
-                                          color: isSelected
-                                              ? Colors.white
-                                              : AppTheme.textSecondary,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ).animate().fadeIn(
-                        duration: const Duration(milliseconds: 400),
-                      ),
-                ),
-
-                // ── Message Input (glassmorphism) ─────────────────
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppTheme.spacingMd),
-                    child:
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '對方傳了什麼？',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const SizedBox(height: AppTheme.spacingSm),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(
-                                AppTheme.radiusLg,
-                              ),
-                              child: BackdropFilter(
-                                filter: ImageFilter.blur(
-                                  sigmaX: 10,
-                                  sigmaY: 10,
-                                ),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 300),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.06),
-                                    borderRadius: BorderRadius.circular(
-                                      AppTheme.radiusLg,
-                                    ),
-                                    border: Border.all(
-                                      color: _inputFocused
-                                          ? AppTheme.accent.withValues(
-                                              alpha: 0.5,
-                                            )
-                                          : Colors.white.withValues(
-                                              alpha: 0.08,
-                                            ),
-                                      width: _inputFocused ? 1.5 : 1,
-                                    ),
-                                    boxShadow: _inputFocused
-                                        ? [
-                                            BoxShadow(
-                                              color: AppTheme.accent.withValues(
-                                                alpha: 0.15,
-                                              ),
-                                              blurRadius: 12,
-                                              spreadRadius: 0,
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  child: TextField(
-                                    controller: _messageController,
-                                    focusNode: _inputFocusNode,
-                                    maxLines: 4,
-                                    maxLength: AppConstants.maxInputLength,
-                                    style: const TextStyle(
-                                      color: AppTheme.textPrimary,
-                                    ),
-                                    decoration: InputDecoration(
-                                      hintText: '貼上對方的訊息...',
-                                      hintStyle: const TextStyle(
-                                        color: AppTheme.textHint,
-                                      ),
-                                      filled: false,
-                                      border: InputBorder.none,
-                                      enabledBorder: InputBorder.none,
-                                      focusedBorder: InputBorder.none,
-                                      contentPadding: const EdgeInsets.all(16),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ).animate().fadeIn(
-                          duration: const Duration(milliseconds: 500),
-                        ),
-                  ),
-                ),
-
-                // ── Style Selector (2 rows of emoji chips) ────────
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppTheme.spacingMd,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '選擇回覆風格',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: AppTheme.spacingSm),
-                        _buildStyleChips(),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // ── Generate Button ───────────────────────────────
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppTheme.spacingMd),
-                    child: _GradientButton(
-                      onTap: ai.isLoading ? null : _generateReplies,
-                      isLoading: ai.isLoading,
-                      label: '\u{2728} 生成回覆',
-                    ),
-                  ),
-                ),
-
-                // ── Error Message ─────────────────────────────────
-                if (ai.error != null)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppTheme.spacingMd,
-                      ),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppTheme.error.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(
-                            AppTheme.radiusMd,
-                          ),
-                          border: Border.all(
-                            color: AppTheme.error.withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.error_outline,
-                              color: AppTheme.error,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                ai.error!,
-                                style: const TextStyle(
-                                  color: AppTheme.error,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.close,
-                                size: 18,
-                                color: AppTheme.error,
-                              ),
-                              onPressed: ai.clearError,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                // ── Feature Grid (3 columns) ─────────────────────
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppTheme.spacingMd),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '更多功能',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: AppTheme.spacingMd),
-                        _buildFeatureGrid(),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Bottom padding
-                const SliverToBoxAdapter(child: SizedBox(height: 80)),
-              ],
+            const Positioned(
+              top: 170,
+              left: -130,
+              child: _Glow(size: 260, color: Color(0x337C3AED)),
             ),
-
-            // ── Floating Emergency Button ─────────────────────────
-            Positioned(
-              right: AppTheme.spacingMd,
-              bottom: AppTheme.spacingMd,
-              child: _PulsingEmergencyButton(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const EmergencyCoachView()),
-                ),
+            SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(22, 20, 22, 30),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _Header(
+                    subscribed: usage.isSubscribed || revenueCat.isSubscribed,
+                    onProTap: _showPaywall,
+                    onSettingsTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SettingsView()),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  const Text(
+                    '不用想破頭',
+                    style: TextStyle(
+                      color: _ink,
+                      fontSize: 42,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -1.3,
+                      height: 0.98,
+                    ),
+                  ),
+                  const Text(
+                    '直接生成一句能貼回去的回覆',
+                    style: TextStyle(
+                      color: _ink,
+                      fontSize: 27,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.7,
+                      height: 1.08,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '複製對方訊息，選一種情境和語氣，LoveKey 只給你一個最適合貼回去的答案。',
+                    style: TextStyle(
+                      color: _muted,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      height: 1.55,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  _InputCard(
+                    controller: _messageController,
+                    onExample: () {
+                      _messageController.text = '我今天真的有點累';
+                    },
+                  ),
+                  const SizedBox(height: 18),
+                  _ModeSelector(
+                    modes: _modes,
+                    selectedIndex: _selectedMode,
+                    onChanged: (index) => setState(() => _selectedMode = index),
+                  ),
+                  const SizedBox(height: 18),
+                  _ToneSelector(
+                    styles: _styles,
+                    selected: _selectedStyle,
+                    onChanged: (style) =>
+                        setState(() => _selectedStyle = style),
+                  ),
+                  const SizedBox(height: 22),
+                  _PrimaryButton(
+                    loading: ai.isLoading,
+                    title: ai.isLoading ? '正在生成...' : '生成回覆',
+                    onTap: ai.isLoading ? null : _generateReplies,
+                  ),
+                  const SizedBox(height: 18),
+                  _KeyboardCard(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const KeyboardGuideView(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  _ProCard(
+                    remaining: usage.remainingFree,
+                    subscribed: usage.isSubscribed || revenueCat.isSubscribed,
+                    onTap: _showPaywall,
+                  ),
+                  const SizedBox(height: 22),
+                  const _StepsCard(),
+                ],
               ),
             ),
           ],
@@ -924,776 +221,296 @@ class _HomeViewState extends State<HomeView> {
       ),
     );
   }
+}
 
-  Widget _buildLoveAssistStyleHome(AiService ai) {
-    return Scaffold(
-      backgroundColor: _cream,
-      body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(child: _buildLightHeader()),
-            if (!_keyboardBannerDismissed)
-              SliverToBoxAdapter(child: _buildLightKeyboardCard()),
-            SliverToBoxAdapter(child: _buildAssistantHomeCard()),
-            SliverToBoxAdapter(child: _buildReplyComposer(ai)),
-            if (ai.error != null)
-              SliverToBoxAdapter(child: _buildLightError(ai)),
-            const SliverToBoxAdapter(child: SizedBox(height: 28)),
-          ],
+class _Header extends StatelessWidget {
+  final bool subscribed;
+  final VoidCallback onProTap;
+  final VoidCallback onSettingsTap;
+
+  const _Header({
+    required this.subscribed,
+    required this.onProTap,
+    required this.onSettingsTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Text(
+          'LoveKey',
+          style: TextStyle(
+            color: _HomeViewState._ink,
+            fontSize: 28,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.7,
+          ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildLightHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 18, 22, 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  '你的專屬聊天助手',
-                  style: TextStyle(
-                    color: _ink,
-                    fontSize: 27,
-                    height: 1.05,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.6,
-                  ),
-                ),
-                SizedBox(height: 6),
-                Text(
-                  '複製一句，幫你想好下一句',
-                  style: TextStyle(
-                    color: _muted,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
+        const Spacer(),
+        GestureDetector(
+          onTap: onProTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [_HomeViewState._primary, _HomeViewState._pink],
+              ),
+              borderRadius: BorderRadius.circular(999),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x338B5CF6),
+                  blurRadius: 18,
+                  offset: Offset(0, 8),
                 ),
               ],
+            ),
+            child: Text(
+              subscribed ? 'PRO' : '升級',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.2,
+              ),
             ),
           ),
-          _CircleIconButton(
-            icon: Icons.settings_rounded,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SettingsView()),
+        ),
+        const SizedBox(width: 10),
+        IconButton(
+          onPressed: onSettingsTap,
+          icon: const Icon(Icons.settings_rounded),
+          color: _HomeViewState._muted,
+        ),
+      ],
+    );
+  }
+}
+
+class _InputCard extends StatelessWidget {
+  final TextEditingController controller;
+  final VoidCallback onExample;
+
+  const _InputCard({required this.controller, required this.onExample});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: _HomeViewState._surface,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: _HomeViewState._line),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 22,
+            offset: Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text(
+                '對方訊息',
+                style: TextStyle(
+                  color: _HomeViewState._muted,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: onExample,
+                child: const Text(
+                  '換例句',
+                  style: TextStyle(
+                    color: _HomeViewState._pink,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: controller,
+            minLines: 2,
+            maxLines: 4,
+            style: const TextStyle(
+              color: _HomeViewState._ink,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              height: 1.35,
+            ),
+            decoration: InputDecoration(
+              hintText: '貼上她剛剛傳來的話...',
+              hintStyle: TextStyle(
+                color: _HomeViewState._muted.withValues(alpha: 0.45),
+                fontWeight: FontWeight.w700,
+              ),
+              filled: true,
+              fillColor: _HomeViewState._soft,
+              border: OutlineInputBorder(
+                borderSide: BorderSide.none,
+                borderRadius: BorderRadius.circular(22),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 16,
+              ),
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildLightKeyboardCard() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
-      child: GestureDetector(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const KeyboardGuideView()),
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: _lightCardDecoration(radius: 22),
-          child: Row(
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: _sage,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.keyboard_alt_rounded,
-                  color: _forest,
-                  size: 25,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '先開啟 AI 鍵盤',
-                      style: TextStyle(
-                        color: _ink,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    SizedBox(height: 3),
-                    Text(
-                      '不用切 App，在 LINE、IG 直接填入回覆',
-                      style: TextStyle(
-                        color: _muted,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              _SmallPill(label: '看教學', color: _forest, bg: _sage),
-              const SizedBox(width: 4),
-              GestureDetector(
-                onTap: () => setState(() => _keyboardBannerDismissed = true),
-                child: const Icon(Icons.close_rounded, color: _muted, size: 20),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+class _ModeSelector extends StatelessWidget {
+  final List<_ModeItem> modes;
+  final int selectedIndex;
+  final ValueChanged<int> onChanged;
 
-  Widget _buildAssistantHomeCard() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFF4F0),
-          borderRadius: BorderRadius.circular(34),
-          border: Border.all(color: const Color(0xFFF2D5CC), width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: _rose.withValues(alpha: 0.14),
-              blurRadius: 26,
-              offset: const Offset(0, 14),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(
-                    Icons.keyboard_alt_rounded,
-                    color: _forest,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '核心流程',
-                        style: TextStyle(
-                          color: _ink,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      SizedBox(height: 3),
-                      Text(
-                        '複製對話，回到鍵盤選一種回覆方式',
-                        style: TextStyle(
-                          color: _muted,
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            Container(
-              height: 116,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(26),
-                border: Border.all(color: _line),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: const [
-                      _SmallPill(label: '接話', color: Colors.white, bg: _forest),
-                      _SmallPill(label: '破冰', color: _forest, bg: _sage),
-                      _SmallPill(label: '邀約', color: _forest, bg: _sage),
-                      _SmallPill(label: '安撫', color: _forest, bg: _sage),
-                      _SmallPill(label: '自訂', color: _forest, bg: _sage),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  const Text(
-                    '這 5 個模式就是主要功能，不再加一堆入口。',
-                    style: TextStyle(
-                      color: _muted,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            _PrimaryPillButton(
-              label: '設定鍵盤',
-              icon: Icons.arrow_forward_rounded,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const KeyboardGuideView()),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  const _ModeSelector({
+    required this.modes,
+    required this.selectedIndex,
+    required this.onChanged,
+  });
 
-  Widget _buildModeChips() {
-    const modes = ['接話', '破冰', '邀約', '安撫', '自訂'];
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: modes.map((mode) {
-        final isSelected = mode == '接話';
-        return _SmallPill(
-          label: mode,
-          color: isSelected ? Colors.white : _forest,
-          bg: isSelected ? _forest : _sage,
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildSimpleStyleChips() {
-    final styles = ReplyStyle.values.take(4).toList();
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: styles.map((style) {
-        final isSelected = style == _selectedStyle;
-        return GestureDetector(
-          onTap: () => setState(() => _selectedStyle = style),
-          child: _SmallPill(
-            label: '${style.emoji} ${style.label}',
-            color: isSelected ? Colors.white : _ink,
-            bg: isSelected ? _forest : _sand,
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildReplyComposer(AiService ai) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: _lightCardDecoration(radius: 26),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '先在這裡試一句',
-              style: TextStyle(
-                color: _ink,
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              '正式使用時，在聊天 App 複製一句，再用鍵盤生成。',
-              style: TextStyle(
-                color: _muted,
-                fontSize: 12.5,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 14),
-            _buildModeChips(),
-            const SizedBox(height: 14),
-            TextField(
-              controller: _messageController,
-              focusNode: _inputFocusNode,
-              maxLines: 3,
-              maxLength: AppConstants.maxInputLength,
-              style: const TextStyle(color: _ink, fontWeight: FontWeight.w700),
-              decoration: InputDecoration(
-                hintText: '貼上對方傳來的訊息...',
-                hintStyle: const TextStyle(color: _muted),
-                counterText: '',
-                filled: true,
-                fillColor: _sand,
-                contentPadding: const EdgeInsets.all(14),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(18),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
-            _buildSimpleStyleChips(),
-            const SizedBox(height: 16),
-            _PrimaryPillButton(
-              label: ai.isLoading ? '生成中...' : '生成一則回覆',
-              icon: Icons.bolt_rounded,
-              onTap: ai.isLoading ? null : _generateReplies,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLightError(AiService ai) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: _softRose,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: _rose.withValues(alpha: 0.24)),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.error_outline_rounded, color: _rose, size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                ai.error!,
-                style: const TextStyle(
-                  color: _rose,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.close_rounded, size: 18, color: _rose),
-              onPressed: ai.clearError,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  BoxDecoration _lightCardDecoration({double radius = 22}) {
-    return BoxDecoration(
-      color: _card,
-      borderRadius: BorderRadius.circular(radius),
-      border: Border.all(color: _line),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.06),
-          blurRadius: 18,
-          offset: const Offset(0, 8),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStyleChips() {
-    final styles = _showAllStyles
-        ? ReplyStyle.values
-        : ReplyStyle.values.take(_mainStyleCount).toList();
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        ...styles.map((style) {
-          final isSelected = style == _selectedStyle;
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 56,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: modes.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          final mode = modes[index];
+          final selected = selectedIndex == index;
           return GestureDetector(
-            onTap: () => setState(() => _selectedStyle = style),
+            onTap: () => onChanged(index),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              duration: const Duration(milliseconds: 160),
+              padding: const EdgeInsets.symmetric(horizontal: 18),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? style.color.withValues(alpha: 0.2)
-                    : Colors.white.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+                color: selected ? _HomeViewState._primary : Colors.white,
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: isSelected
-                      ? style.color.withValues(alpha: 0.6)
-                      : Colors.white.withValues(alpha: 0.1),
-                  width: isSelected ? 1.5 : 1,
+                  color: selected
+                      ? _HomeViewState._primary
+                      : _HomeViewState._line,
                 ),
-                boxShadow: isSelected
-                    ? [
+                boxShadow: selected
+                    ? const [
                         BoxShadow(
-                          color: style.color.withValues(alpha: 0.3),
-                          blurRadius: 10,
-                          spreadRadius: 0,
+                          color: Color(0x307C3AED),
+                          blurRadius: 16,
+                          offset: Offset(0, 8),
                         ),
                       ]
                     : null,
               ),
               child: Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(style.emoji, style: const TextStyle(fontSize: 18)),
-                  const SizedBox(width: 6),
+                  Icon(
+                    mode.icon,
+                    size: 18,
+                    color: selected ? Colors.white : _HomeViewState._primary,
+                  ),
+                  const SizedBox(width: 8),
                   Text(
-                    style.label,
+                    mode.title,
                     style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: isSelected
-                          ? FontWeight.w700
-                          : FontWeight.w500,
-                      color: isSelected ? style.color : AppTheme.textSecondary,
+                      color: selected ? Colors.white : _HomeViewState._ink,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
                 ],
               ),
             ),
           );
-        }),
-        if (!_showAllStyles)
-          GestureDetector(
-            onTap: () => setState(() => _showAllStyles = true),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(AppTheme.radiusFull),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('\u{2795}', style: TextStyle(fontSize: 14)),
-                  SizedBox(width: 4),
-                  Text(
-                    '更多',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildFeatureGrid() {
-    final features = <_FeatureItem>[
-      _FeatureItem(
-        emoji: '\u{1F321}\u{FE0F}',
-        label: '聊天溫度計',
-        onTap: () {
-          AnalyticsService.instance.trackFeatureUsed(
-            feature: AdTrackingConfig.featureAnalysis,
-          );
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ChatAnalysisView()),
-          );
         },
-      ),
-      _FeatureItem(
-        emoji: '\u{1F9E0}',
-        label: '她什麼意思',
-        onTap: () {
-          AnalyticsService.instance.trackFeatureUsed(
-            feature: AdTrackingConfig.featureInterpret,
-          );
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const ChatAnalysisView(initialTab: 1),
-            ),
-          );
-        },
-      ),
-      _FeatureItem(
-        emoji: '\u{1F4AC}',
-        label: '破冰開場白',
-        onTap: () {
-          AnalyticsService.instance.trackFeatureUsed(
-            feature: AdTrackingConfig.featureOpener,
-          );
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const OpenerView()),
-          );
-        },
-      ),
-      _FeatureItem(
-        emoji: '\u{1F4A1}',
-        label: '話題建議',
-        onTap: () {
-          AnalyticsService.instance.trackFeatureUsed(
-            feature: AdTrackingConfig.featureTopic,
-          );
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const TopicSuggestionsView()),
-          );
-        },
-      ),
-      _FeatureItem(
-        emoji: '\u{1F30D}',
-        label: '跨國翻譯',
-        onTap: () {
-          AnalyticsService.instance.trackFeatureUsed(
-            feature: AdTrackingConfig.featureTranslate,
-          );
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const TranslateReplyView()),
-          );
-        },
-      ),
-      _FeatureItem(
-        emoji: '\u{23F0}',
-        label: '節奏教練',
-        onTap: () {
-          AnalyticsService.instance.trackFeatureUsed(
-            feature: AdTrackingConfig.featureTiming,
-          );
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const TimingCoachView()),
-          );
-        },
-      ),
-      _FeatureItem(
-        emoji: '\u{1F60A}',
-        label: '表情建議',
-        onTap: () {
-          AnalyticsService.instance.trackFeatureUsed(
-            feature: AdTrackingConfig.featureEmoji,
-          );
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const EmojiSuggesterView()),
-          );
-        },
-      ),
-      _FeatureItem(
-        emoji: '\u{2764}\u{FE0F}',
-        label: '約會邀請',
-        onTap: () {
-          AnalyticsService.instance.trackFeatureUsed(
-            feature: AdTrackingConfig.featureDate,
-          );
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const DateInvitationView()),
-          );
-        },
-      ),
-      _FeatureItem(
-        emoji: '\u{1F91D}',
-        label: '吵架和好',
-        onTap: () {
-          AnalyticsService.instance.trackFeatureUsed(
-            feature: AdTrackingConfig.featureArgument,
-          );
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ArgumentResolveView()),
-          );
-        },
-      ),
-      _FeatureItem(
-        emoji: '\u{2600}\u{FE0F}',
-        label: '早安晚安',
-        onTap: () {
-          AnalyticsService.instance.trackFeatureUsed(
-            feature: AdTrackingConfig.featureGreeting,
-          );
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const GreetingsView()),
-          );
-        },
-      ),
-      _FeatureItem(
-        emoji: '\u{2B50}',
-        label: '回覆評分',
-        onTap: () {
-          AnalyticsService.instance.trackFeatureUsed(
-            feature: AdTrackingConfig.featureScore,
-          );
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ReplyScorerView()),
-          );
-        },
-      ),
-      _FeatureItem(
-        emoji: '\u{1F30F}',
-        label: '約會文化',
-        onTap: () {
-          AnalyticsService.instance.trackFeatureUsed(
-            feature: AdTrackingConfig.featureCulture,
-          );
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const CultureTipsView()),
-          );
-        },
-      ),
-    ];
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 1.0,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-      ),
-      itemCount: features.length,
-      itemBuilder: (context, index) {
-        final item = features[index];
-        return GestureDetector(
-              onTap: item.onTap,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.08),
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(item.emoji, style: const TextStyle(fontSize: 28)),
-                        const SizedBox(height: 6),
-                        Text(
-                          item.label,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.textPrimary,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            )
-            .animate(delay: Duration(milliseconds: 200 + index * 50))
-            .fadeIn(duration: const Duration(milliseconds: 400));
-      },
-    );
-  }
-}
-
-class _FeatureItem {
-  final String emoji;
-  final String label;
-  final VoidCallback onTap;
-
-  _FeatureItem({required this.emoji, required this.label, required this.onTap});
-}
-
-class _CircleIconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _CircleIconButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: _HomeViewState._card,
-          shape: BoxShape.circle,
-          border: Border.all(color: _HomeViewState._line),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 14,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Icon(icon, color: _HomeViewState._forest, size: 22),
       ),
     );
   }
 }
 
-class _SmallPill extends StatelessWidget {
-  final String label;
-  final Color color;
-  final Color bg;
+class _ToneSelector extends StatelessWidget {
+  final List<_ToneItem> styles;
+  final ReplyStyle selected;
+  final ValueChanged<ReplyStyle> onChanged;
 
-  const _SmallPill({
-    required this.label,
-    required this.color,
-    required this.bg,
+  const _ToneSelector({
+    required this.styles,
+    required this.selected,
+    required this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.12)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 12.5,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: styles.map((tone) {
+        final active = tone.style == selected;
+        return GestureDetector(
+          onTap: () => onChanged(tone.style),
+          child: Column(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: active ? const Color(0xFFFFD8EA) : Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: active ? _HomeViewState._pink : _HomeViewState._line,
+                    width: active ? 3 : 1,
+                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x12000000),
+                      blurRadius: 12,
+                      offset: Offset(0, 7),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  tone.icon,
+                  color: active ? _HomeViewState._pink : _HomeViewState._muted,
+                ),
+              ),
+              const SizedBox(height: 7),
+              Text(
+                tone.title,
+                style: TextStyle(
+                  color: active ? _HomeViewState._ink : _HomeViewState._muted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 }
 
-class _PrimaryPillButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
+class _PrimaryButton extends StatelessWidget {
+  final bool loading;
+  final String title;
   final VoidCallback? onTap;
 
-  const _PrimaryPillButton({
-    required this.label,
-    required this.icon,
+  const _PrimaryButton({
+    required this.loading,
+    required this.title,
     required this.onTap,
   });
 
@@ -1701,33 +518,42 @@ class _PrimaryPillButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        height: 56,
+      child: Container(
+        height: 62,
         width: double.infinity,
         decoration: BoxDecoration(
-          color: onTap == null
-              ? _HomeViewState._forest.withValues(alpha: 0.46)
-              : _HomeViewState._forest,
-          borderRadius: BorderRadius.circular(999),
-          boxShadow: [
+          gradient: const LinearGradient(
+            colors: [_HomeViewState._primary, _HomeViewState._pink],
+          ),
+          borderRadius: BorderRadius.circular(23),
+          boxShadow: const [
             BoxShadow(
-              color: _HomeViewState._forest.withValues(alpha: 0.22),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
+              color: Color(0x3AEC4899),
+              blurRadius: 24,
+              offset: Offset(0, 12),
             ),
           ],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white, size: 20),
+            if (loading)
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            else
+              const Icon(Icons.bolt_rounded, color: Colors.white),
             const SizedBox(width: 8),
             Text(
-              label,
+              title,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: 18,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -1738,107 +564,233 @@ class _PrimaryPillButton extends StatelessWidget {
   }
 }
 
-// ── Pulsing Emergency FAB ────────────────────────────────────────────
-class _PulsingEmergencyButton extends StatelessWidget {
+class _KeyboardCard extends StatelessWidget {
   final VoidCallback onTap;
 
-  const _PulsingEmergencyButton({required this.onTap});
+  const _KeyboardCard({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-          onTap: onTap,
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFEF4444), Color(0xFFEC4899)],
-              ),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFEF4444).withValues(alpha: 0.4),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: const Center(
-              child: Text('\u{1F198}', style: TextStyle(fontSize: 24)),
-            ),
-          ),
-        )
-        .animate(onPlay: (c) => c.repeat(reverse: true))
-        .scale(
-          begin: const Offset(1.0, 1.0),
-          end: const Offset(1.08, 1.08),
-          duration: const Duration(milliseconds: 1200),
-          curve: Curves.easeInOut,
-        );
+    return _ActionCard(
+      icon: Icons.keyboard_alt_rounded,
+      title: '設定鍵盤',
+      subtitle: '在 LINE、IG、交友 App 裡直接使用',
+      buttonText: '查看教學',
+      onTap: onTap,
+    );
   }
 }
 
-// ── Gradient Button ──────────────────────────────────────────────────
-class _GradientButton extends StatelessWidget {
-  final VoidCallback? onTap;
-  final bool isLoading;
-  final String label;
+class _ProCard extends StatelessWidget {
+  final int remaining;
+  final bool subscribed;
+  final VoidCallback onTap;
 
-  const _GradientButton({
+  const _ProCard({
+    required this.remaining,
+    required this.subscribed,
     required this.onTap,
-    required this.isLoading,
-    required this.label,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: double.infinity,
-        height: 56,
-        decoration: BoxDecoration(
-          gradient: onTap != null
-              ? const LinearGradient(
-                  colors: [Color(0xFFEC4899), Color(0xFFAB47BC)],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                )
-              : null,
-          color: onTap == null ? Colors.white.withValues(alpha: 0.1) : null,
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          boxShadow: onTap != null
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFFEC4899).withValues(alpha: 0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 6),
-                  ),
-                ]
-              : null,
-        ),
-        child: Center(
-          child: isLoading
-              ? const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : Text(
-                  label,
+    return _ActionCard(
+      icon: Icons.workspace_premium_rounded,
+      title: subscribed ? 'Pro 已解鎖' : '免費剩餘 $remaining 次',
+      subtitle: subscribed
+          ? '已解鎖所有語氣與鍵盤 AI 回覆'
+          : 'Monthly \$9.99 · Quarterly \$19.99 · Yearly \$39.99',
+      buttonText: subscribed ? '已啟用' : '升級 Pro',
+      onTap: subscribed ? null : onTap,
+    );
+  }
+}
+
+class _ActionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String buttonText;
+  final VoidCallback? onTap;
+
+  const _ActionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.buttonText,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _HomeViewState._line),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: _HomeViewState._soft,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: _HomeViewState._primary),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: _HomeViewState._ink,
                     fontSize: 17,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-        ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: _HomeViewState._muted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          TextButton(
+            onPressed: onTap,
+            child: Text(
+              buttonText,
+              style: TextStyle(
+                color: onTap == null
+                    ? _HomeViewState._muted
+                    : _HomeViewState._pink,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
+}
+
+class _StepsCard extends StatelessWidget {
+  const _StepsCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: _HomeViewState._line),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '使用方式',
+            style: TextStyle(
+              color: _HomeViewState._ink,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          SizedBox(height: 14),
+          _StepRow(number: '1', text: '複製一則對方訊息'),
+          _StepRow(number: '2', text: '選情境與語氣'),
+          _StepRow(number: '3', text: '產生一則回覆並貼回聊天'),
+        ],
+      ),
+    );
+  }
+}
+
+class _StepRow extends StatelessWidget {
+  final String number;
+  final String text;
+
+  const _StepRow({required this.number, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              color: _HomeViewState._primary,
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              number,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            text,
+            style: const TextStyle(
+              color: _HomeViewState._muted,
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Glow extends StatelessWidget {
+  final double size;
+  final Color color;
+
+  const _Glow({required this.size, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+    );
+  }
+}
+
+class _ModeItem {
+  final String title;
+  final IconData icon;
+
+  const _ModeItem(this.title, this.icon);
+}
+
+class _ToneItem {
+  final ReplyStyle style;
+  final String title;
+  final IconData icon;
+
+  const _ToneItem(this.style, this.title, this.icon);
 }

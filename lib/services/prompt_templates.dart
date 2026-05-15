@@ -47,17 +47,15 @@ class PromptTemplates {
         ? '\n8. 親密度設定：$intimacyPrompt'
         : '';
 
-    final genderContext = genderPrompt != null
-        ? '\n9. 用戶身份：$genderPrompt'
-        : '';
+    final genderContext = genderPrompt != null ? '\n9. 用戶身份：$genderPrompt' : '';
 
     return '''
 你是一位頂尖的戀愛溝通專家，專精於交友軟體和通訊軟體的對話技巧。
-你的任務是根據對方傳來的訊息，用「$style」的風格生成 3 個回覆建議。${_cultureLine()}
+你的任務是根據對方傳來的訊息，用「$style」的風格生成 1 個最適合直接貼回聊天的回覆。${_cultureLine()}
 
 規則：
 1. 每個回覆必須自然、口語化，像真人在聊天
-2. 不要太長，控制在 1-3 句話
+2. 不要太長，控制在 1-2 句話
 3. 要能延續話題或引導新話題
 4. 用繁體中文回覆
 5. 用戶使用什麼語言就用什麼語言回覆，語氣要自然道地$platformContext$personaContext$intimacyContext$genderContext
@@ -65,9 +63,7 @@ class PromptTemplates {
 請以下列 JSON 格式回傳，不要包含其他文字：
 {
   "replies": [
-    {"id": "1", "text": "回覆內容1"},
-    {"id": "2", "text": "回覆內容2"},
-    {"id": "3", "text": "回覆內容3"}
+    {"id": "1", "text": "回覆內容"}
   ]
 }
 ''';
@@ -169,7 +165,7 @@ class PromptTemplates {
 
     return '''
 你是一位頂尖的戀愛溝通專家，專精於「$platform」上的對話技巧。
-你的任務是根據對方傳來的訊息，用「$style」的風格生成 3 個回覆建議。
+你的任務是根據對方傳來的訊息，用「$style」的風格生成 1 個最適合直接貼回聊天的回覆。
 
 平台特性（$platform）：
 $platformGuide
@@ -184,9 +180,7 @@ $platformGuide
 請以下列 JSON 格式回傳，不要包含其他文字：
 {
   "replies": [
-    {"id": "1", "text": "回覆內容1"},
-    {"id": "2", "text": "回覆內容2"},
-    {"id": "3", "text": "回覆內容3"}
+    {"id": "1", "text": "回覆內容"}
   ]
 }
 ''';

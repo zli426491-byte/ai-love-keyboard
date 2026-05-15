@@ -2,7 +2,7 @@ class AppConstants {
   AppConstants._();
 
   // ── App Info ──────────────────────────────────────────────────────────
-  static const String appName = 'AI 戀愛鍵盤';
+  static const String appName = 'LoveKey';
   static const String bundleId = 'com.ailovekeyboard.app';
   static const String appVersion = '1.0.0';
 
@@ -21,34 +21,37 @@ class AppConstants {
   // ── Situation Package Product IDs ────────────────────────────────────
   static const String argumentPackageId = 'com.ailovekeyboard.pack.argument';
   static const String breakupPackageId = 'com.ailovekeyboard.pack.breakup';
-  static const String confessionPackageId = 'com.ailovekeyboard.pack.confession';
-  static const String escalationPackageId = 'com.ailovekeyboard.pack.escalation';
-  static const String leftOnReadPackageId = 'com.ailovekeyboard.pack.leftonread';
+  static const String confessionPackageId =
+      'com.ailovekeyboard.pack.confession';
+  static const String escalationPackageId =
+      'com.ailovekeyboard.pack.escalation';
+  static const String leftOnReadPackageId =
+      'com.ailovekeyboard.pack.leftonread';
 
   // ── Keyboard Extension ────────────────────────────────────────────────
   static const String appGroupId = 'group.com.ailovekeyboard.app';
   static const String keyboardBundleId = 'com.ailovekeyboard.app.keyboard';
-  static const String keyboardDisplayName = 'AI 戀愛鍵盤';
+  static const String keyboardDisplayName = 'LoveKey';
 
-  // Review build: all digital features are free. Paid subscriptions, coin
-  // packs, and non-IAP unlock flows must stay disabled until Apple IAP is
-  // implemented and submitted with the related products.
-  static const bool reviewFreeMode = true;
+  static const String revenueCatIosPublicKey =
+      'appl_nttijTbdotLvIoxrLhTiTPmTivA';
+  static const String proEntitlementId = 'pro';
+  static const bool reviewFreeMode = false;
 
   // ── Free Tier ─────────────────────────────────────────────────────────
-  static const int freeDailyLimit = 999;
+  static const int freeDailyLimit = 3;
 
   // ── Subscription Product IDs ──────────────────────────────────────────
-  static const String weeklyProductId = 'com.ailovekeyboard.pro.weekly';
   static const String monthlyProductId = 'com.ailovekeyboard.pro.monthly';
-  static const String lifetimeProductId = 'com.ailovekeyboard.pro.lifetime';
-  static const int freeTrialDays = 7;
-  static const String weeklyPriceDisplay = '免費';
-  static const String monthlyPriceDisplay = '免費';
-  static const String lifetimePriceDisplay = '免費';
-  static const double weeklyPriceUsd = 0;
-  static const double monthlyPriceUsd = 0;
-  static const double lifetimePriceUsd = 0;
+  static const String quarterlyProductId = 'com.ailovekeyboard.pro.quarterly';
+  static const String yearlyProductId = 'com.ailovekeyboard.pro.yearly';
+  static const int freeTrialDays = 3;
+  static const String monthlyPriceDisplay = r'$9.99';
+  static const String quarterlyPriceDisplay = r'$19.99';
+  static const String yearlyPriceDisplay = r'$39.99';
+  static const double monthlyPriceUsd = 9.99;
+  static const double quarterlyPriceUsd = 19.99;
+  static const double yearlyPriceUsd = 39.99;
 
   // ── SharedPreferences Keys ────────────────────────────────────────────
   static const String prefOnboardingComplete = 'onboarding_complete';
@@ -58,7 +61,7 @@ class AppConstants {
   static const String prefUserGender = 'user_gender'; // male / female
 
   // ── AI Defaults ───────────────────────────────────────────────────────
-  static const int defaultReplyCount = 3;
+  static const int defaultReplyCount = 1;
   static const int defaultOpenerCount = 5;
   static const int defaultTopicCount = 5;
   static const int maxInputLength = 2000;
