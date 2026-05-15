@@ -63,6 +63,16 @@ class _HomeViewState extends State<HomeView> {
 
   // Main 4 styles + 6 more
   static const _mainStyleCount = 4;
+  static const _cream = Color(0xFFFAF7F2);
+  static const _card = Color(0xFFFFFEFB);
+  static const _ink = Color(0xFF171717);
+  static const _muted = Color(0xFF6B6B6B);
+  static const _line = Color(0xFFE7DDD0);
+  static const _forest = Color(0xFF1F3A2E);
+  static const _sage = Color(0xFFE7EFE8);
+  static const _rose = Color(0xFFC8385C);
+  static const _sand = Color(0xFFF1E9DC);
+  static const _softRose = Color(0xFFFFE8ED);
 
   @override
   void initState() {
@@ -153,6 +163,9 @@ class _HomeViewState extends State<HomeView> {
   @override
   Widget build(BuildContext context) {
     final ai = context.watch<AiService>();
+    if (MediaQuery.sizeOf(context).width >= 0) {
+      return _buildLoveAssistStyleHome(ai);
+    }
 
     return Scaffold(
       backgroundColor: AppTheme.bgDark,
@@ -912,6 +925,719 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
+  Widget _buildLoveAssistStyleHome(AiService ai) {
+    return Scaffold(
+      backgroundColor: _cream,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(child: _buildLightHeader()),
+                if (!_keyboardBannerDismissed)
+                  SliverToBoxAdapter(child: _buildLightKeyboardCard()),
+                SliverToBoxAdapter(child: _buildAssistantHomeCard()),
+                SliverToBoxAdapter(child: _buildReplyComposer(ai)),
+                if (ai.error != null)
+                  SliverToBoxAdapter(child: _buildLightError(ai)),
+                SliverToBoxAdapter(child: _buildCompactFeatureSection()),
+                const SliverToBoxAdapter(child: SizedBox(height: 98)),
+              ],
+            ),
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 12,
+              child: _buildLightBottomBar(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLightHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(22, 18, 22, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  '你的專屬聊天助手',
+                  style: TextStyle(
+                    color: _ink,
+                    fontSize: 27,
+                    height: 1.05,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.6,
+                  ),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  '複製一句，幫你想好下一句',
+                  style: TextStyle(
+                    color: _muted,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _CircleIconButton(
+            icon: Icons.settings_rounded,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SettingsView()),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLightKeyboardCard() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
+      child: GestureDetector(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const KeyboardGuideView()),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: _lightCardDecoration(radius: 22),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: _sage,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.keyboard_alt_rounded,
+                  color: _forest,
+                  size: 25,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '先開啟 AI 鍵盤',
+                      style: TextStyle(
+                        color: _ink,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      '不用切 App，在 LINE、IG 直接填入回覆',
+                      style: TextStyle(
+                        color: _muted,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              _SmallPill(label: '看教學', color: _forest, bg: _sage),
+              const SizedBox(width: 4),
+              GestureDetector(
+                onTap: () => setState(() => _keyboardBannerDismissed = true),
+                child: const Icon(Icons.close_rounded, color: _muted, size: 20),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAssistantHomeCard() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF4F0),
+          borderRadius: BorderRadius.circular(34),
+          border: Border.all(color: const Color(0xFFF2D5CC), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: _rose.withValues(alpha: 0.14),
+              blurRadius: 26,
+              offset: const Offset(0, 14),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    height: 44,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.search_rounded, color: _rose, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          '搜尋更多回覆',
+                          style: TextStyle(
+                            color: _muted,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.workspace_premium_rounded,
+                    color: _rose,
+                    size: 22,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              '50%',
+              style: TextStyle(
+                color: _ink,
+                fontSize: 45,
+                height: 1,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -1.2,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              '聊天熟悉度',
+              style: TextStyle(
+                color: _muted,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              width: 140,
+              height: 112,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    _rose.withValues(alpha: 0.5),
+                    _softRose,
+                    Colors.white.withValues(alpha: 0),
+                  ],
+                ),
+              ),
+              child: const Icon(Icons.favorite_rounded, color: _rose, size: 72),
+            ),
+            const SizedBox(height: 10),
+            _PrimaryPillButton(
+              label: '開啟戀愛鍵盤',
+              icon: Icons.auto_awesome_rounded,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const KeyboardGuideView()),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Expanded(
+                  child: _MiniActionCard(
+                    title: '情緒老師',
+                    subtitle: '看懂她的訊號',
+                    icon: Icons.psychology_alt_rounded,
+                    color: _rose,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ChatAnalysisView(initialTab: 1),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _MiniActionCard(
+                    title: '文案改寫',
+                    subtitle: '把話說順',
+                    icon: Icons.edit_note_rounded,
+                    color: const Color(0xFFB98937),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const TranslateReplyView(),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                const Text(
+                  '我的鍵盤',
+                  style: TextStyle(
+                    color: _ink,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const KeyboardGuideView(),
+                    ),
+                  ),
+                  child: const Text(
+                    '鍵盤管理',
+                    style: TextStyle(
+                      color: _muted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: const [
+                _SmallPill(label: '溫柔', color: _forest, bg: _sage),
+                _SmallPill(
+                  label: '高情商',
+                  color: Color(0xFF3578C6),
+                  bg: Color(0xFFE6F0FF),
+                ),
+                _SmallPill(
+                  label: '陽光',
+                  color: Color(0xFFB98937),
+                  bg: Color(0xFFFFF3CE),
+                ),
+                _SmallPill(
+                  label: '幽默',
+                  color: Color(0xFF7B5C18),
+                  bg: Color(0xFFFFF0BD),
+                ),
+                _SmallPill(label: '撩人', color: _rose, bg: _softRose),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReplyComposer(AiService ai) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: _lightCardDecoration(radius: 26),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '試著貼一句訊息',
+              style: TextStyle(
+                color: _ink,
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              '選平台、關係階段與語氣，生成可直接貼上的回覆。',
+              style: TextStyle(
+                color: _muted,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 14),
+            _buildLightPlatformChips(),
+            const SizedBox(height: 14),
+            _buildLightPersonaAndIntimacy(),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _messageController,
+              focusNode: _inputFocusNode,
+              maxLines: 3,
+              maxLength: AppConstants.maxInputLength,
+              style: const TextStyle(color: _ink, fontWeight: FontWeight.w700),
+              decoration: InputDecoration(
+                hintText: '貼上對方傳來的訊息...',
+                hintStyle: const TextStyle(color: _muted),
+                counterText: '',
+                filled: true,
+                fillColor: _sand,
+                contentPadding: const EdgeInsets.all(14),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            _buildLightStyleChips(),
+            const SizedBox(height: 16),
+            _PrimaryPillButton(
+              label: ai.isLoading ? '生成中...' : '生成回覆',
+              icon: Icons.bolt_rounded,
+              onTap: ai.isLoading ? null : _generateReplies,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLightPlatformChips() {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: _platforms.map((platform) {
+        final isSelected = platform == _selectedPlatform;
+        return GestureDetector(
+          onTap: () => setState(() => _selectedPlatform = platform),
+          child: _SmallPill(
+            label: platform,
+            color: isSelected ? Colors.white : _forest,
+            bg: isSelected ? _forest : _sage,
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildLightPersonaAndIntimacy() {
+    return Row(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            onTap: () async {
+              final persona = await Navigator.push<ChatPersona?>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      CharacterMarketView(currentPersona: _selectedPersona),
+                ),
+              );
+              if (mounted) {
+                setState(() => _selectedPersona = persona);
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              decoration: BoxDecoration(
+                color: _sand,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.person_search_rounded,
+                    color: _forest,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _selectedPersona != null
+                          ? _selectedPersona!.name
+                          : '選擇 AI 角色',
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _ink,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: _muted,
+                    size: 18,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: _sand,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.favorite_rounded, color: _rose, size: 18),
+              const SizedBox(width: 6),
+              Text(
+                '親密 $_intimacyLevel',
+                style: const TextStyle(
+                  color: _ink,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(width: 6),
+              GestureDetector(
+                onTap: () => setState(() {
+                  _intimacyLevel = _intimacyLevel == 5 ? 1 : _intimacyLevel + 1;
+                }),
+                child: const Icon(
+                  Icons.add_circle_rounded,
+                  color: _forest,
+                  size: 18,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLightStyleChips() {
+    final styles = _showAllStyles
+        ? ReplyStyle.values
+        : ReplyStyle.values.take(_mainStyleCount).toList();
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        ...styles.map((style) {
+          final isSelected = style == _selectedStyle;
+          return GestureDetector(
+            onTap: () => setState(() => _selectedStyle = style),
+            child: _SmallPill(
+              label: '${style.emoji} ${style.label}',
+              color: isSelected ? Colors.white : _ink,
+              bg: isSelected ? _forest : _sand,
+            ),
+          );
+        }),
+        if (!_showAllStyles)
+          GestureDetector(
+            onTap: () => setState(() => _showAllStyles = true),
+            child: const _SmallPill(label: '更多', color: _forest, bg: _sage),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildLightError(AiService ai) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: _softRose,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: _rose.withValues(alpha: 0.24)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.error_outline_rounded, color: _rose, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                ai.error!,
+                style: const TextStyle(
+                  color: _rose,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close_rounded, size: 18, color: _rose),
+              onPressed: ai.clearError,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactFeatureSection() {
+    final items = <_FeatureItem>[
+      _FeatureItem(
+        emoji: '溫',
+        label: '聊天分析',
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ChatAnalysisView()),
+        ),
+      ),
+      _FeatureItem(
+        emoji: '破',
+        label: '破冰開場',
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const OpenerView()),
+        ),
+      ),
+      _FeatureItem(
+        emoji: '約',
+        label: '約會邀請',
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const DateInvitationView()),
+        ),
+      ),
+      _FeatureItem(
+        emoji: '救',
+        label: '緊急求助',
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const EmergencyCoachView()),
+        ),
+      ),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '更多功能',
+            style: TextStyle(
+              color: _ink,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 12),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 2.55,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+            ),
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              final item = items[index];
+              return _FeatureTileLight(item: item);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLightBottomBar() {
+    return Container(
+      height: 66,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _line),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          const _BottomNavLight(
+            icon: Icons.home_rounded,
+            label: '首頁',
+            active: true,
+          ),
+          _BottomNavLight(
+            icon: Icons.keyboard_alt_rounded,
+            label: '鍵盤',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const KeyboardGuideView()),
+            ),
+          ),
+          _BottomNavLight(
+            icon: Icons.chat_bubble_rounded,
+            label: '訊息',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ChatAnalysisView()),
+            ),
+          ),
+          _BottomNavLight(
+            icon: Icons.person_rounded,
+            label: '我的',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SettingsView()),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  BoxDecoration _lightCardDecoration({double radius = 22}) {
+    return BoxDecoration(
+      color: _card,
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(color: _line),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.06),
+          blurRadius: 18,
+          offset: const Offset(0, 8),
+        ),
+      ],
+    );
+  }
+
   Widget _buildStyleChips() {
     final styles = _showAllStyles
         ? ReplyStyle.values
@@ -1221,6 +1947,291 @@ class _FeatureItem {
   final VoidCallback onTap;
 
   _FeatureItem({required this.emoji, required this.label, required this.onTap});
+}
+
+class _CircleIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _CircleIconButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: _HomeViewState._card,
+          shape: BoxShape.circle,
+          border: Border.all(color: _HomeViewState._line),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Icon(icon, color: _HomeViewState._forest, size: 22),
+      ),
+    );
+  }
+}
+
+class _SmallPill extends StatelessWidget {
+  final String label;
+  final Color color;
+  final Color bg;
+
+  const _SmallPill({
+    required this.label,
+    required this.color,
+    required this.bg,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.12)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 12.5,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
+class _PrimaryPillButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  const _PrimaryPillButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        height: 56,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: onTap == null
+              ? _HomeViewState._forest.withValues(alpha: 0.46)
+              : _HomeViewState._forest,
+          borderRadius: BorderRadius.circular(999),
+          boxShadow: [
+            BoxShadow(
+              color: _HomeViewState._forest.withValues(alpha: 0.22),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MiniActionCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _MiniActionCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: _HomeViewState._muted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FeatureTileLight extends StatelessWidget {
+  final _FeatureItem item;
+
+  const _FeatureTileLight({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: item.onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: _HomeViewState._card,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: _HomeViewState._line),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: _HomeViewState._sage,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Text(
+                  item.emoji,
+                  style: const TextStyle(
+                    color: _HomeViewState._forest,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                item.label,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: _HomeViewState._ink,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: _HomeViewState._muted,
+              size: 18,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomNavLight extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool active;
+  final VoidCallback? onTap;
+
+  const _BottomNavLight({
+    required this.icon,
+    required this.label,
+    this.active = false,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = active ? _HomeViewState._forest : _HomeViewState._muted;
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 58,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 23),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ── Pulsing Emergency FAB ────────────────────────────────────────────
