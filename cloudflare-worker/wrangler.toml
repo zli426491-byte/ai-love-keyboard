@@ -1,13 +1,11 @@
 name = "lovekey-proxy"
 main = "src/index.js"
 compatibility_date = "2026-05-01"
+account_id = "0ca12458136d4bd68dfd7b1be2769f5d"
 
-# After creating KV in Cloudflare, uncomment and set the namespace id:
-# wrangler kv:namespace create KV_USAGE
-#
-# [[kv_namespaces]]
-# binding = "KV_USAGE"
-# id = "YOUR_KV_NAMESPACE_ID"
+[[kv_namespaces]]
+binding = "KV_USAGE"
+id = "a68452c77bfd4c9e9f176a8c9794fa82"
 
 [vars]
 OPENAI_MODEL_LIGHT = "gpt-4o-mini"
