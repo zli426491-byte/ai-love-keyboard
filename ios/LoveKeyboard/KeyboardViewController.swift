@@ -662,7 +662,8 @@ final class KeyboardViewController: UIInputViewController {
             textDocumentProxy.insertText(reply)
             filledIndex = 0
             statusMode = .filled
-            renderContent()
+            updateStatusText()
+            updatePasteInputDecorations()
         } else if currentMessage.isEmpty {
             readClipboardAndGenerate()
         } else {
@@ -1396,6 +1397,8 @@ final class KeyboardViewController: UIInputViewController {
         let payload: [String: Any] = [
             "user_id": userID,
             "message": message,
+            "user_message": message,
+            "system_prompt": aiSystemPrompt(style: style, mode: mode, instruction: instruction),
             "tone": style.title,
             "mode": mode.title,
             "instruction": instruction ?? "",
@@ -1476,15 +1479,23 @@ final class KeyboardViewController: UIInputViewController {
         - Generate exactly 1 reply that can be pasted directly into a chat app.
         - Scenario: \(mode.title). Tone: \(style.title).
         - Treat the input as the other person's latest chat message. Infer whether it is teasing, tired, cold, angry, inviting, refusing, casual slang, or small talk.
+        - If the message means "隨便 / 你決定 / 都可以", do not say "驚喜". Choose a simple low-pressure next step instead.
         \(extraInstruction)
         - Each reply must be natural, concise, and context-aware. Do not sound like a template, customer support, motivational quote, or generic assistant answer.
         - Do not invent specific past facts, places, restaurants, movies, promises, or plans unless the user's message already mentions them.
+        - Avoid exaggerated certainty such as "你一定會喜歡", "保證", "絕對", unless the user already said it.
         - For casual slang or profanity, keep the reply relaxed and socially natural. Do not over-explain or moralize.
         - Prefer replies that keep the conversation moving with a light question or an easy next step.
         - Never output placeholder text such as "reply 1", "sentence A", "回覆1", or "句子A".
         - Avoid manipulation, guilt-tripping, pressure, sexual explicitness, insults, or promises.
         - Do not mention AI, model, high EQ, prompt, template, or the app.
         - Do not explain. JSON only. Example shape: {"replies":["actual message"]}
+
+        Style examples to learn from, not copy blindly:
+        - "幹免費的喔" -> {"replies":["對啊，這麼好康我也想確認一下 😂"]}
+        - "我今天真的有點累" -> {"replies":["辛苦了，先休息一下，晚點再慢慢聊。"]}
+        - "隨便啦 你決定就好" -> {"replies":["那我來安排一個輕鬆的，你只要負責出現。"]}
+        - "哈哈哈" -> {"replies":["笑這麼開心，快說你剛剛想到什麼。"]}
         """
     }
 

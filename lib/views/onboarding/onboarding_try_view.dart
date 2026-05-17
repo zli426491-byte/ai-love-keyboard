@@ -8,18 +8,18 @@ class OnboardingTryView extends StatefulWidget {
 }
 
 class _OnboardingTryViewState extends State<OnboardingTryView> {
-  static const _cream = Color(0xFFFAF7F2);
-  static const _card = Color(0xFFFFFCF7);
-  static const _forest = Color(0xFF1F3A2E);
-  static const _sage = Color(0xFFE7EFE8);
-  static const _warmYellow = Color(0xFFF5E6B8);
-  static const _roseSoft = Color(0xFFF5D6DC);
-  static const _navySoft = Color(0xFFD6E0EC);
-  static const _brown = Color(0xFF8B6F47);
-  static const _red = Color(0xFFC8385C);
-  static const _text = Color(0xFF1A1A1A);
-  static const _muted = Color(0xFF6B6B6B);
-  static const _line = Color(0xFFE7DDD0);
+  static const _cream = Color(0xFFFFF6FA);
+  static const _card = Color(0xFFFFFFFF);
+  static const _forest = Color(0xFFFF4F78);
+  static const _sage = Color(0xFFFFEAF2);
+  static const _warmYellow = Color(0xFFFFF0C8);
+  static const _roseSoft = Color(0xFFFFD7E5);
+  static const _navySoft = Color(0xFFE9DDFF);
+  static const _brown = Color(0xFFC147E9);
+  static const _red = Color(0xFFFF3E7A);
+  static const _text = Color(0xFF201722);
+  static const _muted = Color(0xFF786873);
+  static const _line = Color(0xFFF0DDE7);
 
   final _demoMessages = const [
     '我今天真的有點累',

@@ -54,7 +54,8 @@ async function handleKeyboardReply(body, request, env) {
   const tone = clean(body.tone) || "自然";
   const mode = clean(body.mode) || "接話";
   const instruction = clean(body.instruction);
-  const systemPrompt = buildKeyboardSystemPrompt(tone, mode, instruction);
+  const systemPrompt =
+    clean(body.system_prompt) || buildKeyboardSystemPrompt(tone, mode, instruction);
 
   const content = await callOpenAI(env, {
     model: env.OPENAI_MODEL_LIGHT || "gpt-4o-mini",
@@ -64,7 +65,7 @@ async function handleKeyboardReply(body, request, env) {
     ],
     response_format: { type: "json_object" },
     max_tokens: 180,
-    temperature: 0.72,
+    temperature: 0.45,
   });
 
   const reply = parseReply(content);
@@ -151,14 +152,26 @@ The user input is a message from the other person, not a question to you.
 Return only a JSON object with one key "replies" and exactly one string item in an array.
 
 Rules:
-- Write Traditional Chinese unless the user's message is clearly in another language.
-- Match the other person's emotional state before flirting.
-- Keep it natural, concise, and usable in chat.
-- Do not mention AI, model, prompt, or analysis.
-- Do not use pickup-artist wording.
-- Do not add quotes or explanations.
+- Reply in the same language as the user's message. For Traditional Chinese, use natural Taiwan phrasing.
+- First classify the situation: daily chat, tired/stressed, flirting, cold reply, logistics, food/date plan, conflict, joke/profanity, or unclear.
+- Match the situation before applying the tone. If the other person is tired, comfort first. If they are joking, answer lightly. If they are angry, lower pressure and acknowledge.
+- If the message means "隨便 / 你決定 / 都可以", do not say "驚喜". Choose a simple low-pressure next step instead.
+- Keep it paste-ready: 1 short message, usually under 32 Chinese characters unless context needs one extra clause.
+- Avoid generic phrases like "我懂你的意思", "高情商", "我會陪你", unless they clearly fit the exact message.
+- Do not invent dates, places, relationship history, promises, restaurants, or plans that the user did not provide.
+- Avoid exaggerated certainty such as "你一定會喜歡", "保證", "絕對", unless the user already said it.
+- Prefer one natural next step or one easy question when it helps the conversation continue.
+- Do not mention AI, model, prompt, template, analysis, or the app.
+- Do not use pickup-artist wording, manipulation, guilt, pressure, explicit sexual content, insults, or fake intimacy.
+- Do not add quotes, numbering, labels, or explanations.
 - Tone: ${tone}
 - Mode: ${mode}${extra}
+
+Style examples to learn from, not copy blindly:
+- "幹免費的喔" -> {"replies":["對啊，這麼好康我也想確認一下 😂"]}
+- "我今天真的有點累" -> {"replies":["辛苦了，先休息一下，晚點再慢慢聊。"]}
+- "隨便啦 你決定就好" -> {"replies":["那我來安排一個輕鬆的，你只要負責出現。"]}
+- "哈哈哈" -> {"replies":["笑這麼開心，快說你剛剛想到什麼。"]}
 `.trim();
 }
 

@@ -4,18 +4,18 @@ class AppTheme {
   AppTheme._();
 
   // ── Romantic Dark Colors ─────────────────────────────────────────────
-  static const Color primary = Color(0xFFAB47BC); // Romantic purple
-  static const Color primaryLight = Color(0xFFCE93D8);
-  static const Color primaryDark = Color(0xFF7B1FA2);
-  static const Color accent = Color(0xFFFF80AB); // Romantic pink
-  static const Color accentLight = Color(0xFFFF80AB);
-  static const Color accentDark = Color(0xFFF50057);
+  static const Color primary = Color(0xFFFF4F78);
+  static const Color primaryLight = Color(0xFFFFB3C8);
+  static const Color primaryDark = Color(0xFFD82F62);
+  static const Color accent = Color(0xFFC147E9);
+  static const Color accentLight = Color(0xFFE9C6FF);
+  static const Color accentDark = Color(0xFF8F31C8);
 
   // ── Background Colors ────────────────────────────────────────────────
-  static const Color bgDark = Color(0xFF0D0515); // Deep romantic dark
-  static const Color bgCard = Color(0xFF1A0F2E); // Card background
-  static const Color bgCardLight = Color(0xFF241548); // Lighter card
-  static const Color bgGlass = Color(0x20FFFFFF); // Glassmorphism
+  static const Color bgDark = Color(0xFFFFF6FA);
+  static const Color bgCard = Color(0xFFFFFFFF);
+  static const Color bgCardLight = Color(0xFFFFEAF2);
+  static const Color bgGlass = Color(0xCCFFFFFF);
 
   // ── Semantic Colors ───────────────────────────────────────────────────
   static const Color success = Color(0xFF66BB6A);
@@ -24,61 +24,61 @@ class AppTheme {
   static const Color gold = Color(0xFFFFD700);
 
   // ── Text Colors ───────────────────────────────────────────────────────
-  static const Color textPrimary = Color(0xFFF5F5F5);
-  static const Color textSecondary = Color(0xFFB0A0C8);
-  static const Color textHint = Color(0xFF6B5E8A);
+  static const Color textPrimary = Color(0xFF201722);
+  static const Color textSecondary = Color(0xFF786873);
+  static const Color textHint = Color(0xFFB79AA8);
 
   // ── Gradients ─────────────────────────────────────────────────────────
   static const LinearGradient romanticGradient = LinearGradient(
-    colors: [Color(0xFFAB47BC), Color(0xFFFF80AB)],
+    colors: [Color(0xFFFF4F78), Color(0xFFC147E9)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient bgGradient = LinearGradient(
-    colors: [Color(0xFF0D0515), Color(0xFF1A0F2E), Color(0xFF0D0515)],
+    colors: [Color(0xFFFFE2E6), Color(0xFFFFF7F8), Color(0xFFFFFFFF)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
 
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [Color(0xFF9C27B0), Color(0xFFE040FB)],
+    colors: [Color(0xFFFF4F78), Color(0xFFFF8CAD)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient accentGradient = LinearGradient(
-    colors: [Color(0xFFFF80AB), Color(0xFFFF4081)],
+    colors: [Color(0xFFE9C6FF), Color(0xFFC147E9)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient cardGradient = LinearGradient(
-    colors: [Color(0xFFAB47BC), Color(0xFFFF80AB)],
+    colors: [Color(0xFFFF6B9D), Color(0xFFC147E9)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient glowGradient = LinearGradient(
-    colors: [Color(0x40AB47BC), Color(0x40FF80AB), Color(0x00000000)],
+    colors: [Color(0x44FF4F78), Color(0x33C147E9), Color(0x00000000)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
 
   static const LinearGradient onboardingGradient1 = LinearGradient(
-    colors: [Color(0xFF1A0533), Color(0xFF2D1458), Color(0xFF0D0515)],
+    colors: [Color(0xFFFFE2E6), Color(0xFFFFF7F8), Color(0xFFFFFFFF)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient onboardingGradient2 = LinearGradient(
-    colors: [Color(0xFF2D0A4E), Color(0xFF4A1865), Color(0xFF0D0515)],
+    colors: [Color(0xFFFFF0F6), Color(0xFFFFF8FB), Color(0xFFFFFFFF)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient onboardingGradient3 = LinearGradient(
-    colors: [Color(0xFF1A0533), Color(0xFF3D1258), Color(0xFF0D0515)],
+    colors: [Color(0xFFFFE6F4), Color(0xFFFFF7F8), Color(0xFFFFFFFF)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -100,29 +100,23 @@ class AppTheme {
 
   // ── Glassmorphism Decoration ──────────────────────────────────────────
   static BoxDecoration get glassDecoration => BoxDecoration(
-        color: bgGlass,
-        borderRadius: BorderRadius.circular(radiusLg),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.08),
-          width: 1,
-        ),
-      );
+    color: bgGlass,
+    borderRadius: BorderRadius.circular(radiusLg),
+    border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1),
+  );
 
   static BoxDecoration get glassDecorationAccent => BoxDecoration(
-        color: bgGlass,
-        borderRadius: BorderRadius.circular(radiusLg),
-        border: Border.all(
-          color: accent.withValues(alpha: 0.2),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: accent.withValues(alpha: 0.1),
-            blurRadius: 12,
-            spreadRadius: 0,
-          ),
-        ],
-      );
+    color: bgGlass,
+    borderRadius: BorderRadius.circular(radiusLg),
+    border: Border.all(color: accent.withValues(alpha: 0.2), width: 1),
+    boxShadow: [
+      BoxShadow(
+        color: accent.withValues(alpha: 0.1),
+        blurRadius: 12,
+        spreadRadius: 0,
+      ),
+    ],
+  );
 
   // ── Light Theme (redirects to dark romantic) ──────────────────────────
   static ThemeData get lightTheme => darkTheme;
@@ -131,10 +125,10 @@ class AppTheme {
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
+      brightness: Brightness.light,
       colorScheme: ColorScheme.fromSeed(
         seedColor: primary,
-        brightness: Brightness.dark,
+        brightness: Brightness.light,
         primary: primary,
         secondary: accent,
         surface: bgCard,
@@ -168,10 +162,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radiusMd),
           ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -190,11 +181,11 @@ class AppTheme {
         contentPadding: const EdgeInsets.all(16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMd),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          borderSide: const BorderSide(color: Color(0xFFF0DDE7)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMd),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          borderSide: const BorderSide(color: Color(0xFFF0DDE7)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMd),
@@ -232,26 +223,17 @@ class AppTheme {
           fontWeight: FontWeight.w600,
           color: textPrimary,
         ),
-        bodyLarge: TextStyle(
-          fontSize: 16,
-          color: textSecondary,
-        ),
-        bodyMedium: TextStyle(
-          fontSize: 14,
-          color: textSecondary,
-        ),
-        bodySmall: TextStyle(
-          fontSize: 12,
-          color: textHint,
-        ),
+        bodyLarge: TextStyle(fontSize: 16, color: textSecondary),
+        bodyMedium: TextStyle(fontSize: 14, color: textSecondary),
+        bodySmall: TextStyle(fontSize: 12, color: textHint),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: bgDark,
-        selectedItemColor: accent,
+        backgroundColor: Colors.white,
+        selectedItemColor: primary,
         unselectedItemColor: textHint,
       ),
       dividerTheme: DividerThemeData(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: const Color(0xFFF0DDE7),
         thickness: 1,
       ),
     );

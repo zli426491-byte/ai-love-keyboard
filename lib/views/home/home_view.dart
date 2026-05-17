@@ -34,7 +34,7 @@ class _HomeViewState extends State<HomeView> {
     _KeyboardTone('😉', '高情商', ReplyStyle.intellectual),
     _KeyboardTone('😌', '溫柔', ReplyStyle.warm),
     _KeyboardTone('💞', '曖昧拉扯', ReplyStyle.romantic),
-    _KeyboardTone('😀', '智能回复', ReplyStyle.mature),
+    _KeyboardTone('😀', '智能回覆', ReplyStyle.mature),
     _KeyboardTone('😊', '可愛', ReplyStyle.cute),
     _KeyboardTone('😎', '大男子', ReplyStyle.cool),
     _KeyboardTone('☺️', '撒嬌', ReplyStyle.cute),
@@ -376,7 +376,7 @@ class _MessagesTab extends StatelessWidget {
             const SizedBox(height: 22),
             _MessageCard(
               title: '鍵盤已更新',
-              subtitle: '新的粉色鍵盤樣式已可在 TestFlight Build 43 測試。',
+              subtitle: '新的粉色鍵盤與主 App 樣式已可在最新 TestFlight 測試。',
               icon: Icons.keyboard_alt_rounded,
               onTap: onHome,
             ),
@@ -530,7 +530,7 @@ class _SearchAndCrown extends StatelessWidget {
                     ),
                     decoration: const InputDecoration(
                       border: InputBorder.none,
-                      hintText: '搜索更多回復',
+                      hintText: '搜尋更多回覆',
                       hintStyle: TextStyle(
                         color: _HomeViewState._muted,
                         fontWeight: FontWeight.w700,

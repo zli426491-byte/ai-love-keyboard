@@ -227,7 +227,17 @@ class AiService extends ChangeNotifier {
 
       final repliesList = result['replies'] as List<dynamic>;
       _replies = repliesList
-          .map((r) => AiReply.fromJson(r as Map<String, dynamic>, style))
+          .map((r) {
+            if (r is String) {
+              return AiReply(
+                id: DateTime.now().microsecondsSinceEpoch.toString(),
+                text: r.trim(),
+                style: style,
+              );
+            }
+            return AiReply.fromJson(r as Map<String, dynamic>, style);
+          })
+          .where((reply) => reply.text.trim().isNotEmpty)
           .toList();
 
       _setLoading(false);
