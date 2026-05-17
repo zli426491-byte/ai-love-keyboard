@@ -91,21 +91,21 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private enum Palette {
-        static let background = UIColor(red: 16 / 255, green: 16 / 255, blue: 18 / 255, alpha: 1)
+        static let background = UIColor(red: 255 / 255, green: 244 / 255, blue: 249 / 255, alpha: 1)
         static let card = UIColor(red: 255 / 255, green: 255 / 255, blue: 255 / 255, alpha: 1)
-        static let primary = UIColor(red: 255 / 255, green: 87 / 255, blue: 120 / 255, alpha: 1)
-        static let accent = UIColor(red: 214 / 255, green: 47 / 255, blue: 82 / 255, alpha: 1)
-        static let blush = UIColor(red: 255 / 255, green: 132 / 255, blue: 159 / 255, alpha: 1)
-        static let text = UIColor(red: 18 / 255, green: 18 / 255, blue: 20 / 255, alpha: 1)
-        static let secondary = UIColor(red: 106 / 255, green: 108 / 255, blue: 116 / 255, alpha: 1)
-        static let border = UIColor(red: 33 / 255, green: 33 / 255, blue: 36 / 255, alpha: 1)
-        static let key = UIColor(red: 225 / 255, green: 228 / 255, blue: 236 / 255, alpha: 1)
+        static let primary = UIColor(red: 255 / 255, green: 70 / 255, blue: 124 / 255, alpha: 1)
+        static let accent = UIColor(red: 178 / 255, green: 72 / 255, blue: 232 / 255, alpha: 1)
+        static let blush = UIColor(red: 255 / 255, green: 128 / 255, blue: 166 / 255, alpha: 1)
+        static let text = UIColor(red: 35 / 255, green: 24 / 255, blue: 38 / 255, alpha: 1)
+        static let secondary = UIColor(red: 128 / 255, green: 104 / 255, blue: 122 / 255, alpha: 1)
+        static let border = UIColor(red: 242 / 255, green: 216 / 255, blue: 228 / 255, alpha: 1)
+        static let key = UIColor(red: 250 / 255, green: 240 / 255, blue: 246 / 255, alpha: 1)
         static let selectedSoft = UIColor(red: 255 / 255, green: 235 / 255, blue: 241 / 255, alpha: 1)
-        static let warmYellow = UIColor(red: 255 / 255, green: 230 / 255, blue: 246 / 255, alpha: 1)
+        static let warmYellow = UIColor(red: 255 / 255, green: 239 / 255, blue: 202 / 255, alpha: 1)
         static let roseSoft = UIColor(red: 255 / 255, green: 216 / 255, blue: 234 / 255, alpha: 1)
         static let navySoft = UIColor(red: 240 / 255, green: 232 / 255, blue: 255 / 255, alpha: 1)
-        static let darkPill = UIColor(red: 31 / 255, green: 32 / 255, blue: 35 / 255, alpha: 1)
-        static let commandKey = UIColor(red: 220 / 255, green: 224 / 255, blue: 233 / 255, alpha: 1)
+        static let headerPill = UIColor(red: 255 / 255, green: 228 / 255, blue: 239 / 255, alpha: 1)
+        static let commandKey = UIColor(red: 248 / 255, green: 240 / 255, blue: 247 / 255, alpha: 1)
         static let commandPink = UIColor(red: 255 / 255, green: 239 / 255, blue: 244 / 255, alpha: 1)
     }
 
@@ -189,10 +189,12 @@ final class KeyboardViewController: UIInputViewController {
         modeButton.setImage(UIImage(systemName: "arrow.left.arrow.right"), for: .normal)
         modeButton.semanticContentAttribute = .forceRightToLeft
         modeButton.titleLabel?.font = .systemFont(ofSize: 14.5, weight: .heavy)
-        modeButton.tintColor = .white
-        modeButton.setTitleColor(.white, for: .normal)
-        modeButton.backgroundColor = Palette.darkPill
+        modeButton.tintColor = Palette.primary
+        modeButton.setTitleColor(Palette.text, for: .normal)
+        modeButton.backgroundColor = Palette.headerPill
         modeButton.layer.cornerRadius = 16
+        modeButton.layer.borderWidth = 0.8
+        modeButton.layer.borderColor = Palette.border.cgColor
         modeButton.contentEdgeInsets = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 8)
         modeButton.imageEdgeInsets = UIEdgeInsets(top: 0, left: 5, bottom: 0, right: -4)
         modeButton.addTarget(self, action: #selector(cycleModeTapped), for: .touchUpInside)
@@ -202,9 +204,9 @@ final class KeyboardViewController: UIInputViewController {
         row.addArrangedSubview(modeButton)
 
         let brand = UILabel()
-        brand.text = "💘 Love"
+        brand.text = "LoveKey"
         brand.font = .systemFont(ofSize: 15, weight: .heavy)
-        brand.textColor = Palette.primary.withAlphaComponent(0.62)
+        brand.textColor = Palette.accent
         brand.textAlignment = .center
         row.addArrangedSubview(brand)
 
@@ -217,7 +219,7 @@ final class KeyboardViewController: UIInputViewController {
         badge.textAlignment = .center
         badge.font = .systemFont(ofSize: 11, weight: .black)
         badge.textColor = .white
-        badge.backgroundColor = Palette.primary
+        badge.backgroundColor = Palette.blush
         badge.layer.cornerRadius = 15
         badge.layer.masksToBounds = true
         badge.layer.borderColor = UIColor.white.withAlphaComponent(0.55).cgColor
@@ -241,9 +243,11 @@ final class KeyboardViewController: UIInputViewController {
         let button = UIButton(type: .system)
         let config = UIImage.SymbolConfiguration(pointSize: 17, weight: .bold)
         button.setImage(UIImage(systemName: systemName, withConfiguration: config), for: .normal)
-        button.tintColor = UIColor.white.withAlphaComponent(0.22)
-        button.backgroundColor = Palette.darkPill.withAlphaComponent(0.42)
+        button.tintColor = Palette.secondary
+        button.backgroundColor = UIColor.white.withAlphaComponent(0.82)
         button.layer.cornerRadius = 15
+        button.layer.borderWidth = 0.8
+        button.layer.borderColor = Palette.border.cgColor
         button.widthAnchor.constraint(equalToConstant: 30).isActive = true
         button.heightAnchor.constraint(equalToConstant: 30).isActive = true
         button.addTarget(self, action: action, for: .touchUpInside)
@@ -779,7 +783,7 @@ final class KeyboardViewController: UIInputViewController {
         button.backgroundColor = statusMode == .noFullAccess ? Palette.blush : Palette.primary
         button.layer.cornerRadius = 11
         button.widthAnchor.constraint(equalToConstant: 74).isActive = true
-        button.addTarget(self, action: #selector(readClipboard), for: .touchUpInside)
+        button.addTarget(self, action: #selector(pasteActionTapped), for: .touchUpInside)
         pasteActionButton = button
         row.addArrangedSubview(button)
 
@@ -819,6 +823,12 @@ final class KeyboardViewController: UIInputViewController {
     private func pasteButtonTitle() -> String {
         if isGenerating {
             return "..."
+        }
+        if currentReplies.first != nil {
+            return "填入"
+        }
+        if !normalizeMessage(messageTextView.text).isEmpty || !currentMessage.isEmpty {
+            return "生成"
         }
         return "粘貼"
     }

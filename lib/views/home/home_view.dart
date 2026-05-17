@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:ai_love_keyboard/models/reply_style.dart';
 import 'package:ai_love_keyboard/services/ai_service.dart';
+import 'package:ai_love_keyboard/services/coin_service.dart';
 import 'package:ai_love_keyboard/services/revenuecat_service.dart';
 import 'package:ai_love_keyboard/services/usage_service.dart';
+import 'package:ai_love_keyboard/utils/constants.dart';
+import 'package:ai_love_keyboard/views/coins/coin_store_view.dart';
 import 'package:ai_love_keyboard/views/keyboard/keyboard_guide_view.dart';
 import 'package:ai_love_keyboard/views/paywall/paywall_view.dart';
 import 'package:ai_love_keyboard/views/reply/reply_cards_view.dart';
@@ -19,11 +23,11 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  static const _ink = Color(0xFF161318);
-  static const _muted = Color(0xFF8C838C);
-  static const _pink = Color(0xFFFF4F78);
-  static const _hotPink = Color(0xFFFF3E7A);
-  static const _peach = Color(0xFFFFE3DF);
+  static const _ink = Color(0xFF241827);
+  static const _muted = Color(0xFF7D6C78);
+  static const _pink = Color(0xFFFF467C);
+  static const _hotPink = Color(0xFFFF315F);
+  static const _peach = Color(0xFFFFE4EC);
 
   final _messageController = TextEditingController();
   int _tabIndex = 0;
@@ -107,6 +111,111 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
+  void _openCoinStore() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CoinStoreView()),
+    );
+  }
+
+  void _switchToBlindBox() => setState(() => _tabIndex = 1);
+
+  void _showBlindBoxComposer() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _BlindBoxComposeSheet(
+        onSubmit: (intro) {
+          Navigator.pop(context);
+          _showSnack(intro.trim().isEmpty ? '已放入一個匿名盲盒' : '盲盒已送出');
+        },
+      ),
+    );
+  }
+
+  Future<void> _drawBlindBox() async {
+    final coins = context.read<CoinService>();
+    if (!coins.hasEnoughCoins(10)) {
+      _showNeedCoinsDialog();
+      return;
+    }
+
+    final spent = await coins.spendCoins(10, '抽盲盒');
+    if (!mounted) return;
+    if (!spent) {
+      _showNeedCoinsDialog();
+      return;
+    }
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _BlindMatchSheet(),
+    );
+  }
+
+  void _showNeedCoinsDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('金幣不足'),
+        content: const Text('抽盲盒需要 10 金幣。可以先領每日金幣，或到金幣商店補充。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('先不用'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              _openCoinStore();
+            },
+            child: const Text('去金幣商店'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _sendFeedback() async {
+    final uri = Uri(
+      scheme: 'mailto',
+      path: '362666@gmail.com',
+      queryParameters: {
+        'subject': 'LoveKey 反饋建議',
+        'body': '我想回報：\n\n手機型號：\niOS 版本：\nTestFlight Build：',
+      },
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      _copyBusinessEmail();
+    }
+  }
+
+  void _showAbout() {
+    showAboutDialog(
+      context: context,
+      applicationName: 'LoveKey',
+      applicationVersion: '1.0.4',
+      applicationIcon: const Icon(
+        Icons.favorite_rounded,
+        color: _hotPink,
+        size: 42,
+      ),
+      children: const [Text('LoveKey 是一個用來快速生成聊天回覆與設定 iOS 鍵盤的工具。')],
+    );
+  }
+
+  Future<void> _openReview() async {
+    final uri = Uri.parse(AppConstants.appStoreReviewUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      _showSnack('目前無法開啟 App Store');
+    }
+  }
+
   void _copyBusinessEmail() {
     Clipboard.setData(const ClipboardData(text: '362666@gmail.com'));
     _showSnack('已複製商務合作信箱');
@@ -138,19 +247,27 @@ class _HomeViewState extends State<HomeView> {
         onToneTap: (tone) => _generateReplies(style: tone.style),
         onPaywall: _showPaywall,
         onKeyboardGuide: _openKeyboardGuide,
+        onBlindBox: _switchToBlindBox,
       ),
       _BlindBoxTab(
-        onOpen: () => _showSnack('放盲盒功能準備中'),
-        onDraw: () => _showSnack('抽盲盒功能準備中'),
+        onOpen: _showBlindBoxComposer,
+        onDraw: _drawBlindBox,
         onSettings: _openSettings,
+        onCoinStore: _openCoinStore,
       ),
-      _MessagesTab(onHome: () => setState(() => _tabIndex = 0)),
+      _MessagesTab(
+        onHome: () => setState(() => _tabIndex = 0),
+        onBlindBox: _switchToBlindBox,
+      ),
       _ProfileTab(
         subscribed: subscribed,
         onPaywall: _showPaywall,
         onSettings: _openSettings,
         onKeyboardGuide: _openKeyboardGuide,
         onCopyEmail: _copyBusinessEmail,
+        onFeedback: _sendFeedback,
+        onAbout: _showAbout,
+        onReview: _openReview,
       ),
     ];
 
@@ -177,6 +294,7 @@ class _HomeTab extends StatelessWidget {
   final ValueChanged<_KeyboardTone> onToneTap;
   final VoidCallback onPaywall;
   final VoidCallback onKeyboardGuide;
+  final VoidCallback onBlindBox;
 
   const _HomeTab({
     required this.controller,
@@ -186,6 +304,7 @@ class _HomeTab extends StatelessWidget {
     required this.onToneTap,
     required this.onPaywall,
     required this.onKeyboardGuide,
+    required this.onBlindBox,
   });
 
   @override
@@ -233,7 +352,7 @@ class _HomeTab extends StatelessWidget {
               onKeyboardGuide: onKeyboardGuide,
             ),
             const SizedBox(height: 18),
-            _BlindBanner(onTap: () {}),
+            _BlindBanner(onTap: onBlindBox),
             const SizedBox(height: 26),
             Row(
               children: [
@@ -271,11 +390,13 @@ class _BlindBoxTab extends StatelessWidget {
   final VoidCallback onOpen;
   final VoidCallback onDraw;
   final VoidCallback onSettings;
+  final VoidCallback onCoinStore;
 
   const _BlindBoxTab({
     required this.onOpen,
     required this.onDraw,
     required this.onSettings,
+    required this.onCoinStore,
   });
 
   @override
@@ -287,7 +408,7 @@ class _BlindBoxTab extends StatelessWidget {
           children: [
             Row(
               children: [
-                const _CoinPill(),
+                _CoinPill(onTap: onCoinStore),
                 const Spacer(),
                 IconButton(
                   onPressed: onSettings,
@@ -354,8 +475,9 @@ class _BlindBoxTab extends StatelessWidget {
 
 class _MessagesTab extends StatelessWidget {
   final VoidCallback onHome;
+  final VoidCallback onBlindBox;
 
-  const _MessagesTab({required this.onHome});
+  const _MessagesTab({required this.onHome, required this.onBlindBox});
 
   @override
   Widget build(BuildContext context) {
@@ -383,9 +505,9 @@ class _MessagesTab extends StatelessWidget {
             const SizedBox(height: 14),
             _MessageCard(
               title: '盲盒交友',
-              subtitle: '此區塊先完成 UI，後續再接配對和金幣流程。',
+              subtitle: '可以放入一則匿名訊息，也可以花 10 金幣抽一個盲盒。',
               icon: Icons.card_giftcard_rounded,
-              onTap: onHome,
+              onTap: onBlindBox,
             ),
           ],
         ),
@@ -400,6 +522,9 @@ class _ProfileTab extends StatelessWidget {
   final VoidCallback onSettings;
   final VoidCallback onKeyboardGuide;
   final VoidCallback onCopyEmail;
+  final VoidCallback onFeedback;
+  final VoidCallback onAbout;
+  final VoidCallback onReview;
 
   const _ProfileTab({
     required this.subscribed,
@@ -407,6 +532,9 @@ class _ProfileTab extends StatelessWidget {
     required this.onSettings,
     required this.onKeyboardGuide,
     required this.onCopyEmail,
+    required this.onFeedback,
+    required this.onAbout,
+    required this.onReview,
   });
 
   @override
@@ -432,15 +560,15 @@ class _ProfileTab extends StatelessWidget {
             const SizedBox(height: 14),
             _MenuSection(
               children: [
-                _MenuRow(title: '反饋建議', onTap: onSettings),
-                _MenuRow(title: '關於我們', onTap: onSettings),
+                _MenuRow(title: '反饋建議', onTap: onFeedback),
+                _MenuRow(title: '關於我們', onTap: onAbout),
                 _MenuRow(
                   title: '商務合作',
                   trailing: '362666@gmail.com',
                   copy: true,
                   onTap: onCopyEmail,
                 ),
-                _MenuRow(title: '五星好評，鼓勵一下⭐', onTap: onSettings),
+                _MenuRow(title: '五星好評，鼓勵一下⭐', onTap: onReview),
               ],
             ),
           ],
@@ -462,8 +590,8 @@ class _PinkShell extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFFFFE2E6), Color(0xFFFFF7F8), Colors.white],
-          stops: [0, 0.46, 1],
+          colors: [Color(0xFFFFDDE9), Color(0xFFF5E7FF), Colors.white],
+          stops: [0, 0.42, 1],
         ),
       ),
       child: child,
@@ -483,7 +611,7 @@ class _PurpleShell extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFABC1FF), Color(0xFFE9C6FF), Color(0xFFFFE6F4)],
+          colors: [Color(0xFFB7C6FF), Color(0xFFE5C9FF), Color(0xFFFFDDE9)],
         ),
       ),
       child: child,
@@ -545,7 +673,7 @@ class _SearchAndCrown extends StatelessWidget {
                     width: 36,
                     height: 36,
                     decoration: const BoxDecoration(
-                      color: Color(0xFFFFD4E2),
+                      color: Color(0xFFFFD7E5),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -644,7 +772,7 @@ class _MainCtaButton extends StatelessWidget {
           height: 72,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFFFF315F), Color(0xFFFF8D8F)],
+              colors: [Color(0xFFFF315F), Color(0xFFFF7AA4), Color(0xFFC147E9)],
             ),
             borderRadius: BorderRadius.circular(999),
             boxShadow: const [
@@ -806,7 +934,7 @@ class _BlindBanner extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 22),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFFC4D6FF), Color(0xFFFFB7DA)],
+            colors: [Color(0xFFC9D8FF), Color(0xFFFFB8D3), Color(0xFFDCC2FF)],
           ),
           borderRadius: BorderRadius.circular(20),
         ),
@@ -892,53 +1020,62 @@ class _KeyboardToneGrid extends StatelessWidget {
 }
 
 class _CoinPill extends StatelessWidget {
-  const _CoinPill();
+  final VoidCallback onTap;
+
+  const _CoinPill({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 44,
-      padding: const EdgeInsets.fromLTRB(12, 6, 8, 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.82),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 30,
-            height: 30,
-            decoration: const BoxDecoration(
-              color: Color(0xFFFFD45A),
-              shape: BoxShape.circle,
+    final balance = context.watch<CoinService>().balance;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.fromLTRB(12, 6, 8, 6),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.86),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.72)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFFFFE37A), Color(0xFFFFA63D)],
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.monetization_on_rounded,
+                color: Colors.white,
+                size: 21,
+              ),
             ),
-            child: const Icon(
-              Icons.monetization_on_rounded,
-              color: Color(0xFFFFA800),
-              size: 22,
+            const SizedBox(width: 8),
+            Text(
+              '$balance',
+              style: const TextStyle(
+                color: _HomeViewState._ink,
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          const Text(
-            '0',
-            style: TextStyle(
-              color: _HomeViewState._muted,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
+            const SizedBox(width: 10),
+            Container(
+              width: 32,
+              height: 32,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFE0EC),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.add_rounded, color: _HomeViewState._pink),
             ),
-          ),
-          const SizedBox(width: 10),
-          Container(
-            width: 32,
-            height: 32,
-            decoration: const BoxDecoration(
-              color: Color(0xFFFFE0EC),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.add_rounded, color: _HomeViewState._pink),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1151,6 +1288,186 @@ class _BlindButton extends StatelessWidget {
   }
 }
 
+class _BlindBoxComposeSheet extends StatefulWidget {
+  final ValueChanged<String> onSubmit;
+
+  const _BlindBoxComposeSheet({required this.onSubmit});
+
+  @override
+  State<_BlindBoxComposeSheet> createState() => _BlindBoxComposeSheetState();
+}
+
+class _BlindBoxComposeSheetState extends State<_BlindBoxComposeSheet> {
+  final _controller = TextEditingController(text: '喜歡輕鬆聊天，也想認識有趣的人。');
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.viewInsetsOf(context).bottom;
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottom),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(22, 14, 22, 24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0DDE7),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                '放入盲盒',
+                style: TextStyle(
+                  color: _HomeViewState._ink,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '寫一句自然的自我介紹，系統會匿名放入盲盒池。',
+                style: TextStyle(
+                  color: _HomeViewState._muted,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 18),
+              TextField(
+                controller: _controller,
+                minLines: 3,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  hintText: '例如：下班後喜歡散步和找好吃的店。',
+                  filled: true,
+                  fillColor: const Color(0xFFFFF6FA),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                    borderSide: const BorderSide(color: Color(0xFFF0DDE7)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: FilledButton(
+                  onPressed: () => widget.onSubmit(_controller.text),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _HomeViewState._hotPink,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  child: const Text(
+                    '放入盲盒',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BlindMatchSheet extends StatelessWidget {
+  const _BlindMatchSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 18, 24, 26),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 74,
+              height: 74,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFFFF7AA4), Color(0xFFC147E9)],
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.favorite_rounded,
+                color: Colors.white,
+                size: 38,
+              ),
+            ),
+            const SizedBox(height: 18),
+            const Text(
+              '抽到一個盲盒',
+              style: TextStyle(
+                color: _HomeViewState._ink,
+                fontSize: 25,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              '「我也喜歡輕鬆聊天，最近在找週末可以去的咖啡店。」',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: _HomeViewState._muted,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                height: 1.45,
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: FilledButton(
+                onPressed: () => Navigator.pop(context),
+                style: FilledButton.styleFrom(
+                  backgroundColor: _HomeViewState._hotPink,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                child: const Text(
+                  '收下',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _MessageCard extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -1254,7 +1571,10 @@ class _ProfileHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -1281,22 +1601,21 @@ class _ProfileHeader extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE8E8E8),
+                      color: const Color(0xFFFFE6F0),
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: const Text(
                       'ID:795684',
                       style: TextStyle(
-                        color: _HomeViewState._muted,
+                        color: _HomeViewState._pink,
                         fontSize: 13,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 7),
                   const Icon(
                     Icons.copy_rounded,
-                    color: Color(0xFFB9B9B9),
+                    color: _HomeViewState._pink,
                     size: 20,
                   ),
                 ],
@@ -1324,10 +1643,19 @@ class _MembershipCard extends StatelessWidget {
         height: 106,
         padding: const EdgeInsets.symmetric(horizontal: 24),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFA6ACBC), Color(0xFFD7D5DF)],
+          gradient: LinearGradient(
+            colors: subscribed
+                ? const [Color(0xFFFF467C), Color(0xFFB248E8)]
+                : const [Color(0xFFFFA6C5), Color(0xFFE4D3FF)],
           ),
           borderRadius: BorderRadius.circular(28),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x22FF467C),
+              blurRadius: 22,
+              offset: Offset(0, 12),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -1388,8 +1716,9 @@ class _MenuSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8F8F8),
+        color: Colors.white.withValues(alpha: 0.82),
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFF0DDE7)),
       ),
       child: Column(children: children),
     );
@@ -1500,7 +1829,9 @@ class _AppBottomNav extends StatelessWidget {
                   children: [
                     Icon(
                       item.icon,
-                      color: selected ? Colors.black : const Color(0xFFD0D0D0),
+                      color: selected
+                          ? _HomeViewState._hotPink
+                          : const Color(0xFFCFC6D0),
                       size: 29,
                     ),
                     const SizedBox(height: 5),
@@ -1509,8 +1840,8 @@ class _AppBottomNav extends StatelessWidget {
                       maxLines: 1,
                       style: TextStyle(
                         color: selected
-                            ? Colors.black
-                            : const Color(0xFF9B9B9B),
+                            ? _HomeViewState._hotPink
+                            : const Color(0xFF9B8F9B),
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
                       ),

@@ -3,18 +3,18 @@ import 'package:flutter/material.dart';
 class AppTheme {
   AppTheme._();
 
-  // ── Romantic Dark Colors ─────────────────────────────────────────────
-  static const Color primary = Color(0xFFFF4F78);
-  static const Color primaryLight = Color(0xFFFFB3C8);
-  static const Color primaryDark = Color(0xFFD82F62);
-  static const Color accent = Color(0xFFC147E9);
-  static const Color accentLight = Color(0xFFE9C6FF);
-  static const Color accentDark = Color(0xFF8F31C8);
+  // ── LoveKey Pink / Violet System ────────────────────────────────────
+  static const Color primary = Color(0xFFFF467C);
+  static const Color primaryLight = Color(0xFFFFA6C5);
+  static const Color primaryDark = Color(0xFFE52E68);
+  static const Color accent = Color(0xFFB248E8);
+  static const Color accentLight = Color(0xFFEAD7FF);
+  static const Color accentDark = Color(0xFF8D2AC9);
 
   // ── Background Colors ────────────────────────────────────────────────
-  static const Color bgDark = Color(0xFFFFF6FA);
+  static const Color bgDark = Color(0xFFFFF7FB);
   static const Color bgCard = Color(0xFFFFFFFF);
-  static const Color bgCardLight = Color(0xFFFFEAF2);
+  static const Color bgCardLight = Color(0xFFFFEDF5);
   static const Color bgGlass = Color(0xCCFFFFFF);
 
   // ── Semantic Colors ───────────────────────────────────────────────────
@@ -24,61 +24,61 @@ class AppTheme {
   static const Color gold = Color(0xFFFFD700);
 
   // ── Text Colors ───────────────────────────────────────────────────────
-  static const Color textPrimary = Color(0xFF201722);
-  static const Color textSecondary = Color(0xFF786873);
-  static const Color textHint = Color(0xFFB79AA8);
+  static const Color textPrimary = Color(0xFF241827);
+  static const Color textSecondary = Color(0xFF7D6C78);
+  static const Color textHint = Color(0xFFB99AAA);
 
   // ── Gradients ─────────────────────────────────────────────────────────
   static const LinearGradient romanticGradient = LinearGradient(
-    colors: [Color(0xFFFF4F78), Color(0xFFC147E9)],
+    colors: [Color(0xFFFF467C), Color(0xFFB248E8)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient bgGradient = LinearGradient(
-    colors: [Color(0xFFFFE2E6), Color(0xFFFFF7F8), Color(0xFFFFFFFF)],
+    colors: [Color(0xFFFFDDE9), Color(0xFFF4E6FF), Color(0xFFFFFFFF)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
 
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [Color(0xFFFF4F78), Color(0xFFFF8CAD)],
+    colors: [Color(0xFFFF315F), Color(0xFFFF7AA4), Color(0xFFC147E9)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient accentGradient = LinearGradient(
-    colors: [Color(0xFFE9C6FF), Color(0xFFC147E9)],
+    colors: [Color(0xFFFFBBD1), Color(0xFFC147E9)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient cardGradient = LinearGradient(
-    colors: [Color(0xFFFF6B9D), Color(0xFFC147E9)],
+    colors: [Color(0xFFFF6B9D), Color(0xFFD865E8)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient glowGradient = LinearGradient(
-    colors: [Color(0x44FF4F78), Color(0x33C147E9), Color(0x00000000)],
+    colors: [Color(0x55FF467C), Color(0x33B248E8), Color(0x00000000)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
 
   static const LinearGradient onboardingGradient1 = LinearGradient(
-    colors: [Color(0xFFFFE2E6), Color(0xFFFFF7F8), Color(0xFFFFFFFF)],
+    colors: [Color(0xFFFFDDE9), Color(0xFFFFF7FB), Color(0xFFFFFFFF)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient onboardingGradient2 = LinearGradient(
-    colors: [Color(0xFFFFF0F6), Color(0xFFFFF8FB), Color(0xFFFFFFFF)],
+    colors: [Color(0xFFF0E2FF), Color(0xFFFFF7FB), Color(0xFFFFFFFF)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient onboardingGradient3 = LinearGradient(
-    colors: [Color(0xFFFFE6F4), Color(0xFFFFF7F8), Color(0xFFFFFFFF)],
+    colors: [Color(0xFFFFDDE9), Color(0xFFF5E7FF), Color(0xFFFFFFFF)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

@@ -270,7 +270,7 @@ class _MessageCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
             decoration: BoxDecoration(
-              color: const Color(0xFFF1ECE5),
+              color: const Color(0xFFFFF4F8),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(

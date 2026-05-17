@@ -716,7 +716,7 @@ class _PracticeBubble extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 290),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
         decoration: BoxDecoration(
-          color: const Color(0xFFF1ECE5),
+          color: const Color(0xFFFFF4F8),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: KeyboardGuideView._line),
         ),
@@ -1020,7 +1020,7 @@ class _ChatBubble extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 250),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isMine ? KeyboardGuideView._sage : const Color(0xFFF1ECE5),
+          color: isMine ? KeyboardGuideView._sage : const Color(0xFFFFF4F8),
           borderRadius: BorderRadius.circular(18),
         ),
         child: Text(

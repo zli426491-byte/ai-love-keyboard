@@ -44,15 +44,15 @@ class SituationPackageDialog extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF1A0F2E), Color(0xFF0D0515)],
+          colors: [Color(0xFFFFF7FB), Color(0xFFF5E7FF)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         border: Border(
-          top: BorderSide(color: Color(0x40AB47BC), width: 1),
-          left: BorderSide(color: Color(0x40AB47BC), width: 1),
-          right: BorderSide(color: Color(0x40AB47BC), width: 1),
+          top: BorderSide(color: Color(0xFFF0DDE7), width: 1),
+          left: BorderSide(color: Color(0xFFF0DDE7), width: 1),
+          right: BorderSide(color: Color(0xFFF0DDE7), width: 1),
         ),
       ),
       child: SafeArea(
@@ -66,7 +66,7 @@ class SituationPackageDialog extends StatelessWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white24,
+                  color: const Color(0xFFF0DDE7),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -77,16 +77,16 @@ class SituationPackageDialog extends StatelessWidget {
                 package.emoji,
                 style: const TextStyle(fontSize: 56),
               ).animate().scale(
-                    duration: const Duration(milliseconds: 500),
-                    curve: Curves.elasticOut,
-                  ),
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.elasticOut,
+              ),
               const SizedBox(height: 12),
 
               // Package name
               Text(
                 package.name,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppTheme.textPrimary,
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                 ),
@@ -109,11 +109,9 @@ class SituationPackageDialog extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
+                  color: Colors.white.withValues(alpha: 0.84),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                  ),
+                  border: Border.all(color: const Color(0xFFF0DDE7)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,7 +119,7 @@ class SituationPackageDialog extends StatelessWidget {
                     const Text(
                       '包含內容',
                       style: TextStyle(
-                        color: Colors.white70,
+                        color: AppTheme.textSecondary,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -142,7 +140,7 @@ class SituationPackageDialog extends StatelessWidget {
                               child: Text(
                                 f,
                                 style: const TextStyle(
-                                  color: Colors.white,
+                                  color: AppTheme.textPrimary,
                                   fontSize: 14,
                                 ),
                               ),
@@ -158,8 +156,10 @@ class SituationPackageDialog extends StatelessWidget {
 
               // Availability text
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: AppTheme.accent.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
@@ -184,7 +184,8 @@ class SituationPackageDialog extends StatelessWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                            '${package.emoji} ${package.name} 已免費解鎖！'),
+                          '${package.emoji} ${package.name} 已免費解鎖！',
+                        ),
                       ),
                     );
                   }
@@ -227,7 +228,9 @@ class SituationPackageDialog extends StatelessWidget {
                     onTap: () async {
                       if (hasCoins) {
                         final spent = await coinService.spendCoins(
-                            coinCost, package.name);
+                          coinCost,
+                          package.name,
+                        );
                         if (spent && ctx.mounted) {
                           await packageManager.purchasePackage(package.type);
                           if (ctx.mounted) {
@@ -235,7 +238,8 @@ class SituationPackageDialog extends StatelessWidget {
                             ScaffoldMessenger.of(ctx).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                    '${package.emoji} ${package.name} 已解鎖！'),
+                                  '${package.emoji} ${package.name} 已解鎖！',
+                                ),
                               ),
                             );
                           }
@@ -250,8 +254,7 @@ class SituationPackageDialog extends StatelessWidget {
                       height: 48,
                       decoration: BoxDecoration(
                         color: AppTheme.gold.withValues(alpha: 0.12),
-                        borderRadius:
-                            BorderRadius.circular(AppTheme.radiusMd),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                         border: Border.all(
                           color: AppTheme.gold.withValues(alpha: 0.4),
                         ),
@@ -262,8 +265,7 @@ class SituationPackageDialog extends StatelessWidget {
                               ? '使用 $coinCost \u{1FA99} 解鎖'
                               : '$coinCost \u{1FA99}（餘額不足，前往商店）',
                           style: TextStyle(
-                            color:
-                                hasCoins ? AppTheme.gold : AppTheme.textHint,
+                            color: hasCoins ? AppTheme.gold : AppTheme.textHint,
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
@@ -283,10 +285,7 @@ class SituationPackageDialog extends StatelessWidget {
                 },
                 child: const Text(
                   '先不要',
-                  style: TextStyle(
-                    color: AppTheme.textHint,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: AppTheme.textHint, fontSize: 14),
                 ),
               ),
             ],
@@ -294,10 +293,10 @@ class SituationPackageDialog extends StatelessWidget {
         ),
       ),
     ).animate().slideY(
-          begin: 0.3,
-          end: 0,
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeOutCubic,
-        );
+      begin: 0.3,
+      end: 0,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOutCubic,
+    );
   }
 }

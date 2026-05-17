@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -457,16 +458,13 @@ class SettingsView extends StatelessWidget {
           _SettingsTile(
             icon: Icons.star_rounded,
             title: '為 App 評分',
-            onTap: () {
-              // TODO: Open app store review
-            },
+            onTap: () => _launchUrl(AppConstants.appStoreReviewUrl),
           ),
           _SettingsTile(
             icon: Icons.share_rounded,
             title: '分享給朋友',
-            onTap: () {
-              // TODO: Implement share
-            },
+            onTap: () =>
+                Share.share('我在用 LoveKey 生成聊天回覆：${AppConstants.appStoreUrl}'),
           ),
 
           const SizedBox(height: AppTheme.spacingMd),

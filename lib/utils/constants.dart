@@ -5,6 +5,9 @@ class AppConstants {
   static const String appName = 'LoveKey';
   static const String bundleId = 'com.ailovekeyboard.app';
   static const String appVersion = '1.0.0';
+  static const String appStoreUrl = 'https://apps.apple.com/app/id6764681086';
+  static const String appStoreReviewUrl =
+      'https://apps.apple.com/app/id6764681086?action=write-review';
 
   // ── AI Backend Proxy ───────────────────────────────────────────────────
   // Inject at build time:
