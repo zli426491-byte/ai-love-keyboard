@@ -945,7 +945,7 @@ final class KeyboardViewController: UIInputViewController {
             "😉 高情商",
             "😌 溫柔",
             "💞 曖昧拉扯",
-            "😀 智能回复",
+            "😀 智能回覆",
             "😊 可愛",
             "😎 大男子",
             "☺️ 撒嬌",

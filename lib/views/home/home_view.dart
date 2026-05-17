@@ -1346,7 +1346,7 @@ class _MembershipCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    subscribed ? '已解鎖所有回覆' : '無限鍵盤回復',
+                    subscribed ? '已解鎖所有回覆' : '無限鍵盤回覆',
                     style: const TextStyle(
                       color: Color(0xF2FFFFFF),
                       fontSize: 15,

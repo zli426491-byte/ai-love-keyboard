@@ -160,9 +160,9 @@ class SettingsView extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppTheme.spacingMd),
             decoration: BoxDecoration(
-              color: const Color(0xFFFAF7F2),
+              color: AppTheme.bgCard,
               borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-              border: Border.all(color: const Color(0xFFE7DDD0)),
+              border: Border.all(color: const Color(0xFFF0DDE7)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,7 +171,7 @@ class SettingsView extends StatelessWidget {
                   children: [
                     const Icon(
                       Icons.keyboard_rounded,
-                      color: Color(0xFF1F3A2E),
+                      color: AppTheme.primary,
                       size: 24,
                     ),
                     const SizedBox(width: 10),
@@ -181,7 +181,7 @@ class SettingsView extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF1A1A1A),
+                          color: AppTheme.textPrimary,
                         ),
                       ),
                     ),
@@ -190,7 +190,7 @@ class SettingsView extends StatelessWidget {
                 const SizedBox(height: 12),
                 const Text(
                   '啟用後可在聊天 App 中讀取你複製的訊息，選擇語氣後直接把建議回覆填入輸入框。',
-                  style: TextStyle(fontSize: 13, color: Color(0xFF6B6B6B)),
+                  style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
                 ),
                 const SizedBox(height: 14),
                 Container(
@@ -232,7 +232,7 @@ class SettingsView extends StatelessWidget {
                     icon: const Icon(Icons.menu_book_rounded, size: 18),
                     label: const Text('查看圖文教學'),
                     style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF1F3A2E),
+                      backgroundColor: AppTheme.primary,
                       foregroundColor: Colors.white,
                     ),
                   ),
@@ -252,8 +252,8 @@ class SettingsView extends StatelessWidget {
                     icon: const Icon(Icons.open_in_new_rounded, size: 18),
                     label: const Text('前往設定'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF1F3A2E),
-                      side: const BorderSide(color: Color(0xFFE7DDD0)),
+                      foregroundColor: AppTheme.primary,
+                      side: const BorderSide(color: Color(0xFFF0DDE7)),
                     ),
                   ),
                 ),
