@@ -126,6 +126,10 @@ final class KeyboardViewController: UIInputViewController {
     private var isGenerating = false
     private var aiErrorText: String?
     private var generationInstruction: String?
+    private let messageTextView = PasteInputTextView()
+    private let messagePlaceholderLabel = UILabel()
+    private weak var pasteActionButton: UIButton?
+    private var isSyncingMessageText = false
 
     private enum StatusMode {
         case idle
@@ -144,6 +148,7 @@ final class KeyboardViewController: UIInputViewController {
     private func setupView() {
         view.backgroundColor = Palette.background
         view.heightAnchor.constraint(greaterThanOrEqualToConstant: 340).isActive = true
+        configureMessageTextView()
 
         rootStack.axis = .vertical
         rootStack.spacing = 5
@@ -283,6 +288,39 @@ final class KeyboardViewController: UIInputViewController {
         return contentStack
     }
 
+    private func configureMessageTextView() {
+        messageTextView.delegate = self
+        messageTextView.backgroundColor = .clear
+        messageTextView.textColor = Palette.text
+        messageTextView.tintColor = Palette.primary
+        messageTextView.font = .systemFont(ofSize: 13, weight: .bold)
+        messageTextView.isScrollEnabled = false
+        messageTextView.isEditable = true
+        messageTextView.isSelectable = true
+        messageTextView.returnKeyType = .done
+        messageTextView.autocorrectionType = .no
+        messageTextView.spellCheckingType = .no
+        messageTextView.smartQuotesType = .no
+        messageTextView.smartDashesType = .no
+        messageTextView.textContainerInset = UIEdgeInsets(top: 5, left: 0, bottom: 5, right: 0)
+        messageTextView.textContainer.lineFragmentPadding = 0
+        messageTextView.textContainer.maximumNumberOfLines = 2
+        messageTextView.textContainer.lineBreakMode = .byTruncatingTail
+        messageTextView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        messagePlaceholderLabel.font = .systemFont(ofSize: 13, weight: .bold)
+        messagePlaceholderLabel.textColor = Palette.secondary.withAlphaComponent(0.72)
+        messagePlaceholderLabel.numberOfLines = 2
+        messagePlaceholderLabel.isUserInteractionEnabled = false
+        messagePlaceholderLabel.translatesAutoresizingMaskIntoConstraints = false
+        messageTextView.addSubview(messagePlaceholderLabel)
+        NSLayoutConstraint.activate([
+            messagePlaceholderLabel.leadingAnchor.constraint(equalTo: messageTextView.leadingAnchor),
+            messagePlaceholderLabel.trailingAnchor.constraint(equalTo: messageTextView.trailingAnchor),
+            messagePlaceholderLabel.topAnchor.constraint(equalTo: messageTextView.topAnchor, constant: 5)
+        ])
+    }
+
     private func makeUtilityRow() -> UIView {
         let row = UIStackView()
         row.axis = .horizontal
@@ -379,6 +417,35 @@ final class KeyboardViewController: UIInputViewController {
 
     @objc private func readClipboardAndGenerate() {
         loadClipboard(generateAfterRead: true)
+    }
+
+    @objc private func pasteActionTapped() {
+        if currentReplies.first != nil && !isGenerating {
+            insertPrimaryReply()
+            return
+        }
+
+        let typedMessage = normalizeMessage(messageTextView.text)
+        guard !typedMessage.isEmpty else {
+            if hasFullAccess {
+                loadClipboard(generateAfterRead: false)
+            } else {
+                statusMode = .noFullAccess
+                messageTextView.becomeFirstResponder()
+                updateStatusText()
+                updatePasteInputDecorations()
+            }
+            return
+        }
+
+        currentMessage = typedMessage
+        statusMode = .ready
+        filledIndex = nil
+        currentReplies = []
+        aiErrorText = nil
+        generationIndex += 1
+        generationInstruction = "Use the selected mode and tone. Generate a direct reply for the pasted message."
+        regenerateReplies()
     }
 
     private func loadClipboard(generateAfterRead: Bool) {
@@ -528,6 +595,16 @@ final class KeyboardViewController: UIInputViewController {
 
         updateModeButtons()
 
+        updateStatusText()
+
+        contentStack.addArrangedSubview(pasteCard())
+        if currentMessage.isEmpty {
+            currentReplies = []
+        }
+        contentStack.addArrangedSubview(replyPanel())
+    }
+
+    private func updateStatusText() {
         if isGenerating {
             statusLabel.text = "AI 生成中"
         } else if let aiErrorText {
@@ -546,12 +623,6 @@ final class KeyboardViewController: UIInputViewController {
                 statusLabel.text = selectedMode.status
             }
         }
-
-        contentStack.addArrangedSubview(pasteCard())
-        if currentMessage.isEmpty {
-            currentReplies = []
-        }
-        contentStack.addArrangedSubview(replyPanel())
     }
 
     private func updateModeButtons() {
@@ -565,17 +636,12 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func pasteCard() -> UIView {
-        let card = UIControl()
+        let card = UIView()
         card.backgroundColor = Palette.card
         card.layer.cornerRadius = 12
         card.layer.borderWidth = 0.8
         card.layer.borderColor = Palette.border.withAlphaComponent(0.9).cgColor
-        card.heightAnchor.constraint(equalToConstant: 45).isActive = true
-        if currentReplies.first != nil && !isGenerating {
-            card.addTarget(self, action: #selector(insertPrimaryReply), for: .touchUpInside)
-        } else {
-            card.addTarget(self, action: #selector(readClipboard), for: .touchUpInside)
-        }
+        card.heightAnchor.constraint(equalToConstant: 58).isActive = true
 
         let row = UIStackView()
         row.axis = .horizontal
@@ -591,37 +657,19 @@ final class KeyboardViewController: UIInputViewController {
         icon.heightAnchor.constraint(equalToConstant: 17).isActive = true
         row.addArrangedSubview(icon)
 
-        let label = UILabel()
-        label.numberOfLines = 2
-        label.font = .systemFont(ofSize: 13, weight: .bold)
-        label.textColor = Palette.text
-
-        if let reply = currentReplies.first, !reply.isEmpty {
-            label.text = preview(reply, limit: 36)
-        } else {
-            switch statusMode {
-            case .noFullAccess:
-                label.text = "允許完整取用，才能讀取複製的對話"
-            case .emptyClipboard:
-                label.text = "剪貼簿沒有文字，先複製一句對話"
-            case .ready, .filled:
-                label.text = preview(currentMessage, limit: 34)
-            case .idle:
-                label.text = "點這裡讀取 TA 的對話"
-            }
-        }
-
-        row.addArrangedSubview(label)
+        syncMessageTextView()
+        row.addArrangedSubview(messageTextView)
 
         let button = UIButton(type: .system)
-        button.setTitle(currentReplies.first == nil ? (currentMessage.isEmpty ? "貼上" : "重讀") : "填入", for: .normal)
+        button.setTitle(pasteButtonTitle(), for: .normal)
         button.titleLabel?.font = .systemFont(ofSize: 12.4, weight: .heavy)
         button.setTitleColor(.white, for: .normal)
         button.backgroundColor = statusMode == .noFullAccess ? Palette.blush : Palette.primary
         button.layer.cornerRadius = 12
         button.widthAnchor.constraint(equalToConstant: 55).isActive = true
         button.heightAnchor.constraint(equalToConstant: 31).isActive = true
-        button.addTarget(self, action: currentReplies.first == nil ? #selector(readClipboard) : #selector(insertPrimaryReply), for: .touchUpInside)
+        button.addTarget(self, action: #selector(pasteActionTapped), for: .touchUpInside)
+        pasteActionButton = button
         row.addArrangedSubview(button)
 
         NSLayoutConstraint.activate([
@@ -632,6 +680,47 @@ final class KeyboardViewController: UIInputViewController {
         ])
 
         return card
+    }
+
+    private func syncMessageTextView() {
+        isSyncingMessageText = true
+        if messageTextView.text != currentMessage {
+            messageTextView.text = currentMessage
+        }
+        isSyncingMessageText = false
+        updatePasteInputDecorations()
+    }
+
+    private func updatePasteInputDecorations() {
+        messagePlaceholderLabel.text = pastePlaceholderText()
+        messagePlaceholderLabel.isHidden = !normalizeMessage(messageTextView.text).isEmpty
+        messageTextView.isEditable = !isGenerating
+        messageTextView.isSelectable = true
+        pasteActionButton?.setTitle(pasteButtonTitle(), for: .normal)
+        pasteActionButton?.backgroundColor = statusMode == .noFullAccess ? Palette.blush : Palette.primary
+    }
+
+    private func pasteButtonTitle() -> String {
+        if isGenerating {
+            return "..."
+        }
+        if currentReplies.first != nil {
+            return "填入"
+        }
+        return currentMessage.isEmpty ? "貼上" : "生成"
+    }
+
+    private func pastePlaceholderText() -> String {
+        switch statusMode {
+        case .noFullAccess:
+            return "長按貼上對話，或開啟完整取用"
+        case .emptyClipboard:
+            return "剪貼簿沒有文字，可長按貼上"
+        case .ready, .filled:
+            return "長按貼上對方訊息"
+        case .idle:
+            return "長按貼上對方訊息"
+        }
     }
 
     private func replyPanel() -> UIView {
@@ -1928,4 +2017,53 @@ final class KeyboardViewController: UIInputViewController {
         return false
     }
 
+}
+
+extension KeyboardViewController: UITextViewDelegate {
+    func textViewDidChange(_ textView: UITextView) {
+        guard textView === messageTextView, !isSyncingMessageText else { return }
+
+        let previousMessageWasEmpty = currentMessage.isEmpty
+        let newMessage = normalizeMessage(textView.text)
+        let needsReplyPanelRefresh = !currentReplies.isEmpty || aiErrorText != nil || isGenerating || filledIndex != nil
+
+        currentMessage = newMessage
+        statusMode = newMessage.isEmpty ? .idle : .ready
+        currentReplies = []
+        displayedReplies = []
+        filledIndex = nil
+        aiErrorText = nil
+        isGenerating = false
+        generationInstruction = nil
+        generationIndex += 1
+
+        if needsReplyPanelRefresh || previousMessageWasEmpty != newMessage.isEmpty {
+            renderContent()
+            messageTextView.becomeFirstResponder()
+        } else {
+            updateStatusText()
+            updatePasteInputDecorations()
+        }
+    }
+
+    func textView(
+        _ textView: UITextView,
+        shouldChangeTextIn range: NSRange,
+        replacementText text: String
+    ) -> Bool {
+        if text == "\n" {
+            textView.resignFirstResponder()
+            return false
+        }
+        return true
+    }
+}
+
+private final class PasteInputTextView: UITextView {
+    override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
+        if action == #selector(paste(_:)) {
+            return true
+        }
+        return super.canPerformAction(action, withSender: sender)
+    }
 }
