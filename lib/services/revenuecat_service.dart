@@ -43,50 +43,52 @@ class RevenueCatService extends ChangeNotifier {
   bool get hasProducts => plans.any((plan) => plan.isAvailable);
 
   List<SubscriptionPlan> get plans {
-    final monthly = _findPackage(
-      AppConstants.monthlyProductId,
-      PackageType.monthly,
-    );
-    final quarterly = _findPackage(
-      AppConstants.quarterlyProductId,
-      PackageType.threeMonth,
+    final lifetime = _findPackage(
+      AppConstants.lifetimeProductId,
+      PackageType.lifetime,
     );
     final yearly = _findPackage(
       AppConstants.yearlyProductId,
       PackageType.annual,
     );
+    final weekly = _findPackage(
+      AppConstants.weeklyProductId,
+      PackageType.weekly,
+    );
 
     return [
       SubscriptionPlan(
-        id: AppConstants.monthlyProductId,
-        title: 'Monthly',
-        subtitle: '每月彈性使用',
-        fallbackPrice: AppConstants.monthlyPriceDisplay,
+        id: AppConstants.lifetimeProductId,
+        title: '永久會員',
+        subtitle: '一次解鎖，長期使用最省',
+        fallbackPrice: AppConstants.lifetimePriceDisplay,
         badge: '',
-        package: monthly,
-      ),
-      SubscriptionPlan(
-        id: AppConstants.quarterlyProductId,
-        title: 'Quarterly',
-        subtitle: '3 個月，最適合測試成效',
-        fallbackPrice: AppConstants.quarterlyPriceDisplay,
-        badge: '推薦',
-        package: quarterly,
+        package: lifetime,
       ),
       SubscriptionPlan(
         id: AppConstants.yearlyProductId,
-        title: 'Yearly',
-        subtitle: '一年完整使用，單月成本最低',
+        title: '年度會員',
+        subtitle: '一年完整使用，推薦長期聊天',
         fallbackPrice: AppConstants.yearlyPriceDisplay,
         badge: '最划算',
         package: yearly,
+      ),
+      SubscriptionPlan(
+        id: AppConstants.weeklyProductId,
+        title: '週會員',
+        subtitle: '短期彈性使用，隨時可取消',
+        fallbackPrice: AppConstants.weeklyPriceDisplay,
+        badge: '',
+        package: weekly,
       ),
     ];
   }
 
   Future<bool> init() async {
     if (defaultTargetPlatform != TargetPlatform.iOS) {
-      _errorMessage = 'RevenueCat 目前只在 iOS 啟用';
+      // Keep web/desktop previews clean. Real purchases are validated on iOS.
+      _errorMessage = null;
+      notifyListeners();
       return false;
     }
 
@@ -108,6 +110,12 @@ class RevenueCatService extends ChangeNotifier {
   }
 
   Future<void> loadOfferings() async {
+    if (defaultTargetPlatform != TargetPlatform.iOS) {
+      _errorMessage = null;
+      notifyListeners();
+      return;
+    }
+
     if (!_configured) {
       await init();
       return;

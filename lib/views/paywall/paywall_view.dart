@@ -13,12 +13,12 @@ class PaywallView extends StatefulWidget {
 }
 
 class _PaywallViewState extends State<PaywallView> {
-  static const _ink = Color(0xFF19131F);
-  static const _muted = Color(0xFF7A6F82);
-  static const _primary = Color(0xFF7C3AED);
-  static const _pink = Color(0xFFEC4899);
-  static const _line = Color(0xFFEAD7E9);
-  static const _soft = Color(0xFFFFF2FA);
+  static const _ink = Color(0xFFFFF7FB);
+  static const _muted = Color(0xFFC9B8CA);
+  static const _line = Color(0x33FFFFFF);
+  static const _pink = Color(0xFFFF4F8B);
+  static const _violet = Color(0xFFC147E9);
+  static const _gold = Color(0xFFFFD37A);
 
   int _selectedIndex = 1;
 
@@ -45,7 +45,7 @@ class _PaywallViewState extends State<PaywallView> {
         _showSnack(revenueCat.errorMessage!);
       }
     } catch (_) {
-      _showSnack('RevenueCat 產品尚未設定完成');
+      _showSnack('訂閱付款暫時無法使用，請確認 RevenueCat 產品設定');
     }
   }
 
@@ -66,7 +66,7 @@ class _PaywallViewState extends State<PaywallView> {
       SnackBar(
         content: Text(message),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: _ink,
+        backgroundColor: const Color(0xFF19131F),
       ),
     );
   }
@@ -80,8 +80,12 @@ class _PaywallViewState extends State<PaywallView> {
 
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFFFFF7FC),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF211620), Color(0xFF170F18), Color(0xFF2B1430)],
+        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       child: SafeArea(
         top: false,
@@ -94,14 +98,15 @@ class _PaywallViewState extends State<PaywallView> {
               Align(
                 alignment: Alignment.center,
                 child: Container(
-                  width: 42,
+                  width: 46,
                   height: 5,
                   decoration: BoxDecoration(
-                    color: _line,
+                    color: Colors.white.withValues(alpha: 0.22),
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   const Expanded(
@@ -126,7 +131,7 @@ class _PaywallViewState extends State<PaywallView> {
               ),
               const SizedBox(height: 8),
               const Text(
-                '解鎖鍵盤 AI 回覆、所有情境模式與不限次生成。所有購買都透過 App Store 完成。',
+                '解鎖鍵盤 AI 回覆、所有情境模式與不限次生成。付款透過 App Store 完成，價格會依所在地自動顯示。',
                 style: TextStyle(
                   color: _muted,
                   fontSize: 14,
@@ -165,19 +170,19 @@ class _PaywallViewState extends State<PaywallView> {
               GestureDetector(
                 onTap: canPurchase ? () => _purchase(selected) : null,
                 child: AnimatedOpacity(
-                  opacity: canPurchase ? 1 : 0.45,
+                  opacity: canPurchase ? 1 : 0.48,
                   duration: const Duration(milliseconds: 160),
                   child: Container(
                     height: 58,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [_primary, _pink]),
+                      gradient: const LinearGradient(colors: [_pink, _violet]),
                       borderRadius: BorderRadius.circular(22),
                       boxShadow: const [
                         BoxShadow(
-                          color: Color(0x36EC4899),
-                          blurRadius: 20,
-                          offset: Offset(0, 10),
+                          color: Color(0x55EC4899),
+                          blurRadius: 24,
+                          offset: Offset(0, 12),
                         ),
                       ],
                     ),
@@ -210,16 +215,13 @@ class _PaywallViewState extends State<PaywallView> {
                   onPressed: revenueCat.isLoading ? null : _restore,
                   child: const Text(
                     '恢復購買',
-                    style: TextStyle(
-                      color: _primary,
-                      fontWeight: FontWeight.w900,
-                    ),
+                    style: TextStyle(color: _gold, fontWeight: FontWeight.w900),
                   ),
                 ),
               ),
               const Center(
                 child: Text(
-                  '可隨時在 Apple ID 設定中管理或取消訂閱',
+                  '訂閱會透過 Apple ID 扣款，可在設定中管理或取消',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: _muted,
@@ -255,12 +257,26 @@ class _PlanCard extends StatelessWidget {
         duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: selected ? _PaywallViewState._soft : Colors.white,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: selected
+                ? const [Color(0xFF3A253C), Color(0xFF241426)]
+                : const [Color(0xFF2B1D2B), Color(0xFF211620)],
+          ),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? _PaywallViewState._pink : _PaywallViewState._line,
-            width: selected ? 2 : 1,
+            color: selected ? _PaywallViewState._ink : _PaywallViewState._line,
+            width: selected ? 1.6 : 1,
           ),
+          boxShadow: [
+            if (selected)
+              BoxShadow(
+                color: _PaywallViewState._pink.withValues(alpha: 0.18),
+                blurRadius: 22,
+                offset: const Offset(0, 10),
+              ),
+          ],
         ),
         child: Row(
           children: [
@@ -279,12 +295,16 @@ class _PlanCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        plan.title,
-                        style: const TextStyle(
-                          color: _PaywallViewState._ink,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
+                      Flexible(
+                        child: Text(
+                          plan.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: _PaywallViewState._ink,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ),
                       if (plan.badge.isNotEmpty) ...[
@@ -295,7 +315,12 @@ class _PlanCard extends StatelessWidget {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: _PaywallViewState._pink,
+                            gradient: const LinearGradient(
+                              colors: [
+                                _PaywallViewState._pink,
+                                _PaywallViewState._violet,
+                              ],
+                            ),
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
@@ -322,6 +347,7 @@ class _PlanCard extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(width: 12),
             Text(
               plan.price,
               style: const TextStyle(
@@ -353,7 +379,9 @@ class _FeatureRow extends StatelessWidget {
             height: 23,
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
-              color: _PaywallViewState._primary,
+              gradient: LinearGradient(
+                colors: [_PaywallViewState._pink, _PaywallViewState._violet],
+              ),
             ),
             child: const Icon(
               Icons.check_rounded,

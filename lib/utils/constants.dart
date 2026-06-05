@@ -42,16 +42,16 @@ class AppConstants {
   static const int freeDailyLimit = 3;
 
   // ── Subscription Product IDs ──────────────────────────────────────────
-  static const String monthlyProductId = 'com.ailovekeyboard.pro.monthly';
-  static const String quarterlyProductId = 'com.ailovekeyboard.pro.quarterly';
+  static const String weeklyProductId = 'com.ailovekeyboard.pro.weekly';
   static const String yearlyProductId = 'com.ailovekeyboard.pro.yearly';
+  static const String lifetimeProductId = 'com.ailovekeyboard.pro.lifetime';
   static const int freeTrialDays = 3;
-  static const String monthlyPriceDisplay = r'$9.99';
-  static const String quarterlyPriceDisplay = r'$19.99';
+  static const String weeklyPriceDisplay = r'$9.99';
   static const String yearlyPriceDisplay = r'$39.99';
-  static const double monthlyPriceUsd = 9.99;
-  static const double quarterlyPriceUsd = 19.99;
+  static const String lifetimePriceDisplay = r'$59.99';
+  static const double weeklyPriceUsd = 9.99;
   static const double yearlyPriceUsd = 39.99;
+  static const double lifetimePriceUsd = 59.99;
 
   // ── SharedPreferences Keys ────────────────────────────────────────────
   static const String prefOnboardingComplete = 'onboarding_complete';

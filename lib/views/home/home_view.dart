@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -240,7 +243,6 @@ class _HomeViewState extends State<HomeView> {
 
     final pages = [
       _HomeTab(
-        controller: _messageController,
         loading: ai.isLoading,
         keyboardStyles: _keyboardStyles,
         onGenerate: () => _generateReplies(),
@@ -287,7 +289,6 @@ class _HomeViewState extends State<HomeView> {
 }
 
 class _HomeTab extends StatelessWidget {
-  final TextEditingController controller;
   final bool loading;
   final List<_KeyboardTone> keyboardStyles;
   final VoidCallback onGenerate;
@@ -297,7 +298,6 @@ class _HomeTab extends StatelessWidget {
   final VoidCallback onBlindBox;
 
   const _HomeTab({
-    required this.controller,
     required this.loading,
     required this.keyboardStyles,
     required this.onGenerate,
@@ -311,57 +311,31 @@ class _HomeTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return _PinkShell(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 58, 24, 128),
+        padding: const EdgeInsets.fromLTRB(24, 34, 24, 128),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _SearchAndCrown(controller: controller, onSubmit: onGenerate),
-            const SizedBox(height: 30),
-            const Center(
-              child: Column(
-                children: [
-                  Text(
-                    '30%',
-                    style: TextStyle(
-                      color: _HomeViewState._ink,
-                      fontSize: 60,
-                      height: 0.95,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -1.8,
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  Text(
-                    '聊天親密度',
-                    style: TextStyle(
-                      color: _HomeViewState._muted,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 28),
-            const _HeartHero(),
-            const SizedBox(height: 26),
+            _HomeHeader(onPaywall: onPaywall),
+            const SizedBox(height: 8),
+            const _IntimacyHero(percent: 30),
+            const SizedBox(height: 16),
             _MainCtaButton(loading: loading, onTap: onGenerate),
-            const SizedBox(height: 28),
+            const SizedBox(height: 18),
             _FeatureGrid(
               onPaywall: onPaywall,
               onKeyboardGuide: onKeyboardGuide,
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 10),
             _BlindBanner(onTap: onBlindBox),
-            const SizedBox(height: 26),
+            const SizedBox(height: 16),
             Row(
               children: [
                 const Text(
                   '我的鍵盤',
                   style: TextStyle(
                     color: _HomeViewState._ink,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w900,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -377,7 +351,7 @@ class _HomeTab extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             _KeyboardToneGrid(items: keyboardStyles, onTap: onToneTap),
           ],
         ),
@@ -585,18 +559,116 @@ class _PinkShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFFFFDDE9), Color(0xFFF5E7FF), Colors.white],
-          stops: [0, 0.42, 1],
-        ),
+    return DecoratedBox(
+      decoration: const BoxDecoration(color: Color(0xFFFFF7FA)),
+      child: Stack(
+        children: [
+          const Positioned.fill(
+            child: CustomPaint(painter: _RomanticBackgroundPainter()),
+          ),
+          const Positioned(
+            top: -120,
+            left: -90,
+            child: _GlowBlob(
+              size: 300,
+              colors: [Color(0x40FF789F), Color(0x00FF789F)],
+            ),
+          ),
+          const Positioned(
+            top: 90,
+            right: -120,
+            child: _GlowBlob(
+              size: 270,
+              colors: [Color(0x30FFC2D2), Color(0x00FFC2D2)],
+            ),
+          ),
+          const Positioned(
+            bottom: 250,
+            left: -110,
+            child: _GlowBlob(
+              size: 260,
+              colors: [Color(0x33FFD9B7), Color(0x00FFD9B7)],
+            ),
+          ),
+          const Positioned(
+            bottom: -120,
+            right: -90,
+            child: _GlowBlob(
+              size: 260,
+              colors: [Color(0x2CBEE7FF), Color(0x00BEE7FF)],
+            ),
+          ),
+          child,
+        ],
       ),
-      child: child,
     );
   }
+}
+
+class _RomanticBackgroundPainter extends CustomPainter {
+  const _RomanticBackgroundPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final base = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Color(0xFFFFE5EE),
+          Color(0xFFFFF7FA),
+          Color(0xFFFFFFFF),
+          Color(0xFFFFF6F8),
+        ],
+        stops: [0, 0.45, 0.78, 1],
+      ).createShader(rect);
+    canvas.drawRect(rect, base);
+
+    void radial(Offset center, double radius, Color color) {
+      final paint = Paint()
+        ..shader = RadialGradient(
+          colors: [color, color.withValues(alpha: 0)],
+        ).createShader(Rect.fromCircle(center: center, radius: radius));
+      canvas.drawCircle(center, radius, paint);
+    }
+
+    radial(
+      Offset(size.width * 0.18, size.height * 0.09),
+      size.width * 0.54,
+      const Color(0x38FF789F),
+    );
+    radial(
+      Offset(size.width * 0.88, size.height * 0.18),
+      size.width * 0.44,
+      const Color(0x30FFB8CA),
+    );
+    radial(
+      Offset(size.width * 0.24, size.height * 0.62),
+      size.width * 0.46,
+      const Color(0x24FFE1B8),
+    );
+    radial(
+      Offset(size.width * 0.82, size.height * 0.76),
+      size.width * 0.50,
+      const Color(0x18FFD6E1),
+    );
+
+    final veil = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.white.withValues(alpha: 0.08),
+          Colors.white.withValues(alpha: 0.46),
+          Colors.white.withValues(alpha: 0.10),
+        ],
+      ).createShader(rect);
+    canvas.drawRect(rect, veil);
+  }
+
+  @override
+  bool shouldRepaint(covariant _RomanticBackgroundPainter oldDelegate) => false;
 }
 
 class _PurpleShell extends StatelessWidget {
@@ -611,100 +683,158 @@ class _PurpleShell extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFB7C6FF), Color(0xFFE5C9FF), Color(0xFFFFDDE9)],
+          colors: [
+            Color(0xFF9FB4FF),
+            Color(0xFFDCC2FF),
+            Color(0xFFFFCAE0),
+            Color(0xFFFBE6FF),
+          ],
         ),
       ),
-      child: child,
+      child: Stack(
+        children: [
+          const Positioned(
+            top: -70,
+            right: -70,
+            child: _GlowBlob(
+              size: 230,
+              colors: [Color(0xFFFFFFFF), Color(0x00FFFFFF)],
+            ),
+          ),
+          const Positioned(
+            bottom: 120,
+            left: -90,
+            child: _GlowBlob(
+              size: 260,
+              colors: [Color(0xFFFF6FB5), Color(0x00FF6FB5)],
+            ),
+          ),
+          child,
+        ],
+      ),
     );
   }
 }
 
-class _SearchAndCrown extends StatelessWidget {
-  final TextEditingController controller;
-  final VoidCallback onSubmit;
+class _GlowBlob extends StatelessWidget {
+  final double size;
+  final List<Color> colors;
 
-  const _SearchAndCrown({required this.controller, required this.onSubmit});
+  const _GlowBlob({required this.size, required this.colors});
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(colors: colors),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeHeader extends StatelessWidget {
+  final VoidCallback onPaywall;
+
+  const _HomeHeader({required this.onPaywall});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(
-          child: Container(
-            height: 58,
-            padding: const EdgeInsets.symmetric(horizontal: 22),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.78),
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x12FF4F78),
-                  blurRadius: 22,
-                  offset: Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: controller,
-                    minLines: 1,
-                    maxLines: 1,
-                    style: const TextStyle(
-                      color: _HomeViewState._ink,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      hintText: '搜尋更多回覆',
-                      hintStyle: TextStyle(
-                        color: _HomeViewState._muted,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    onSubmitted: (_) => onSubmit(),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+            child: Container(
+              height: 38,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.50),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.70)),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x0DFF5C82),
+                    blurRadius: 18,
+                    offset: Offset(0, 8),
                   ),
-                ),
-                GestureDetector(
-                  onTap: onSubmit,
-                  child: Container(
-                    width: 36,
-                    height: 36,
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 9,
+                    height: 9,
                     decoration: const BoxDecoration(
-                      color: Color(0xFFFFD7E5),
+                      color: _HomeViewState._hotPink,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
-                      Icons.search_rounded,
-                      color: _HomeViewState._pink,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'LoveKey',
+                    style: TextStyle(
+                      color: _HomeViewState._ink,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.2,
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
-        const SizedBox(width: 18),
-        Container(
-          width: 58,
-          height: 58,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x12FF4F78),
-                blurRadius: 20,
-                offset: Offset(0, 10),
+        const Spacer(),
+        GestureDetector(
+          onTap: onPaywall,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(19),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.76),
+                  borderRadius: BorderRadius.circular(19),
+                  border: Border.all(color: Colors.white),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x14FF4F78),
+                      blurRadius: 20,
+                      offset: Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [Color(0xFFFFE7B5), Color(0x00FFE7B5)],
+                        ),
+                      ),
+                    ),
+                    const Icon(
+                      Icons.workspace_premium_rounded,
+                      color: _HomeViewState._hotPink,
+                      size: 28,
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
-          child: const Icon(
-            Icons.workspace_premium_rounded,
-            color: _HomeViewState._hotPink,
-            size: 32,
+            ),
           ),
         ),
       ],
@@ -712,48 +842,472 @@ class _SearchAndCrown extends StatelessWidget {
   }
 }
 
-class _HeartHero extends StatelessWidget {
-  const _HeartHero();
+class _IntimacyHero extends StatelessWidget {
+  final int percent;
+
+  const _IntimacyHero({required this.percent});
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Stack(
-        alignment: Alignment.center,
+      child: Column(
         children: [
-          Container(
-            width: 238,
-            height: 238,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [Color(0xFFFFFFFF), Color(0xFFFFD0D9)],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Color(0x33FF6686),
-                  blurRadius: 42,
-                  offset: Offset(0, 22),
-                ),
-              ],
+          Text(
+            '$percent%',
+            style: const TextStyle(
+              color: Color(0xFF24212A),
+              fontSize: 52,
+              height: 0.95,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -1.2,
             ),
           ),
+          const SizedBox(height: 6),
           const Text(
-            '♥',
+            '聊天親密度',
             style: TextStyle(
-              color: Color(0xFFFF5B78),
-              fontSize: 188,
-              height: 0.9,
-              shadows: [
-                Shadow(color: Color(0x55FFFFFF), blurRadius: 20),
-                Shadow(color: Color(0x44FF3E7A), blurRadius: 30),
-              ],
+              color: Color(0xFF7D6D75),
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
             ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: 220,
+            height: 156,
+            child: _GlossyHeart(percent: percent),
           ),
         ],
       ),
     );
   }
+}
+
+class _GlossyHeart extends StatelessWidget {
+  final int percent;
+
+  const _GlossyHeart({required this.percent});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Positioned(
+          bottom: 8,
+          child: Container(
+            width: 142,
+            height: 26,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x288D3B5A),
+                  blurRadius: 28,
+                  spreadRadius: 3,
+                ),
+              ],
+            ),
+          ),
+        ),
+        Container(
+          width: 174,
+          height: 146,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [Color(0x42FF9AB6), Color(0x00FF9AB6)],
+            ),
+          ),
+        ),
+        Transform.translate(
+          offset: const Offset(0, 8),
+          child: Icon(
+            Icons.favorite_rounded,
+            size: 146,
+            color: const Color(0xFFD72D62).withValues(alpha: 0.18),
+          ),
+        ),
+        ShaderMask(
+          blendMode: BlendMode.srcIn,
+          shaderCallback: (rect) => const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFFFF1F6), Color(0xFFFFBBD0), Color(0xFFFF6684)],
+            stops: [0, 0.50, 1],
+          ).createShader(rect),
+          child: const Icon(Icons.favorite_rounded, size: 150),
+        ),
+        ShaderMask(
+          blendMode: BlendMode.srcIn,
+          shaderCallback: (rect) => LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.white.withValues(alpha: 0.95),
+              Colors.white.withValues(alpha: 0.15),
+            ],
+          ).createShader(rect),
+          child: const Icon(Icons.favorite_rounded, size: 150),
+        ),
+        Positioned(
+          top: 24,
+          left: 48,
+          child: Transform.rotate(
+            angle: -0.42,
+            child: Container(
+              width: 52,
+              height: 18,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.52),
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 35,
+          right: 58,
+          child: Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.70),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ignore: unused_element
+class _HeartGaugePainter extends CustomPainter {
+  final double value;
+
+  const _HeartGaugePainter(this.value);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final fill = value.clamp(0.0, 1.0);
+    final heart = _heartPath(size);
+    final bounds = Offset.zero & size;
+
+    final outerGlow = Paint()
+      ..color = const Color(0x30FF5B86)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 24);
+    canvas.drawPath(heart.shift(const Offset(0, 2)), outerGlow);
+
+    final softShadow = Paint()
+      ..color = const Color(0x2C6E233F)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18);
+    canvas.drawPath(heart.shift(const Offset(0, 18)), softShadow);
+
+    final base = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(-0.36, -0.42),
+        radius: 1.05,
+        colors: [
+          Colors.white.withValues(alpha: 0.94),
+          const Color(0xFFFFCFE0).withValues(alpha: 0.86),
+          const Color(0xFFFF86A0).withValues(alpha: 0.78),
+          const Color(0xFFFF5E72).withValues(alpha: 0.72),
+        ],
+      ).createShader(bounds);
+    canvas.drawPath(heart, base);
+
+    canvas.save();
+    canvas.clipPath(heart);
+    final glassWash = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Colors.white.withValues(alpha: 0.58),
+          Colors.white.withValues(alpha: 0.12),
+          const Color(0xFFFF2F64).withValues(alpha: 0.12),
+        ],
+        stops: const [0, 0.47, 1],
+      ).createShader(bounds);
+    canvas.drawRect(bounds, glassWash);
+
+    final refract = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round
+      ..color = Colors.white.withValues(alpha: 0.22);
+    canvas.drawArc(
+      Rect.fromLTWH(
+        size.width * 0.16,
+        size.height * 0.17,
+        size.width * 0.68,
+        size.height * 0.54,
+      ),
+      3.55,
+      2.1,
+      false,
+      refract,
+    );
+    canvas.drawArc(
+      Rect.fromLTWH(
+        size.width * 0.28,
+        size.height * 0.36,
+        size.width * 0.48,
+        size.height * 0.42,
+      ),
+      0.18,
+      1.5,
+      false,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..strokeCap = StrokeCap.round
+        ..color = const Color(0x66FFEDF4),
+    );
+    canvas.restore();
+
+    canvas.save();
+    canvas.clipPath(heart);
+    final fillTop = size.height * (1 - fill);
+    final liquid = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          const Color(0xFFFF7D9E).withValues(alpha: 0.58),
+          const Color(0xFFFF2F64).withValues(alpha: 0.82),
+          const Color(0xFFD81855).withValues(alpha: 0.92),
+        ],
+      ).createShader(bounds);
+    final liquidPath = Path()
+      ..moveTo(0, fillTop + size.height * 0.02)
+      ..cubicTo(
+        size.width * 0.24,
+        fillTop - size.height * 0.07,
+        size.width * 0.58,
+        fillTop + size.height * 0.10,
+        size.width,
+        fillTop,
+      )
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+    canvas.drawPath(liquidPath, liquid);
+    canvas.drawPath(
+      Path()
+        ..moveTo(0, fillTop + size.height * 0.02)
+        ..cubicTo(
+          size.width * 0.24,
+          fillTop - size.height * 0.07,
+          size.width * 0.58,
+          fillTop + size.height * 0.10,
+          size.width,
+          fillTop,
+        ),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..color = Colors.white.withValues(alpha: 0.34),
+    );
+    canvas.restore();
+
+    final stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.white.withValues(alpha: 0.92),
+          Colors.white.withValues(alpha: 0.24),
+          const Color(0x66FF6E92),
+        ],
+      ).createShader(bounds);
+    canvas.drawPath(heart, stroke);
+
+    final innerDepth = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6
+      ..color = const Color(0x24B01048);
+    canvas.drawPath(heart.shift(const Offset(0, 7)), innerDepth);
+
+    final shine = Paint()
+      ..shader =
+          LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withValues(alpha: 0.88),
+              Colors.white.withValues(alpha: 0.18),
+            ],
+          ).createShader(
+            Rect.fromLTWH(10, 7, size.width * 0.56, size.height * 0.36),
+          );
+    final shinePath = Path()
+      ..moveTo(size.width * 0.18, size.height * 0.34)
+      ..cubicTo(
+        size.width * 0.24,
+        size.height * 0.15,
+        size.width * 0.43,
+        size.height * 0.12,
+        size.width * 0.49,
+        size.height * 0.29,
+      )
+      ..cubicTo(
+        size.width * 0.38,
+        size.height * 0.24,
+        size.width * 0.26,
+        size.height * 0.34,
+        size.width * 0.18,
+        size.height * 0.48,
+      )
+      ..close();
+    canvas.drawPath(shinePath, shine);
+
+    final dotPaint = Paint()..color = Colors.white.withValues(alpha: 0.72);
+    canvas.drawCircle(
+      Offset(size.width * 0.34, size.height * 0.20),
+      4,
+      dotPaint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.70, size.height * 0.26),
+      3,
+      dotPaint,
+    );
+  }
+
+  Path _heartPath(Size size) {
+    final w = size.width;
+    final h = size.height;
+    return Path()
+      ..moveTo(w * 0.50, h * 0.92)
+      ..cubicTo(w * 0.18, h * 0.70, w * 0.04, h * 0.52, w * 0.11, h * 0.31)
+      ..cubicTo(w * 0.18, h * 0.08, w * 0.42, h * 0.06, w * 0.50, h * 0.27)
+      ..cubicTo(w * 0.58, h * 0.06, w * 0.82, h * 0.08, w * 0.89, h * 0.31)
+      ..cubicTo(w * 0.96, h * 0.52, w * 0.82, h * 0.70, w * 0.50, h * 0.92)
+      ..close();
+  }
+
+  @override
+  bool shouldRepaint(covariant _HeartGaugePainter oldDelegate) {
+    return oldDelegate.value != value;
+  }
+}
+
+// ignore: unused_element
+class _HeartGlowPainter extends CustomPainter {
+  const _HeartGlowPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width * 0.50, size.height * 0.50);
+    final glow = Paint()
+      ..shader =
+          RadialGradient(
+            colors: [
+              const Color(0x26FF6C95),
+              const Color(0x14FFD4E5),
+              Colors.white.withValues(alpha: 0),
+            ],
+          ).createShader(
+            Rect.fromCircle(center: center, radius: size.width * 0.48),
+          );
+    canvas.drawCircle(center, size.width * 0.48, glow);
+
+    final shine = Paint()
+      ..shader =
+          RadialGradient(
+            colors: [
+              Colors.white.withValues(alpha: 0.54),
+              Colors.white.withValues(alpha: 0),
+            ],
+          ).createShader(
+            Rect.fromCircle(
+              center: Offset(size.width * 0.32, size.height * 0.28),
+              radius: size.width * 0.20,
+            ),
+          );
+    canvas.drawCircle(
+      Offset(size.width * 0.32, size.height * 0.28),
+      size.width * 0.20,
+      shine,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _HeartGlowPainter oldDelegate) => false;
+}
+
+class _GiftOrbPainter extends CustomPainter {
+  const _GiftOrbPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height * 0.46);
+    final orbRadius = size.width * 0.34;
+    final orbRect = Rect.fromCircle(center: center, radius: orbRadius);
+
+    final glow = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          Colors.white.withValues(alpha: 0.90),
+          const Color(0x88FFB8E2),
+          const Color(0x00FFFFFF),
+        ],
+      ).createShader(Rect.fromCircle(center: center, radius: orbRadius * 1.35));
+    canvas.drawCircle(center, orbRadius * 1.35, glow);
+
+    final orb = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(-0.35, -0.45),
+        colors: [
+          Colors.white.withValues(alpha: 0.95),
+          const Color(0xCCFFE1F3),
+          const Color(0x88C9BCFF),
+          Colors.white.withValues(alpha: 0.12),
+        ],
+      ).createShader(orbRect);
+    canvas.drawCircle(center, orbRadius, orb);
+
+    final orbStroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..color = Colors.white.withValues(alpha: 0.72);
+    canvas.drawCircle(center, orbRadius, orbStroke);
+
+    final pedestal = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xFFFFFFFF), Color(0xFFE7D4FF), Color(0x00FFFFFF)],
+      ).createShader(Rect.fromLTWH(0, size.height * 0.75, size.width, 54));
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(size.width / 2, size.height * 0.80),
+        width: size.width * 0.74,
+        height: 54,
+      ),
+      pedestal,
+    );
+
+    final shine = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 5
+      ..strokeCap = StrokeCap.round
+      ..color = Colors.white.withValues(alpha: 0.62);
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: orbRadius * 0.76),
+      -2.75,
+      1.1,
+      false,
+      shine,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _GiftOrbPainter oldDelegate) => false;
 }
 
 class _MainCtaButton extends StatelessWidget {
@@ -768,43 +1322,77 @@ class _MainCtaButton extends StatelessWidget {
       child: GestureDetector(
         onTap: loading ? null : onTap,
         child: Container(
-          width: 320,
-          height: 72,
+          width: double.infinity,
+          height: 64,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFFFF315F), Color(0xFFFF7AA4), Color(0xFFC147E9)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [Color(0xFFFF2F5F), Color(0xFFFF6F7E), Color(0xFFFF9A8B)],
             ),
             borderRadius: BorderRadius.circular(999),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x44FF4F78),
-                blurRadius: 28,
-                offset: Offset(0, 16),
+                color: Color(0x40FF4F78),
+                blurRadius: 30,
+                offset: Offset(0, 15),
+              ),
+              BoxShadow(
+                color: Color(0x3DFFFFFF),
+                blurRadius: 16,
+                offset: Offset(0, -3),
               ),
             ],
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          child: Stack(
             children: [
-              if (loading)
-                const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2.4,
+              Positioned.fill(
+                top: 1,
+                bottom: 36,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(999),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.white.withValues(alpha: 0.30),
+                        Colors.white.withValues(alpha: 0.02),
+                      ],
+                    ),
                   ),
-                )
-              else
-                const Icon(Icons.auto_awesome_rounded, color: Colors.white),
-              const SizedBox(width: 10),
-              Text(
-                loading ? '生成中...' : '體驗戀愛鍵盤',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.5,
+                ),
+              ),
+              Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (loading)
+                      const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.4,
+                        ),
+                      )
+                    else
+                      const Icon(
+                        Icons.auto_awesome_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    const SizedBox(width: 10),
+                    Text(
+                      loading ? '生成中...' : '體驗戀愛鍵盤',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 21,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -829,8 +1417,9 @@ class _FeatureGrid extends StatelessWidget {
           child: _FeatureCard(
             title: '情感老師',
             subtitle: '全天在線解答問題',
-            tint: const Color(0xFFFFC4C8),
-            icon: Icons.school_rounded,
+            colors: const [Color(0xFFFFD6DF), Color(0xFFFFF1F4)],
+            accent: const Color(0xFFFF4F7D),
+            artwork: _FeatureArtwork.coach,
             onTap: onPaywall,
           ),
         ),
@@ -839,8 +1428,9 @@ class _FeatureGrid extends StatelessWidget {
           child: _FeatureCard(
             title: '文案改寫',
             subtitle: '引起Ta的興趣',
-            tint: const Color(0xFFFFE3A3),
-            icon: Icons.edit_rounded,
+            colors: const [Color(0xFFFFE0B8), Color(0xFFFFF4DE)],
+            accent: const Color(0xFFFF8A42),
+            artwork: _FeatureArtwork.rewrite,
             onTap: onKeyboardGuide,
           ),
         ),
@@ -849,18 +1439,22 @@ class _FeatureGrid extends StatelessWidget {
   }
 }
 
+enum _FeatureArtwork { coach, rewrite }
+
 class _FeatureCard extends StatelessWidget {
   final String title;
   final String subtitle;
-  final Color tint;
-  final IconData icon;
+  final List<Color> colors;
+  final Color accent;
+  final _FeatureArtwork artwork;
   final VoidCallback onTap;
 
   const _FeatureCard({
     required this.title,
     required this.subtitle,
-    required this.tint,
-    required this.icon,
+    required this.colors,
+    required this.accent,
+    required this.artwork,
     required this.onTap,
   });
 
@@ -868,54 +1462,473 @@ class _FeatureCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        height: 116,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [tint.withValues(alpha: 0.95), Colors.white],
-          ),
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0D000000),
-              blurRadius: 18,
-              offset: Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: _HomeViewState._hotPink,
-                      fontSize: 21,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 7),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      color: _HomeViewState._muted,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(26),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            height: 106,
+            padding: const EdgeInsets.fromLTRB(16, 15, 10, 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: colors,
               ),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.72)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x16FF5C82),
+                  blurRadius: 24,
+                  offset: Offset(0, 12),
+                ),
+              ],
             ),
-            Icon(icon, color: _HomeViewState._hotPink, size: 38),
-          ],
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _FeatureCardBackgroundPainter(
+                      accent: accent,
+                      artwork: artwork,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: -2,
+                  bottom: -4,
+                  child: Text(
+                    artwork == _FeatureArtwork.coach ? 'Mentor' : 'Rewrite',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.28),
+                      fontSize: 31,
+                      height: 1,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.8,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 8,
+                  bottom: 12,
+                  child: _FeatureIconBubble(
+                    icon: artwork == _FeatureArtwork.coach
+                        ? Icons.psychology_alt_rounded
+                        : Icons.edit_note_rounded,
+                    accent: accent,
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: accent,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    SizedBox(
+                      width: 94,
+                      child: Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF8F737C),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          height: 1.28,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                Positioned(
+                  left: 2,
+                  right: 2,
+                  top: 0,
+                  child: Container(
+                    height: 1,
+                    color: Colors.white.withValues(alpha: 0.55),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
+  }
+}
+
+class _FeatureCardBackgroundPainter extends CustomPainter {
+  final Color accent;
+  final _FeatureArtwork artwork;
+
+  const _FeatureCardBackgroundPainter({
+    required this.accent,
+    required this.artwork,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final light = Paint()
+      ..shader =
+          RadialGradient(
+            colors: [
+              Colors.white.withValues(alpha: 0.56),
+              Colors.white.withValues(alpha: 0),
+            ],
+          ).createShader(
+            Rect.fromCircle(
+              center: Offset(size.width * 0.80, size.height * 0.30),
+              radius: size.width * 0.55,
+            ),
+          );
+    canvas.drawCircle(
+      Offset(size.width * 0.80, size.height * 0.30),
+      size.width * 0.55,
+      light,
+    );
+
+    final bubblePaint = Paint()..color = Colors.white.withValues(alpha: 0.36);
+    final dotPaint = Paint()..color = accent.withValues(alpha: 0.13);
+    canvas.drawCircle(
+      Offset(size.width * 0.14, size.height * 0.74),
+      4,
+      dotPaint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.25, size.height * 0.18),
+      3,
+      bubblePaint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.85, size.height * 0.18),
+      3.5,
+      bubblePaint,
+    );
+
+    if (artwork == _FeatureArtwork.rewrite) {
+      final starPaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.6
+        ..strokeCap = StrokeCap.round
+        ..color = const Color(0xFFFFC852).withValues(alpha: 0.64);
+      _drawSpark(
+        canvas,
+        Offset(size.width * 0.70, size.height * 0.20),
+        8,
+        starPaint,
+      );
+      _drawSpark(
+        canvas,
+        Offset(size.width * 0.58, size.height * 0.76),
+        5,
+        starPaint,
+      );
+    }
+  }
+
+  void _drawSpark(Canvas canvas, Offset center, double radius, Paint paint) {
+    canvas.drawLine(
+      center.translate(-radius, 0),
+      center.translate(radius, 0),
+      paint,
+    );
+    canvas.drawLine(
+      center.translate(0, -radius),
+      center.translate(0, radius),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _FeatureCardBackgroundPainter oldDelegate) {
+    return oldDelegate.accent != accent || oldDelegate.artwork != artwork;
+  }
+}
+
+class _FeatureIconBubble extends StatelessWidget {
+  final IconData icon;
+  final Color accent;
+
+  const _FeatureIconBubble({required this.icon, required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 54,
+      height: 54,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withValues(alpha: 0.92),
+            accent.withValues(alpha: 0.18),
+          ],
+        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.78)),
+        boxShadow: [
+          BoxShadow(
+            color: accent.withValues(alpha: 0.18),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Icon(icon, color: accent, size: 29),
+    );
+  }
+}
+
+// ignore: unused_element
+class _CoachPainter extends CustomPainter {
+  final Color accent;
+
+  const _CoachPainter(this.accent);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final shadow = Paint()
+      ..color = const Color(0x22000000)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(size.width * 0.52, size.height * 0.90),
+        width: size.width * 0.54,
+        height: 14,
+      ),
+      shadow,
+    );
+
+    final bg = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          Colors.white.withValues(alpha: 0.86),
+          accent.withValues(alpha: 0.18),
+          Colors.transparent,
+        ],
+      ).createShader(Offset.zero & size);
+    canvas.drawCircle(
+      Offset(size.width * 0.53, size.height * 0.55),
+      size.width * 0.48,
+      bg,
+    );
+
+    final hair = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF4B263F), Color(0xFFB85B7A), Color(0xFFFFA1B8)],
+      ).createShader(Offset.zero & size);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(size.width * 0.50, size.height * 0.40),
+        width: size.width * 0.56,
+        height: size.height * 0.55,
+      ),
+      hair,
+    );
+
+    final face = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFFFFE0CA), Color(0xFFFFBFAE)],
+      ).createShader(Offset.zero & size);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(size.width * 0.50, size.height * 0.43),
+        width: size.width * 0.40,
+        height: size.height * 0.40,
+      ),
+      face,
+    );
+
+    final lens = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.2
+      ..color = Colors.white.withValues(alpha: 0.92);
+    canvas.drawCircle(Offset(size.width * 0.43, size.height * 0.42), 6, lens);
+    canvas.drawCircle(Offset(size.width * 0.57, size.height * 0.42), 6, lens);
+    canvas.drawLine(
+      Offset(size.width * 0.49, size.height * 0.42),
+      Offset(size.width * 0.51, size.height * 0.42),
+      lens,
+    );
+
+    final body = Paint()
+      ..shader = LinearGradient(
+        colors: [Colors.white, accent.withValues(alpha: 0.32)],
+      ).createShader(Offset.zero & size);
+    final bodyPath = Path()
+      ..moveTo(size.width * 0.18, size.height * 0.92)
+      ..quadraticBezierTo(
+        size.width * 0.50,
+        size.height * 0.62,
+        size.width * 0.82,
+        size.height * 0.92,
+      )
+      ..close();
+    canvas.drawPath(bodyPath, body);
+
+    final book = Paint()
+      ..shader = const LinearGradient(
+        colors: [Color(0xFFFF6F8F), Color(0xFFFFC6D5)],
+      ).createShader(Offset.zero & size);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          size.width * 0.15,
+          size.height * 0.66,
+          size.width * 0.38,
+          size.height * 0.22,
+        ),
+        const Radius.circular(6),
+      ),
+      book,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          size.width * 0.50,
+          size.height * 0.66,
+          size.width * 0.14,
+          size.height * 0.24,
+        ),
+        const Radius.circular(6),
+      ),
+      Paint()..color = Colors.white.withValues(alpha: 0.72),
+    );
+
+    final pointer = Paint()
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round
+      ..color = const Color(0xFFFFC45F);
+    canvas.drawLine(
+      Offset(size.width * 0.65, size.height * 0.70),
+      Offset(size.width * 0.84, size.height * 0.48),
+      pointer,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _CoachPainter oldDelegate) {
+    return oldDelegate.accent != accent;
+  }
+}
+
+// ignore: unused_element
+class _PencilHandPainter extends CustomPainter {
+  final Color accent;
+
+  const _PencilHandPainter(this.accent);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final shadow = Paint()
+      ..color = const Color(0x1F6A3D1E)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(size.width * 0.52, size.height * 0.84),
+        width: size.width * 0.58,
+        height: 16,
+      ),
+      shadow,
+    );
+
+    final glow = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          const Color(0xFFFFF1B8).withValues(alpha: 0.92),
+          const Color(0x00FFF1B8),
+        ],
+      ).createShader(Offset.zero & size);
+    canvas.drawCircle(
+      Offset(size.width * 0.54, size.height * 0.52),
+      size.width * 0.46,
+      glow,
+    );
+
+    final hand = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFFFFE1CF), Color(0xFFFFB996)],
+      ).createShader(Offset.zero & size);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          size.width * 0.21,
+          size.height * 0.58,
+          size.width * 0.56,
+          size.height * 0.27,
+        ),
+        const Radius.circular(14),
+      ),
+      hand,
+    );
+    for (var i = 0; i < 4; i++) {
+      canvas.drawCircle(
+        Offset(size.width * (0.26 + i * 0.12), size.height * 0.56),
+        8,
+        hand,
+      );
+    }
+
+    final pencil = Paint()
+      ..shader = LinearGradient(
+        colors: [accent, const Color(0xFFFFD66B)],
+      ).createShader(Offset.zero & size);
+    canvas.save();
+    canvas.translate(size.width * 0.10, size.height * 0.33);
+    canvas.rotate(-0.32);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(0, 0, size.width * 0.84, 14),
+        const Radius.circular(7),
+      ),
+      pencil,
+    );
+    canvas.drawPath(
+      Path()
+        ..moveTo(size.width * 0.84, 0)
+        ..lineTo(size.width * 0.99, 7)
+        ..lineTo(size.width * 0.84, 14)
+        ..close(),
+      Paint()..color = const Color(0xFF5B3A2C),
+    );
+    canvas.restore();
+
+    final sparkle = Paint()..color = const Color(0xFFFFD66B);
+    canvas.drawCircle(
+      Offset(size.width * 0.22, size.height * 0.20),
+      3,
+      sparkle,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.75, size.height * 0.28),
+      2.5,
+      sparkle,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _PencilHandPainter oldDelegate) {
+    return oldDelegate.accent != accent;
   }
 }
 
@@ -928,49 +1941,358 @@ class _BlindBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        height: 94,
-        padding: const EdgeInsets.symmetric(horizontal: 22),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFC9D8FF), Color(0xFFFFB8D3), Color(0xFFDCC2FF)],
-          ),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: const Row(
-          children: [
-            Text('👦', style: TextStyle(fontSize: 46)),
-            Spacer(),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  '盲盒交友',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    shadows: [Shadow(color: Color(0x66FF3E7A), blurRadius: 8)],
-                  ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            width: double.infinity,
+            height: 98,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFFC8C8FF),
+                  Color(0xFFFFD5EC),
+                  Color(0xFFBEE7FF),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.74)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x18C147E9),
+                  blurRadius: 26,
+                  offset: Offset(0, 14),
                 ),
-                SizedBox(height: 6),
-                Text(
-                  '解鎖未知的Ta，擁抱意外的心動',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
+              ],
+            ),
+            child: Stack(
+              children: [
+                const Positioned.fill(
+                  child: CustomPaint(painter: _BlindBannerPainter()),
+                ),
+                const Positioned(
+                  left: 13,
+                  bottom: 10,
+                  child: _BannerSideIcon(icon: Icons.help_rounded),
+                ),
+                const Positioned(
+                  right: 13,
+                  bottom: 10,
+                  child: _BannerSideIcon(icon: Icons.favorite_rounded),
+                ),
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 72),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '盲盒交友',
+                          maxLines: 1,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 25,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.8,
+                            shadows: [
+                              Shadow(color: Color(0x88FF4F8B), blurRadius: 11),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 7),
+                        Text(
+                          '解鎖未知的Ta，擁抱意外的心動',
+                          maxLines: 2,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            height: 1.25,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
-            Spacer(),
-            Text('👧', style: TextStyle(fontSize: 46)),
-          ],
+          ),
         ),
       ),
     );
+  }
+}
+
+class _BlindBannerPainter extends CustomPainter {
+  const _BlindBannerPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final glow = Paint()
+      ..shader =
+          RadialGradient(
+            colors: [
+              Colors.white.withValues(alpha: 0.82),
+              Colors.white.withValues(alpha: 0.08),
+              Colors.transparent,
+            ],
+          ).createShader(
+            Rect.fromCircle(
+              center: Offset(size.width * 0.52, size.height * 0.45),
+              radius: size.width * 0.46,
+            ),
+          );
+    canvas.drawCircle(Offset(size.width * 0.52, size.height * 0.45), 140, glow);
+
+    final heart = Paint()
+      ..shader = const LinearGradient(
+        colors: [Color(0xFFFF5F92), Color(0xFFFFB6CE)],
+      ).createShader(Offset.zero & size);
+    final path = Path()
+      ..moveTo(size.width * 0.50, size.height * 0.66)
+      ..cubicTo(
+        size.width * 0.39,
+        size.height * 0.56,
+        size.width * 0.34,
+        size.height * 0.47,
+        size.width * 0.38,
+        size.height * 0.37,
+      )
+      ..cubicTo(
+        size.width * 0.43,
+        size.height * 0.27,
+        size.width * 0.49,
+        size.height * 0.36,
+        size.width * 0.50,
+        size.height * 0.41,
+      )
+      ..cubicTo(
+        size.width * 0.51,
+        size.height * 0.36,
+        size.width * 0.57,
+        size.height * 0.27,
+        size.width * 0.62,
+        size.height * 0.37,
+      )
+      ..cubicTo(
+        size.width * 0.66,
+        size.height * 0.47,
+        size.width * 0.61,
+        size.height * 0.56,
+        size.width * 0.50,
+        size.height * 0.66,
+      )
+      ..close();
+    canvas.drawPath(path, heart);
+
+    final dot = Paint()..color = Colors.white.withValues(alpha: 0.44);
+    canvas.drawCircle(Offset(size.width * 0.16, size.height * 0.22), 4, dot);
+    canvas.drawCircle(Offset(size.width * 0.82, size.height * 0.24), 3, dot);
+    canvas.drawCircle(Offset(size.width * 0.70, size.height * 0.78), 2.5, dot);
+  }
+
+  @override
+  bool shouldRepaint(covariant _BlindBannerPainter oldDelegate) => false;
+}
+
+// ignore: unused_element
+class _ToyAvatar extends StatelessWidget {
+  final List<Color> colors;
+  final IconData icon;
+
+  const _ToyAvatar({required this.colors, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 62,
+      height: 66,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1F8246A8),
+            blurRadius: 16,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: CustomPaint(
+        painter: _ToyPainter(
+          colors: colors,
+          isGirl: icon == Icons.favorite_rounded,
+        ),
+      ),
+    );
+  }
+}
+
+class _BannerSideIcon extends StatelessWidget {
+  final IconData icon;
+
+  const _BannerSideIcon({required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 58,
+      height: 58,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white.withValues(alpha: 0.40),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.70)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x16A35BFF),
+            blurRadius: 18,
+            offset: Offset(0, 9),
+          ),
+        ],
+      ),
+      child: Icon(icon, color: Colors.white, size: 30),
+    );
+  }
+}
+
+class _ToyPainter extends CustomPainter {
+  final List<Color> colors;
+  final bool isGirl;
+
+  const _ToyPainter({required this.colors, required this.isGirl});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final shadow = Paint()
+      ..color = const Color(0x22000000)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(size.width * 0.50, size.height * 0.88),
+        width: size.width * 0.70,
+        height: 11,
+      ),
+      shadow,
+    );
+
+    final body = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: colors,
+      ).createShader(Offset.zero & size);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          size.width * 0.20,
+          size.height * 0.46,
+          size.width * 0.60,
+          size.height * 0.38,
+        ),
+        const Radius.circular(18),
+      ),
+      body,
+    );
+
+    final face = Paint()
+      ..shader = const LinearGradient(
+        colors: [Color(0xFFFFE5D4), Color(0xFFFFC3AB)],
+      ).createShader(Offset.zero & size);
+    canvas.drawCircle(
+      Offset(size.width * 0.50, size.height * 0.34),
+      size.width * 0.24,
+      face,
+    );
+
+    final cap = Paint()
+      ..shader = LinearGradient(
+        colors: isGirl
+            ? const [Color(0xFFFFD66B), Color(0xFFFF9AC1)]
+            : const [Color(0xFF8294FF), Color(0xFFB6C3FF)],
+      ).createShader(Offset.zero & size);
+    canvas.drawArc(
+      Rect.fromCenter(
+        center: Offset(size.width * 0.50, size.height * 0.27),
+        width: size.width * 0.52,
+        height: size.height * 0.30,
+      ),
+      3.12,
+      3.15,
+      true,
+      cap,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          size.width * 0.32,
+          size.height * 0.18,
+          size.width * 0.36,
+          9,
+        ),
+        const Radius.circular(8),
+      ),
+      cap,
+    );
+
+    final eye = Paint()..color = const Color(0xFF6E4D56);
+    canvas.drawCircle(Offset(size.width * 0.42, size.height * 0.35), 2.1, eye);
+    canvas.drawCircle(Offset(size.width * 0.58, size.height * 0.35), 2.1, eye);
+
+    if (!isGirl) {
+      final lens = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.6
+        ..color = Colors.white.withValues(alpha: 0.78);
+      canvas.drawCircle(
+        Offset(size.width * 0.42, size.height * 0.35),
+        5.2,
+        lens,
+      );
+      canvas.drawCircle(
+        Offset(size.width * 0.58, size.height * 0.35),
+        5.2,
+        lens,
+      );
+    } else {
+      final cheek = Paint()..color = const Color(0x66FF7A9E);
+      canvas.drawCircle(
+        Offset(size.width * 0.37, size.height * 0.42),
+        3.5,
+        cheek,
+      );
+      canvas.drawCircle(
+        Offset(size.width * 0.63, size.height * 0.42),
+        3.5,
+        cheek,
+      );
+    }
+
+    final shine = Paint()
+      ..color = Colors.white.withValues(alpha: 0.50)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+    canvas.drawArc(
+      Rect.fromLTWH(
+        size.width * 0.24,
+        size.height * 0.10,
+        size.width * 0.42,
+        size.height * 0.36,
+      ),
+      3.7,
+      1.0,
+      false,
+      shine,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _ToyPainter oldDelegate) {
+    return oldDelegate.colors != colors || oldDelegate.isGirl != isGirl;
   }
 }
 
@@ -996,20 +2318,36 @@ class _KeyboardToneGrid extends StatelessWidget {
         final item = items[index];
         return GestureDetector(
           onTap: () => onTap(item),
-          child: Container(
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF4F4F4),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              '${item.emoji} ${item.title}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: _HomeViewState._ink,
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.70),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.72),
+                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x0EFF5C82),
+                      blurRadius: 14,
+                      offset: Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  '${item.emoji} ${item.title}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _HomeViewState._ink,
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
               ),
             ),
           ),
@@ -1122,80 +2460,306 @@ class _GiftOrb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return const SizedBox(
       height: 330,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Container(
-            width: 284,
-            height: 284,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.38),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x55FFFFFF),
-                  blurRadius: 60,
-                  spreadRadius: 8,
-                ),
-              ],
-            ),
+          CustomPaint(size: Size(330, 330), painter: _GiftOrbPainter()),
+          Positioned(top: 74, child: _LoveMatchImage()),
+          Positioned(left: 18, bottom: 68, child: _MiniAvatar(text: 'L')),
+          Positioned(right: 24, bottom: 86, child: _MiniAvatar(text: 'K')),
+          Positioned(
+            top: 34,
+            right: 48,
+            child: _FloatingBadge(icon: Icons.favorite_rounded),
           ),
-          Container(
-            width: 198,
-            height: 188,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFFFD9FB), Color(0xFFD7C1FF)],
-              ),
-              borderRadius: BorderRadius.circular(34),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x558A6BFF),
-                  blurRadius: 34,
-                  offset: Offset(0, 20),
-                ),
-              ],
-            ),
-            child: const Center(
-              child: Text(
-                '?',
-                style: TextStyle(
-                  color: Color(0xFFE678D5),
-                  fontSize: 92,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-          ),
-          const Positioned(
-            top: 26,
-            right: 54,
-            child: Text('😍', style: TextStyle(fontSize: 48)),
-          ),
-          const Positioned(
+          Positioned(
             left: 18,
-            bottom: 68,
-            child: _MiniAvatar(text: '👩'),
-          ),
-          const Positioned(
-            right: 24,
-            bottom: 86,
-            child: _MiniAvatar(text: '🙈'),
-          ),
-          const Positioned(
-            left: 16,
-            top: 86,
-            child: Text('✨', style: TextStyle(fontSize: 36)),
+            top: 88,
+            child: _FloatingBadge(icon: Icons.auto_awesome_rounded),
           ),
         ],
       ),
     );
   }
+}
+
+class _LoveMatchImage extends StatelessWidget {
+  const _LoveMatchImage();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      width: 230,
+      height: 188,
+      child: CustomPaint(painter: _LoveMatchPainter()),
+    );
+  }
+}
+
+class _LoveMatchPainter extends CustomPainter {
+  const _LoveMatchPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+
+    final glow = Paint()
+      ..shader =
+          RadialGradient(
+            colors: [
+              const Color(0xFFFF7DAC).withValues(alpha: 0.36),
+              const Color(0xFFB9CCFF).withValues(alpha: 0.20),
+              Colors.white.withValues(alpha: 0),
+            ],
+          ).createShader(
+            Rect.fromCircle(center: center, radius: size.width * 0.48),
+          );
+    canvas.drawCircle(center, size.width * 0.48, glow);
+
+    final shadow = Paint()
+      ..color = const Color(0x226B46C1)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(center.dx, size.height * 0.84),
+        width: size.width * 0.72,
+        height: 28,
+      ),
+      shadow,
+    );
+
+    final cardRect = RRect.fromRectAndRadius(
+      Rect.fromCenter(
+        center: Offset(center.dx, center.dy + 8),
+        width: size.width * 0.86,
+        height: size.height * 0.70,
+      ),
+      const Radius.circular(34),
+    );
+    final cardPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.white.withValues(alpha: 0.92),
+          const Color(0xFFFFD8EA).withValues(alpha: 0.78),
+          const Color(0xFFD9E6FF).withValues(alpha: 0.74),
+        ],
+      ).createShader(cardRect.outerRect);
+    canvas.drawRRect(cardRect, cardPaint);
+
+    final cardStroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4
+      ..color = Colors.white.withValues(alpha: 0.72);
+    canvas.drawRRect(cardRect, cardStroke);
+
+    final heartPath = Path();
+    final heartCenter = Offset(center.dx, size.height * 0.44);
+    final scale = size.width * 0.012;
+    for (var i = 0; i <= 120; i++) {
+      final t = (i / 120) * 2 * math.pi;
+      final x = 16 * math.pow(math.sin(t), 3).toDouble();
+      final y =
+          -(13 * math.cos(t) -
+              5 * math.cos(2 * t) -
+              2 * math.cos(3 * t) -
+              math.cos(4 * t));
+      final point = Offset(
+        heartCenter.dx + x * scale,
+        heartCenter.dy + y * scale,
+      );
+      if (i == 0) {
+        heartPath.moveTo(point.dx, point.dy);
+      } else {
+        heartPath.lineTo(point.dx, point.dy);
+      }
+    }
+    heartPath.close();
+
+    final heartShadow = Paint()
+      ..color = const Color(0x33FF2F64)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14);
+    canvas.drawPath(heartPath.shift(const Offset(0, 8)), heartShadow);
+
+    final heartPaint = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(-0.35, -0.45),
+        colors: [
+          Colors.white.withValues(alpha: 0.96),
+          const Color(0xFFFFA7BF).withValues(alpha: 0.92),
+          const Color(0xFFFF4C76).withValues(alpha: 0.94),
+          const Color(0xFFD8295D).withValues(alpha: 0.98),
+        ],
+      ).createShader(Rect.fromCircle(center: heartCenter, radius: 58));
+    canvas.drawPath(heartPath, heartPaint);
+
+    final heartHighlight = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round
+      ..color = Colors.white.withValues(alpha: 0.55);
+    canvas.drawArc(
+      Rect.fromCenter(
+        center: Offset(heartCenter.dx - 18, heartCenter.dy - 15),
+        width: 42,
+        height: 30,
+      ),
+      -2.65,
+      1.2,
+      false,
+      heartHighlight,
+    );
+
+    void drawAvatar({
+      required Offset origin,
+      required Color hair,
+      required Color shirt,
+      required Color face,
+      required bool right,
+    }) {
+      final bubblePaint = Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withValues(alpha: 0.92),
+            shirt.withValues(alpha: 0.42),
+          ],
+        ).createShader(Rect.fromCircle(center: origin, radius: 42));
+      canvas.drawCircle(origin, 42, bubblePaint);
+      canvas.drawCircle(
+        origin,
+        42,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2
+          ..color = Colors.white.withValues(alpha: 0.80),
+      );
+
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: Offset(origin.dx, origin.dy + 35),
+            width: 52,
+            height: 42,
+          ),
+          const Radius.circular(18),
+        ),
+        Paint()..color = shirt.withValues(alpha: 0.70),
+      );
+      canvas.drawCircle(origin, 22, Paint()..color = face);
+
+      final hairPath = Path()
+        ..moveTo(origin.dx - 23, origin.dy - 3)
+        ..quadraticBezierTo(
+          origin.dx - 10,
+          origin.dy - 28,
+          origin.dx + 15,
+          origin.dy - 20,
+        )
+        ..quadraticBezierTo(
+          origin.dx + 26,
+          origin.dy - 4,
+          origin.dx + 18,
+          origin.dy + 10,
+        )
+        ..quadraticBezierTo(
+          origin.dx - 3,
+          origin.dy - 2,
+          origin.dx - 23,
+          origin.dy - 3,
+        )
+        ..close();
+      canvas.drawPath(hairPath, Paint()..color = hair);
+
+      final eye = Paint()..color = const Color(0xFF463247);
+      canvas.drawCircle(Offset(origin.dx - 7, origin.dy + 2), 2.1, eye);
+      canvas.drawCircle(Offset(origin.dx + 7, origin.dy + 2), 2.1, eye);
+      canvas.drawCircle(
+        Offset(origin.dx + (right ? -14 : 14), origin.dy + 8),
+        4.3,
+        Paint()..color = const Color(0x3DFF5F8C),
+      );
+
+      final smile = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.7
+        ..strokeCap = StrokeCap.round
+        ..color = const Color(0xFFB75A76);
+      canvas.drawArc(
+        Rect.fromCenter(
+          center: Offset(origin.dx, origin.dy + 9),
+          width: 14,
+          height: 9,
+        ),
+        0.2,
+        2.75,
+        false,
+        smile,
+      );
+    }
+
+    drawAvatar(
+      origin: Offset(size.width * 0.28, size.height * 0.48),
+      hair: const Color(0xFF6A5CE8),
+      shirt: const Color(0xFF8EA6FF),
+      face: const Color(0xFFFFD9C3),
+      right: false,
+    );
+    drawAvatar(
+      origin: Offset(size.width * 0.72, size.height * 0.48),
+      hair: const Color(0xFFFF78A9),
+      shirt: const Color(0xFFFF8AB3),
+      face: const Color(0xFFFFD8C6),
+      right: true,
+    );
+
+    final chatPaint = Paint()..color = Colors.white.withValues(alpha: 0.88);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(size.width * 0.06, size.height * 0.10, 58, 25),
+        const Radius.circular(14),
+      ),
+      chatPaint,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(size.width * 0.68, size.height * 0.12, 58, 25),
+        const Radius.circular(14),
+      ),
+      chatPaint,
+    );
+
+    final chatHeart = Paint()..color = const Color(0xFFFF467C);
+    canvas.drawCircle(
+      Offset(size.width * 0.18, size.height * 0.165),
+      4,
+      chatHeart,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.82, size.height * 0.185),
+      4,
+      chatHeart,
+    );
+
+    final sparklePaint = Paint()..color = Colors.white.withValues(alpha: 0.78);
+    canvas.drawCircle(
+      Offset(size.width * 0.46, size.height * 0.17),
+      3,
+      sparklePaint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.58, size.height * 0.15),
+      2.2,
+      sparklePaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _LoveMatchPainter oldDelegate) => false;
 }
 
 class _MiniAvatar extends StatelessWidget {
@@ -1210,11 +2774,58 @@ class _MiniAvatar extends StatelessWidget {
       height: 54,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.65),
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0.92),
+            const Color(0xFFFFDCEC).withValues(alpha: 0.72),
+          ],
+        ),
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white, width: 2),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x33C147E9),
+            blurRadius: 16,
+            offset: Offset(0, 8),
+          ),
+        ],
       ),
-      child: Text(text, style: const TextStyle(fontSize: 28)),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: _HomeViewState._hotPink,
+          fontSize: 22,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
+class _FloatingBadge extends StatelessWidget {
+  final IconData icon;
+
+  const _FloatingBadge({required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFFFFF), Color(0xFFFFD5EA)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: _HomeViewState._pink.withValues(alpha: 0.20),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Icon(icon, color: _HomeViewState._hotPink, size: 28),
     );
   }
 }
@@ -1799,58 +3410,83 @@ class _AppBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
-      child: Container(
-        height: 82,
-        margin: const EdgeInsets.fromLTRB(0, 0, 0, 0),
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x12000000),
-              blurRadius: 18,
-              offset: Offset(0, -8),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: List.generate(_items.length, (index) {
-            final item = _items[index];
-            final selected = index == currentIndex;
-            return GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => onTap(index),
-              child: SizedBox(
-                width: 72,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      item.icon,
-                      color: selected
-                          ? _HomeViewState._hotPink
-                          : const Color(0xFFCFC6D0),
-                      size: 29,
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      item.label,
-                      maxLines: 1,
-                      style: TextStyle(
-                        color: selected
-                            ? _HomeViewState._hotPink
-                            : const Color(0xFF9B8F9B),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            height: 80,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.82),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(32),
               ),
-            );
-          }),
+              border: Border(
+                top: BorderSide(color: Colors.white.withValues(alpha: 0.82)),
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x14FF5C82),
+                  blurRadius: 26,
+                  offset: Offset(0, -10),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: List.generate(_items.length, (index) {
+                final item = _items[index];
+                final selected = index == currentIndex;
+                return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => onTap(index),
+                  child: SizedBox(
+                    width: 74,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          width: 34,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? _HomeViewState._hotPink.withValues(
+                                    alpha: 0.12,
+                                  )
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(13),
+                          ),
+                          child: Icon(
+                            item.icon,
+                            color: selected
+                                ? _HomeViewState._hotPink
+                                : const Color(0xFFC8BEC9),
+                            size: 26,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          item.label,
+                          maxLines: 1,
+                          style: TextStyle(
+                            color: selected
+                                ? _HomeViewState._hotPink
+                                : const Color(0xFF9B8F9B),
+                            fontSize: 12,
+                            fontWeight: selected
+                                ? FontWeight.w900
+                                : FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
         ),
       ),
     );
