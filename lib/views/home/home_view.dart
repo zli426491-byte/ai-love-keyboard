@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'package:ai_love_keyboard/models/reply_style.dart';
 import 'package:ai_love_keyboard/services/ai_service.dart';
+import 'package:ai_love_keyboard/services/analytics_service.dart';
 import 'package:ai_love_keyboard/services/coin_service.dart';
 import 'package:ai_love_keyboard/services/revenuecat_service.dart';
 import 'package:ai_love_keyboard/services/usage_service.dart';
@@ -41,11 +42,11 @@ class _HomeViewState extends State<HomeView> {
     _KeyboardTone('😉', '高情商', ReplyStyle.intellectual),
     _KeyboardTone('😌', '溫柔', ReplyStyle.warm),
     _KeyboardTone('💞', '曖昧拉扯', ReplyStyle.romantic),
-    _KeyboardTone('😀', '智能回覆', ReplyStyle.mature),
+    _KeyboardTone('😃', '智能回覆', ReplyStyle.mature),
     _KeyboardTone('😊', '可愛', ReplyStyle.cute),
     _KeyboardTone('😎', '大男子', ReplyStyle.cool),
-    _KeyboardTone('☺️', '撒嬌', ReplyStyle.cute),
-    _KeyboardTone('🍷', '甄嬛文學', ReplyStyle.contrast),
+    _KeyboardTone('😘', '撒嬌', ReplyStyle.cute),
+    _KeyboardTone('🍷', '氛圍文學', ReplyStyle.contrast),
   ];
 
   @override
@@ -75,11 +76,12 @@ class _HomeViewState extends State<HomeView> {
     if (!mounted) return;
 
     if (replies.isEmpty) {
-      _showSnack('暫時沒有產生成功，請換一句再試');
+      _showSnack('AI 回覆暫時失敗，請稍後再試');
       return;
     }
 
     await usage.recordUsage();
+    AnalyticsService.instance.trackReplyGenerated(style: _selectedStyle.name);
     if (!mounted) return;
 
     Navigator.push(
@@ -248,6 +250,7 @@ class _HomeViewState extends State<HomeView> {
         onGenerate: () => _generateReplies(),
         onToneTap: (tone) => _generateReplies(style: tone.style),
         onPaywall: _showPaywall,
+        onRewrite: () => _generateReplies(style: ReplyStyle.intellectual),
         onKeyboardGuide: _openKeyboardGuide,
         onBlindBox: _switchToBlindBox,
       ),
@@ -294,6 +297,7 @@ class _HomeTab extends StatelessWidget {
   final VoidCallback onGenerate;
   final ValueChanged<_KeyboardTone> onToneTap;
   final VoidCallback onPaywall;
+  final VoidCallback onRewrite;
   final VoidCallback onKeyboardGuide;
   final VoidCallback onBlindBox;
 
@@ -303,6 +307,7 @@ class _HomeTab extends StatelessWidget {
     required this.onGenerate,
     required this.onToneTap,
     required this.onPaywall,
+    required this.onRewrite,
     required this.onKeyboardGuide,
     required this.onBlindBox,
   });
@@ -323,7 +328,7 @@ class _HomeTab extends StatelessWidget {
             const SizedBox(height: 18),
             _FeatureGrid(
               onPaywall: onPaywall,
-              onKeyboardGuide: onKeyboardGuide,
+              onRewrite: onRewrite,
             ),
             const SizedBox(height: 10),
             _BlindBanner(onTap: onBlindBox),
@@ -396,7 +401,7 @@ class _BlindBoxTab extends StatelessWidget {
             const _BlindTitle(),
             const SizedBox(height: 16),
             const Text(
-              '成功配對 208400 對',
+              '匿名放入心動訊息，探索新的聊天可能',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 17,
@@ -529,7 +534,7 @@ class _ProfileTab extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             _MenuSection(
-              children: [_MenuRow(title: '系統設定', onTap: onKeyboardGuide)],
+              children: [_MenuRow(title: '鍵盤使用教學', onTap: onKeyboardGuide)],
             ),
             const SizedBox(height: 14),
             _MenuSection(
@@ -893,88 +898,29 @@ class _GlossyHeart extends StatelessWidget {
     return Stack(
       alignment: Alignment.center,
       children: [
+        const Positioned.fill(child: CustomPaint(painter: _HeartGlowPainter())),
         Positioned(
-          bottom: 8,
+          bottom: 2,
           child: Container(
-            width: 142,
-            height: 26,
+            width: 150,
+            height: 24,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(999),
               boxShadow: const [
                 BoxShadow(
-                  color: Color(0x288D3B5A),
-                  blurRadius: 28,
+                  color: Color(0x2A8D3B5A),
+                  blurRadius: 30,
                   spreadRadius: 3,
                 ),
               ],
             ),
           ),
         ),
-        Container(
-          width: 174,
+        SizedBox(
+          width: 170,
           height: 146,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [Color(0x42FF9AB6), Color(0x00FF9AB6)],
-            ),
-          ),
-        ),
-        Transform.translate(
-          offset: const Offset(0, 8),
-          child: Icon(
-            Icons.favorite_rounded,
-            size: 146,
-            color: const Color(0xFFD72D62).withValues(alpha: 0.18),
-          ),
-        ),
-        ShaderMask(
-          blendMode: BlendMode.srcIn,
-          shaderCallback: (rect) => const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFFFF1F6), Color(0xFFFFBBD0), Color(0xFFFF6684)],
-            stops: [0, 0.50, 1],
-          ).createShader(rect),
-          child: const Icon(Icons.favorite_rounded, size: 150),
-        ),
-        ShaderMask(
-          blendMode: BlendMode.srcIn,
-          shaderCallback: (rect) => LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.white.withValues(alpha: 0.95),
-              Colors.white.withValues(alpha: 0.15),
-            ],
-          ).createShader(rect),
-          child: const Icon(Icons.favorite_rounded, size: 150),
-        ),
-        Positioned(
-          top: 24,
-          left: 48,
-          child: Transform.rotate(
-            angle: -0.42,
-            child: Container(
-              width: 52,
-              height: 18,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.52),
-                borderRadius: BorderRadius.circular(999),
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          top: 35,
-          right: 58,
-          child: Container(
-            width: 7,
-            height: 7,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.70),
-              shape: BoxShape.circle,
-            ),
+          child: CustomPaint(
+            painter: _HeartGaugePainter(percent / 100),
           ),
         ),
       ],
@@ -1405,9 +1351,9 @@ class _MainCtaButton extends StatelessWidget {
 
 class _FeatureGrid extends StatelessWidget {
   final VoidCallback onPaywall;
-  final VoidCallback onKeyboardGuide;
+  final VoidCallback onRewrite;
 
-  const _FeatureGrid({required this.onPaywall, required this.onKeyboardGuide});
+  const _FeatureGrid({required this.onPaywall, required this.onRewrite});
 
   @override
   Widget build(BuildContext context) {
@@ -1431,7 +1377,7 @@ class _FeatureGrid extends StatelessWidget {
             colors: const [Color(0xFFFFE0B8), Color(0xFFFFF4DE)],
             accent: const Color(0xFFFF8A42),
             artwork: _FeatureArtwork.rewrite,
-            onTap: onKeyboardGuide,
+            onTap: onRewrite,
           ),
         ),
       ],
@@ -1467,7 +1413,7 @@ class _FeatureCard extends StatelessWidget {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
           child: Container(
-            height: 106,
+            height: 116,
             padding: const EdgeInsets.fromLTRB(16, 15, 10, 12),
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -1511,13 +1457,16 @@ class _FeatureCard extends StatelessWidget {
                   ),
                 ),
                 Positioned(
-                  right: 8,
-                  bottom: 12,
-                  child: _FeatureIconBubble(
-                    icon: artwork == _FeatureArtwork.coach
-                        ? Icons.psychology_alt_rounded
-                        : Icons.edit_note_rounded,
-                    accent: accent,
+                  right: -2,
+                  bottom: 4,
+                  child: SizedBox(
+                    width: 72,
+                    height: 82,
+                    child: CustomPaint(
+                      painter: artwork == _FeatureArtwork.coach
+                          ? _CoachPainter(accent)
+                          : _PencilHandPainter(accent),
+                    ),
                   ),
                 ),
                 Column(
@@ -1658,42 +1607,6 @@ class _FeatureCardBackgroundPainter extends CustomPainter {
   }
 }
 
-class _FeatureIconBubble extends StatelessWidget {
-  final IconData icon;
-  final Color accent;
-
-  const _FeatureIconBubble({required this.icon, required this.accent});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 54,
-      height: 54,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.white.withValues(alpha: 0.92),
-            accent.withValues(alpha: 0.18),
-          ],
-        ),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.78)),
-        boxShadow: [
-          BoxShadow(
-            color: accent.withValues(alpha: 0.18),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Icon(icon, color: accent, size: 29),
-    );
-  }
-}
-
-// ignore: unused_element
 class _CoachPainter extends CustomPainter {
   final Color accent;
 

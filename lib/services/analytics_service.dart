@@ -33,7 +33,12 @@ class AnalyticsService {
     // TODO: Initialize TikTok Events SDK
     //   TikTokSdk.init(pixelId: AdTrackingConfig.tiktokPixelId);
 
-    _debugLog('AnalyticsService initialised');
+    _debugLog(
+      'AnalyticsService initialised '
+      '(facebook=${AdTrackingConfig.hasFacebookConfig}, '
+      'adjust=${AdTrackingConfig.hasAdjustConfig}, '
+      'tiktok=${AdTrackingConfig.hasTikTokConfig})',
+    );
   }
 
   // ── Core Event Tracking ──────────────────────────────────────────────
@@ -107,6 +112,12 @@ class AnalyticsService {
 
   void trackFreeTrialStarted() {
     _trackEvent(AdTrackingConfig.eventFreeTrialStarted);
+  }
+
+  void trackPurchaseStarted({required String planType}) {
+    _trackEvent(AdTrackingConfig.eventPurchaseStarted, params: {
+      'plan_type': planType,
+    });
   }
 
   void trackSubscriptionStarted({required String planType}) {

@@ -1,6 +1,6 @@
 /// Ad tracking configuration and event name constants.
 ///
-/// All SDK keys/IDs are placeholders — replace with real values before release.
+/// SDK keys/IDs are injected at build time when a real ad stack is enabled.
 library;
 
 class AdTrackingConfig {
@@ -8,17 +8,27 @@ class AdTrackingConfig {
 
   // ── SDK Keys (replace with real values) ──────────────────────────────
 
-  /// Facebook App ID — set in Info.plist / AndroidManifest as well.
-  static const String facebookAppId = 'YOUR_FACEBOOK_APP_ID';
+  /// Facebook App ID — set with --dart-define=FACEBOOK_APP_ID=...
+  /// The native Info.plist / AndroidManifest values must also match.
+  static const String facebookAppId = String.fromEnvironment('FACEBOOK_APP_ID');
 
   /// Adjust App Token for attribution.
-  static const String adjustAppToken = 'YOUR_ADJUST_APP_TOKEN';
+  static const String adjustAppToken = String.fromEnvironment(
+    'ADJUST_APP_TOKEN',
+  );
 
   /// Adjust environment: 'sandbox' for dev, 'production' for release.
-  static const String adjustEnvironment = 'sandbox';
+  static const String adjustEnvironment = String.fromEnvironment(
+    'ADJUST_ENVIRONMENT',
+    defaultValue: 'sandbox',
+  );
 
   /// TikTok Pixel ID for TikTok Events API.
-  static const String tiktokPixelId = 'YOUR_TIKTOK_PIXEL_ID';
+  static const String tiktokPixelId = String.fromEnvironment('TIKTOK_PIXEL_ID');
+
+  static const bool hasFacebookConfig = facebookAppId.length > 0;
+  static const bool hasAdjustConfig = adjustAppToken.length > 0;
+  static const bool hasTikTokConfig = tiktokPixelId.length > 0;
 
   /// Firebase project configuration is handled via google-services.json
   /// (Android) and GoogleService-Info.plist (iOS). No code constant needed.
@@ -36,6 +46,7 @@ class AdTrackingConfig {
   static const String eventPaywallShown = 'paywall_shown';
   static const String eventPaywallClosed = 'paywall_closed';
   static const String eventPlanSelected = 'plan_selected';
+  static const String eventPurchaseStarted = 'purchase_started';
   static const String eventFreeTrialStarted = 'free_trial_started';
   static const String eventSubscriptionStarted = 'subscription_started';
   static const String eventSubscriptionRenewed = 'subscription_renewed';
@@ -59,6 +70,7 @@ class AdTrackingConfig {
   // Key = our internal event name, value = list of platforms to send to.
 
   static const Map<String, List<String>> conversionEventPlatforms = {
+    eventPurchaseStarted: ['facebook', 'google', 'tiktok', 'adjust'],
     eventFreeTrialStarted: ['facebook', 'google', 'tiktok', 'adjust'],
     eventSubscriptionStarted: ['facebook', 'google', 'tiktok', 'adjust'],
     eventSubscriptionRenewed: ['facebook', 'google', 'adjust'],

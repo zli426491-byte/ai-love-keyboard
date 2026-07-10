@@ -77,8 +77,8 @@ void main() async {
   } catch (_) {}
   try {
     final subscribed = await RevenueCatService.instance.init();
-    if (subscribed) {
-      await usageService.setSubscribed(true);
+    if (RevenueCatService.instance.customerInfoSynced) {
+      await usageService.setSubscribed(subscribed);
     }
   } catch (_) {}
   try {

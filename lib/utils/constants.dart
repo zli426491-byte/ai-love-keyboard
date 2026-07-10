@@ -33,8 +33,12 @@ class AppConstants {
   static const String keyboardBundleId = 'com.ailovekeyboard.app.keyboard';
   static const String keyboardDisplayName = 'LoveKey';
 
-  static const String revenueCatIosPublicKey =
-      'appl_nttijTbdotLvIoxrLhTiTPmTivA';
+  // Inject the LoveKey iOS Public SDK Key at build time. Keeping this empty
+  // makes a misconfigured release fail closed instead of loading another
+  // RevenueCat project's products.
+  static const String revenueCatIosPublicKey = String.fromEnvironment(
+    'REVENUECAT_IOS_PUBLIC_KEY',
+  );
   static const String proEntitlementId = 'pro';
   static const bool reviewFreeMode = false;
 

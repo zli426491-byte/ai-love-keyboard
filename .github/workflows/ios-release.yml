@@ -44,6 +44,15 @@ jobs:
           print("Runtime AI proxy config injected into LoveKeyboard extension.")
           PY
 
+      - name: Validate RevenueCat release config
+        env:
+          REVENUECAT_IOS_PUBLIC_KEY: ${{ secrets.REVENUECAT_IOS_PUBLIC_KEY }}
+        run: |
+          if [ -z "$REVENUECAT_IOS_PUBLIC_KEY" ]; then
+            echo "REVENUECAT_IOS_PUBLIC_KEY secret is empty; configure the LoveKey RevenueCat app before uploading a build."
+            exit 1
+          fi
+
       - name: Setup App Store Connect API Key
         run: |
           mkdir -p ~/private_keys
@@ -97,10 +106,20 @@ jobs:
       - name: Build iOS
         env:
           AI_PROXY_URL: ${{ secrets.AI_PROXY_URL }}
+          REVENUECAT_IOS_PUBLIC_KEY: ${{ secrets.REVENUECAT_IOS_PUBLIC_KEY }}
+          FACEBOOK_APP_ID: ${{ secrets.FACEBOOK_APP_ID }}
+          ADJUST_APP_TOKEN: ${{ secrets.ADJUST_APP_TOKEN }}
+          ADJUST_ENVIRONMENT: ${{ secrets.ADJUST_ENVIRONMENT || 'production' }}
+          TIKTOK_PIXEL_ID: ${{ secrets.TIKTOK_PIXEL_ID }}
         run: |
           flutter build ipa \
             --release \
             --dart-define=AI_PROXY_URL="$AI_PROXY_URL" \
+            --dart-define=REVENUECAT_IOS_PUBLIC_KEY="$REVENUECAT_IOS_PUBLIC_KEY" \
+            --dart-define=FACEBOOK_APP_ID="$FACEBOOK_APP_ID" \
+            --dart-define=ADJUST_APP_TOKEN="$ADJUST_APP_TOKEN" \
+            --dart-define=ADJUST_ENVIRONMENT="$ADJUST_ENVIRONMENT" \
+            --dart-define=TIKTOK_PIXEL_ID="$TIKTOK_PIXEL_ID" \
             --export-options-plist=ios/ExportOptions.generated.plist
 
       - name: Upload to TestFlight

@@ -124,10 +124,7 @@ class AiService extends ChangeNotifier {
       );
 
       if (response.statusCode != 200) {
-        final errorBody = jsonDecode(response.body);
-        throw Exception(
-          errorBody['error']?['message'] ?? '伺服器錯誤 (${response.statusCode})',
-        );
+        throw Exception(_proxyErrorMessage(response));
       }
 
       final body = jsonDecode(response.body);
@@ -182,10 +179,7 @@ class AiService extends ChangeNotifier {
       );
 
       if (response.statusCode != 200) {
-        final errorBody = jsonDecode(response.body);
-        throw Exception(
-          errorBody['error']?['message'] ?? '伺服器錯誤 (${response.statusCode})',
-        );
+        throw Exception(_proxyErrorMessage(response));
       }
 
       final body = jsonDecode(response.body);
@@ -212,6 +206,18 @@ class AiService extends ChangeNotifier {
     _setError(null);
 
     try {
+      if (kIsWeb && AppConstants.aiProxyBaseUrl.trim().isEmpty) {
+        _replies = [
+          AiReply(
+            id: DateTime.now().microsecondsSinceEpoch.toString(),
+            text: _webPreviewReplyFor(message, style),
+            style: style,
+          ),
+        ];
+        _setLoading(false);
+        return _replies;
+      }
+
       final String? personaPrompt = persona?.toPromptString();
       final String? intimacyPrompt = intimacyLevel != null
           ? IntimacyLevel.levels[intimacyLevel - 1].promptHint
@@ -251,6 +257,65 @@ class AiService extends ChangeNotifier {
       _setLoading(false);
       return [];
     }
+  }
+
+  String _proxyErrorMessage(http.Response response) {
+    try {
+      final body = jsonDecode(response.body);
+      final error = body is Map<String, dynamic> ? body['error'] : null;
+      if (error is Map<String, dynamic>) {
+        final message = error['message'];
+        if (message is String && message.trim().isNotEmpty) {
+          return message.trim();
+        }
+      }
+      if (error is String && error.trim().isNotEmpty) {
+        return switch (error) {
+          'server_not_configured' => 'AI 服務尚未設定，請稍後再試。',
+          'quota_exceeded' => '今日免費次數已用完，升級後可繼續使用。',
+          'missing_message' || 'missing_fields' => '請先貼上對方訊息。',
+          'ai_failed' || 'empty_reply' => 'AI 回覆暫時失敗，請稍後再試。',
+          _ => 'AI 服務暫時無法使用，請稍後再試。',
+        };
+      }
+    } catch (_) {
+      // Fall through to the generic status message.
+    }
+    return '伺服器錯誤 (${response.statusCode})';
+  }
+
+  String _webPreviewReplyFor(String message, ReplyStyle style) {
+    final lower = message.toLowerCase();
+    final tired =
+        message.contains('累') || lower.contains('tired') || lower.contains('busy');
+    final casual =
+        message.contains('隨便') || message.contains('都可以') || lower.contains('whatever');
+
+    if (tired) {
+      return switch (style) {
+        ReplyStyle.humorous => '那今天先省電模式，我陪你慢慢放鬆。',
+        ReplyStyle.romantic || ReplyStyle.flirty => '辛苦了，先休息，晚點我再陪你聊。',
+        ReplyStyle.cool => '先休息吧，晚點有精神再說。',
+        _ => '辛苦了，先別硬撐，回家好好休息。',
+      };
+    }
+
+    if (casual) {
+      return switch (style) {
+        ReplyStyle.humorous => '那我負責決定，你負責給我加分。',
+        ReplyStyle.romantic || ReplyStyle.flirty => '那我安排一個你會喜歡的，別偷笑。',
+        ReplyStyle.cool => '好，我來決定，你等著出現就好。',
+        _ => '好，那我來安排一個輕鬆一點的。',
+      };
+    }
+
+    return switch (style) {
+      ReplyStyle.humorous => '這句我先接住，等等讓你笑一下。',
+      ReplyStyle.romantic || ReplyStyle.flirty => '我想認真回你，因為這句我有放在心上。',
+      ReplyStyle.cool => '收到，我想一下怎麼回比較剛好。',
+      ReplyStyle.cute => '好，我先乖乖接住這句。',
+      _ => '我懂你的意思，先讓我好好回你。',
+    };
   }
 
   // ── Preview Persona Reply ──────────────────────────────────────────────

@@ -1,9 +1,14 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:ai_love_keyboard/utils/constants.dart';
 
 class UsageService extends ChangeNotifier {
+  static const MethodChannel _subscriptionChannel = MethodChannel(
+    'com.ailovekeyboard.app/subscription',
+  );
+
   int _usedToday = 0;
   bool _isSubscribed = false;
 
@@ -19,6 +24,7 @@ class UsageService extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _isSubscribed = prefs.getBool(AppConstants.prefIsSubscribed) ?? false;
     await checkAndReset();
+    await _syncSubscriptionToKeyboard(_isSubscribed);
   }
 
   Future<void> checkAndReset() async {
@@ -54,6 +60,22 @@ class UsageService extends ChangeNotifier {
     _isSubscribed = value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(AppConstants.prefIsSubscribed, value);
+    await _syncSubscriptionToKeyboard(value);
     notifyListeners();
+  }
+
+  Future<void> _syncSubscriptionToKeyboard(bool value) async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) return;
+
+    try {
+      await _subscriptionChannel.invokeMethod<void>(
+        'setSubscriptionStatus',
+        <String, bool>{'isSubscribed': value},
+      );
+    } on PlatformException catch (error) {
+      debugPrint('Unable to sync subscription to keyboard: ${error.code}');
+    } on MissingPluginException {
+      debugPrint('Subscription bridge is unavailable on this build.');
+    }
   }
 }

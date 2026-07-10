@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -36,10 +37,20 @@ class _PaywallViewState extends State<PaywallView> {
     final usage = context.read<UsageService>();
 
     try {
+      AnalyticsService.instance.trackPlanSelected(planType: plan.id);
+      AnalyticsService.instance.trackPurchaseStarted(planType: plan.id);
       final purchased = await revenueCat.purchase(plan);
       if (!mounted) return;
       if (purchased) {
         await usage.setSubscribed(true);
+        AnalyticsService.instance.trackSubscriptionStarted(planType: plan.id);
+        if (plan.amount > 0) {
+          AnalyticsService.instance.trackRevenue(
+            amount: plan.amount,
+            currency: plan.currency,
+            planType: plan.id,
+          );
+        }
         if (mounted) Navigator.pop(context);
       } else if (revenueCat.errorMessage != null) {
         _showSnack(revenueCat.errorMessage!);
@@ -76,7 +87,8 @@ class _PaywallViewState extends State<PaywallView> {
     final revenueCat = context.watch<RevenueCatService>();
     final plans = revenueCat.plans;
     final selected = plans[_selectedIndex];
-    final canPurchase = selected.isAvailable && !revenueCat.isLoading;
+    final isIos = defaultTargetPlatform == TargetPlatform.iOS;
+    final canPurchase = isIos && selected.isAvailable && !revenueCat.isLoading;
 
     return Container(
       decoration: const BoxDecoration(
@@ -155,7 +167,7 @@ class _PaywallViewState extends State<PaywallView> {
                   ),
                 );
               }),
-              if (revenueCat.errorMessage != null) ...[
+              if (isIos && revenueCat.errorMessage != null) ...[
                 const SizedBox(height: 2),
                 Text(
                   revenueCat.errorMessage!,
@@ -199,7 +211,9 @@ class _PaywallViewState extends State<PaywallView> {
                         : Text(
                             canPurchase
                                 ? '立即解鎖 ${selected.price}'
-                                : 'RevenueCat 尚未載入產品',
+                                : isIos
+                                    ? '訂閱方案載入中'
+                                    : 'TestFlight 實機測試購買',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 17,
@@ -212,7 +226,7 @@ class _PaywallViewState extends State<PaywallView> {
               const SizedBox(height: 12),
               Center(
                 child: TextButton(
-                  onPressed: revenueCat.isLoading ? null : _restore,
+                  onPressed: isIos && !revenueCat.isLoading ? _restore : null,
                   child: const Text(
                     '恢復購買',
                     style: TextStyle(color: _gold, fontWeight: FontWeight.w900),

@@ -22,6 +22,8 @@ class SubscriptionPlan {
   });
 
   String get price => package?.storeProduct.priceString ?? fallbackPrice;
+  double get amount => package?.storeProduct.price ?? 0;
+  String get currency => package?.storeProduct.currencyCode ?? 'USD';
   bool get isAvailable => package != null;
 }
 
@@ -33,28 +35,21 @@ class RevenueCatService extends ChangeNotifier {
   bool _configured = false;
   bool _loading = false;
   bool _subscribed = false;
+  bool _customerInfoSynced = false;
   String? _errorMessage;
   Offering? _currentOffering;
 
   bool get isLoading => _loading;
   bool get isConfigured => _configured;
   bool get isSubscribed => _subscribed;
+  bool get customerInfoSynced => _customerInfoSynced;
   String? get errorMessage => _errorMessage;
   bool get hasProducts => plans.any((plan) => plan.isAvailable);
 
   List<SubscriptionPlan> get plans {
-    final lifetime = _findPackage(
-      AppConstants.lifetimeProductId,
-      PackageType.lifetime,
-    );
-    final yearly = _findPackage(
-      AppConstants.yearlyProductId,
-      PackageType.annual,
-    );
-    final weekly = _findPackage(
-      AppConstants.weeklyProductId,
-      PackageType.weekly,
-    );
+    final lifetime = _findPackage(AppConstants.lifetimeProductId);
+    final yearly = _findPackage(AppConstants.yearlyProductId);
+    final weekly = _findPackage(AppConstants.weeklyProductId);
 
     return [
       SubscriptionPlan(
@@ -92,6 +87,12 @@ class RevenueCatService extends ChangeNotifier {
       return false;
     }
 
+    if (AppConstants.revenueCatIosPublicKey.trim().isEmpty) {
+      _errorMessage = 'RevenueCat iOS 金鑰尚未設定';
+      notifyListeners();
+      return false;
+    }
+
     try {
       if (!_configured) {
         await Purchases.configure(
@@ -125,7 +126,10 @@ class RevenueCatService extends ChangeNotifier {
     try {
       final offerings = await Purchases.getOfferings();
       _currentOffering = offerings.current;
-      _errorMessage = null;
+      final missingProduct = plans.any((plan) => !plan.isAvailable);
+      _errorMessage = _currentOffering == null || missingProduct
+          ? '訂閱方案設定不完整，請檢查三個 LoveKey 商品'
+          : null;
     } catch (_) {
       _errorMessage = '訂閱方案載入失敗，請檢查 RevenueCat 產品設定';
     } finally {
@@ -141,10 +145,12 @@ class RevenueCatService extends ChangeNotifier {
     try {
       final customerInfo = await Purchases.getCustomerInfo();
       _subscribed = _hasActiveEntitlement(customerInfo);
+      _customerInfoSynced = true;
       _errorMessage = null;
       notifyListeners();
       return _subscribed;
     } catch (_) {
+      _customerInfoSynced = false;
       _errorMessage = '訂閱狀態同步失敗';
       notifyListeners();
       return _subscribed;
@@ -161,6 +167,7 @@ class RevenueCatService extends ChangeNotifier {
     try {
       final result = await Purchases.purchase(PurchaseParams.package(package));
       _subscribed = _hasActiveEntitlement(result.customerInfo);
+      _customerInfoSynced = true;
       _errorMessage = null;
       notifyListeners();
       return _subscribed;
@@ -185,6 +192,7 @@ class RevenueCatService extends ChangeNotifier {
     try {
       final customerInfo = await Purchases.restorePurchases();
       _subscribed = _hasActiveEntitlement(customerInfo);
+      _customerInfoSynced = true;
       _errorMessage = _subscribed ? null : '沒有找到可恢復的訂閱';
       notifyListeners();
       return _subscribed;
@@ -197,15 +205,10 @@ class RevenueCatService extends ChangeNotifier {
     }
   }
 
-  Package? _findPackage(String productId, PackageType packageType) {
+  Package? _findPackage(String productId) {
     final packages = _currentOffering?.availablePackages ?? const <Package>[];
     for (final package in packages) {
       if (package.storeProduct.identifier == productId) {
-        return package;
-      }
-    }
-    for (final package in packages) {
-      if (package.packageType == packageType) {
         return package;
       }
     }
@@ -213,12 +216,9 @@ class RevenueCatService extends ChangeNotifier {
   }
 
   bool _hasActiveEntitlement(CustomerInfo customerInfo) {
-    if (customerInfo.entitlements.active.containsKey(
+    return customerInfo.entitlements.active.containsKey(
       AppConstants.proEntitlementId,
-    )) {
-      return true;
-    }
-    return customerInfo.entitlements.active.isNotEmpty;
+    );
   }
 
   void _setLoading(bool value) {

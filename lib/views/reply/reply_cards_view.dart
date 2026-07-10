@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import 'package:ai_love_keyboard/models/reply_style.dart';
 import 'package:ai_love_keyboard/services/ai_service.dart';
+import 'package:ai_love_keyboard/services/analytics_service.dart';
 import 'package:ai_love_keyboard/services/usage_service.dart';
 import 'package:ai_love_keyboard/utils/app_theme.dart';
 import 'package:ai_love_keyboard/views/components/particle_background.dart';
@@ -34,6 +35,7 @@ class ReplyCardsView extends StatelessWidget {
     final replies = await ai.generateReplies(originalMessage, style);
     if (replies.isNotEmpty) {
       await usage.recordUsage();
+      AnalyticsService.instance.trackReplyGenerated(style: style.name);
     }
   }
 
@@ -206,6 +208,8 @@ class ReplyCardsView extends StatelessWidget {
                                                   ClipboardData(
                                                       text:
                                                           reply.text));
+                                              AnalyticsService.instance
+                                                  .trackReplyCopied();
                                               ScaffoldMessenger.of(
                                                       context)
                                                   .showSnackBar(

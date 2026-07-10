@@ -226,7 +226,7 @@ class _KeyboardPreview extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: const Text(
-                    '我已複製，產生 3 句',
+                    '選語氣，生成 1 句',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white,
@@ -296,8 +296,8 @@ class _FlowCard extends StatelessWidget {
           _GuideDivider(),
           _GuideStep(
             number: '3',
-            title: '讀取後點回覆',
-            body: '點「我已複製，產生 3 句」，選一句建議，會直接填入輸入框。',
+            title: '選語氣後直接填入',
+            body: '讀到訊息後選一種語氣，只生成一則可貼上的回覆，點「填入」就會進到聊天輸入框。',
           ),
         ],
       ),
@@ -404,7 +404,7 @@ class _SetupCard extends StatelessWidget {
           _GuideStep(
             number: '3',
             title: '允許完整取用',
-            body: '剪貼簿讀取需要此權限；不開啟時只能使用固定回覆。',
+            body: '讀取剪貼簿與呼叫 AI 需要此權限；不開啟時只能手動輸入訊息。',
           ),
         ],
       ),
@@ -433,7 +433,7 @@ class _FullAccessCard extends StatelessWidget {
           SizedBox(height: 10),
           _ExplainRow(
             icon: '•',
-            text: '只能用 4 種固定模板',
+            text: '需要手動輸入或貼上對方訊息',
             color: KeyboardGuideView._muted,
           ),
           _ExplainRow(

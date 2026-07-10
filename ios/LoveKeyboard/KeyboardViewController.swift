@@ -90,6 +90,15 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
+    private enum SharedConfig {
+        static let appGroupID = "group.com.ailovekeyboard.app"
+        static let subscriptionKey = "is_subscribed"
+
+        static var isPro: Bool {
+            UserDefaults(suiteName: appGroupID)?.bool(forKey: subscriptionKey) ?? false
+        }
+    }
+
     private enum Palette {
         static let background = UIColor(red: 255 / 255, green: 244 / 255, blue: 249 / 255, alpha: 1)
         static let card = UIColor(red: 255 / 255, green: 255 / 255, blue: 255 / 255, alpha: 1)
@@ -1412,7 +1421,7 @@ final class KeyboardViewController: UIInputViewController {
             "tone": style.title,
             "mode": mode.title,
             "instruction": instruction ?? "",
-            "is_pro": true
+            "is_pro": SharedConfig.isPro
         ]
 
         do {
