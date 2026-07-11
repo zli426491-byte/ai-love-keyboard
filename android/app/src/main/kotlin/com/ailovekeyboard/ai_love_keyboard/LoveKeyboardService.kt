@@ -215,7 +215,8 @@ class LoveKeyboardService : InputMethodService() {
             put("message", message)
             put("tone", style)
             put("mode", "接話")
-            put("is_pro", true)
+            // Paid access is verified by the Worker using RevenueCat. Never
+            // send a client-controlled Pro flag from the keyboard.
         }
 
         val writer = OutputStreamWriter(conn.outputStream, "UTF-8")

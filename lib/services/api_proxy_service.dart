@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:ai_love_keyboard/utils/constants.dart';
+import 'package:ai_love_keyboard/services/revenuecat_service.dart';
 
 /// Service layer for the backend AI proxy.
 ///
@@ -77,10 +78,8 @@ class ApiProxyService {
 
   // ── Request Signing ──────────────────────────────────────────────────
 
-  /// Generate a simple request signature to prevent replay attacks.
-  /// Uses timestamp + nonce to create a unique signature per request.
-  ///
-  /// TODO: Implement HMAC-SHA256 with a shared secret from backend.
+  /// Request metadata is intentionally non-authoritative. The Worker verifies
+  /// RevenueCat entitlements server-side and applies its own rate limits.
   Map<String, String> _generateRequestHeaders() {
     final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
     final nonce = _generateNonce();
@@ -99,10 +98,9 @@ class ApiProxyService {
     return base64Url.encode(bytes);
   }
 
-  /// Simple signature: timestamp + nonce hash.
-  /// TODO: Replace with HMAC-SHA256 using server-provided secret.
+  /// Kept for backwards compatibility with older Worker deployments. This is
+  /// not treated as authentication and must never be used to unlock Pro.
   String _sign(String timestamp, String nonce) {
-    // Placeholder: just concat and base64. Replace with HMAC in production.
     final payload = '$timestamp:$nonce:${_deviceFingerprint ?? ""}';
     return base64Url.encode(utf8.encode(payload));
   }
@@ -117,7 +115,7 @@ class ApiProxyService {
     double temperature = 0.8,
     bool useHeavyModel = false,
     bool responseFormatJson = false,
-    bool isPro = true,
+    bool isPro = false,
   }) async {
     await _ensureDeviceFingerprint();
 
@@ -158,20 +156,26 @@ class ApiProxyService {
       'Content-Type': 'application/json',
       ..._generateRequestHeaders(),
     };
+    final revenueCatAppUserId = await RevenueCatService.instance.appUserId;
+
+    final requestBody = <String, dynamic>{
+      'user_id': _deviceFingerprint,
+      'system_prompt': systemPrompt,
+      'user_message': userMessage,
+      'max_tokens': maxTokens,
+      'temperature': temperature,
+      'use_heavy_model': useHeavyModel,
+      'is_pro': isPro,
+      if (responseFormatJson) 'response_format': {'type': 'json_object'},
+    };
+    if (revenueCatAppUserId case final id?) {
+      requestBody['revenuecat_app_user_id'] = id;
+    }
 
     return http.post(
       Uri.parse('$normalizedBase${AppConstants.aiProxyChatPath}'),
       headers: headers,
-      body: jsonEncode({
-        'user_id': _deviceFingerprint,
-        'system_prompt': systemPrompt,
-        'user_message': userMessage,
-        'max_tokens': maxTokens,
-        'temperature': temperature,
-        'use_heavy_model': useHeavyModel,
-        'is_pro': isPro,
-        if (responseFormatJson) 'response_format': {'type': 'json_object'},
-      }),
+      body: jsonEncode(requestBody),
     );
   }
 }

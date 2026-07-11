@@ -93,6 +93,32 @@ if (-not (Select-String -LiteralPath $releaseWorkflow -SimpleMatch 'secrets.REVE
 }
 Write-Host "Subscription state and App Group wiring are release-gated." -ForegroundColor Green
 
+Step "Backend and Android release gates"
+$workerSource = Join-Path $repo "cloudflare-worker\src\index.js"
+$androidGradle = Join-Path $repo "android\app\build.gradle.kts"
+$androidWorkflow = Join-Path $repo ".github\workflows\android-release.yml"
+Require-File $workerSource "Cloudflare Worker source"
+Require-File $androidGradle "Android Gradle config"
+Require-File $androidWorkflow "Android release workflow"
+if (Select-String -LiteralPath $workerSource -SimpleMatch 'isPro = body.is_pro !== false' -Quiet) {
+  throw "Worker must not default chat requests to Pro."
+}
+if (Select-String -LiteralPath $workerSource -SimpleMatch 'Access-Control-Allow-Origin": "*"' -Quiet) {
+  throw "Worker CORS policy must not be wildcard."
+}
+if (-not (Select-String -LiteralPath $workerSource -SimpleMatch 'REVENUECAT_SECRET_API_KEY' -Quiet)) {
+  throw "Worker is missing server-side RevenueCat entitlement verification."
+}
+if (Select-String -LiteralPath $androidGradle -SimpleMatch 'signingConfig = signingConfigs.getByName("debug")' -Quiet) {
+  throw "Android release must not use debug signing."
+}
+foreach ($secret in @('ANDROID_KEYSTORE_BASE64', 'ANDROID_KEYSTORE_PASSWORD', 'ANDROID_KEY_ALIAS', 'ANDROID_KEY_PASSWORD')) {
+  if (-not (Select-String -LiteralPath $androidWorkflow -SimpleMatch "secrets.$secret" -Quiet)) {
+    throw "Android release workflow is missing $secret."
+  }
+}
+Write-Host "Worker entitlement, CORS, and Android signing gates passed." -ForegroundColor Green
+
 if (Test-Path -LiteralPath $npx) {
   Step "Cloudflare Worker dry-run"
   Push-Location (Join-Path $repo "cloudflare-worker")
@@ -107,6 +133,8 @@ if (Test-Path -LiteralPath $npx) {
 
 Step "Manual checks still required"
 Write-Host "- GitHub Secrets: AI_PROXY_URL, REVENUECAT_IOS_PUBLIC_KEY, APP_STORE_CONNECT_API_KEY, APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID, CERTIFICATE_PRIVATE_KEY"
+Write-Host "- Cloudflare secret: REVENUECAT_SECRET_API_KEY (server-side entitlement verification)"
+Write-Host "- Android secrets: ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD"
 Write-Host "- Optional ad secrets: FACEBOOK_APP_ID, ADJUST_APP_TOKEN, ADJUST_ENVIRONMENT=production, TIKTOK_PIXEL_ID"
 Write-Host "- TestFlight real-device QA: keyboard paste, generate, send, paywall purchase, restore purchase"
 Write-Host "- RevenueCat dashboard: default offering has matching weekly/yearly/lifetime products and pro entitlement"

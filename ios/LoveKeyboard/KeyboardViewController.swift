@@ -93,9 +93,17 @@ final class KeyboardViewController: UIInputViewController {
     private enum SharedConfig {
         static let appGroupID = "group.com.ailovekeyboard.app"
         static let subscriptionKey = "is_subscribed"
+        static let revenueCatAppUserIDKey = "revenuecat_app_user_id"
 
         static var isPro: Bool {
             UserDefaults(suiteName: appGroupID)?.bool(forKey: subscriptionKey) ?? false
+        }
+
+        static var revenueCatAppUserID: String? {
+            let value = UserDefaults(suiteName: appGroupID)?
+                .string(forKey: revenueCatAppUserIDKey)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return value?.isEmpty == false ? value : nil
         }
     }
 
@@ -1413,7 +1421,7 @@ final class KeyboardViewController: UIInputViewController {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(userID, forHTTPHeaderField: "X-Device-Fingerprint")
 
-        let payload: [String: Any] = [
+        var payload: [String: Any] = [
             "user_id": userID,
             "message": message,
             "user_message": message,
@@ -1423,6 +1431,9 @@ final class KeyboardViewController: UIInputViewController {
             "instruction": instruction ?? "",
             "is_pro": SharedConfig.isPro
         ]
+        if let appUserID = SharedConfig.revenueCatAppUserID {
+            payload["revenuecat_app_user_id"] = appUserID
+        }
 
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: payload)

@@ -15,6 +15,7 @@ Copy the returned KV namespace id into `wrangler.toml`, then set the OpenAI key 
 
 ```bash
 wrangler secret put OPENAI_API_KEY
+wrangler secret put REVENUECAT_SECRET_API_KEY
 wrangler deploy
 ```
 
@@ -29,7 +30,10 @@ Do not put OpenAI API keys in the app, GitHub repo, or Xcode project.
 ## Endpoints
 
 - `POST /v1/keyboard-reply`
-  - Body: `{ "user_id": "...", "message": "...", "tone": "曖昧", "mode": "接話", "is_pro": true }`
+  - Body: `{ "user_id": "...", "message": "...", "tone": "曖昧", "mode": "接話", "revenuecat_app_user_id": "..." }`
+  - The `is_pro` flag is not trusted. The Worker verifies RevenueCat's `pro`
+    entitlement with `REVENUECAT_SECRET_API_KEY` and fails closed when the
+    secret or entitlement is unavailable.
   - Response: `{ "reply": "..." }`
 - `POST /v1/chat/completions`
   - Body: `{ "system_prompt": "...", "user_message": "...", "use_heavy_model": false }`

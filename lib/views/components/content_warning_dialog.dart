@@ -12,8 +12,7 @@ class ContentWarningDialog extends StatelessWidget {
   const ContentWarningDialog({super.key, required this.filterResult});
 
   /// Show the warning dialog.
-  static Future<void> show(
-      BuildContext context, ContentFilterResult result) {
+  static Future<void> show(BuildContext context, ContentFilterResult result) {
     return showDialog(
       context: context,
       builder: (_) => ContentWarningDialog(filterResult: result),
@@ -31,9 +30,7 @@ class ContentWarningDialog extends StatelessWidget {
       title: Row(
         children: [
           Icon(
-            isSelfHarm
-                ? Icons.favorite_rounded
-                : Icons.warning_amber_rounded,
+            isSelfHarm ? Icons.favorite_rounded : Icons.warning_amber_rounded,
             color: isSelfHarm ? Colors.red.shade300 : AppTheme.warning,
             size: 26,
           ),
@@ -41,10 +38,7 @@ class ContentWarningDialog extends StatelessWidget {
           Expanded(
             child: Text(
               isSelfHarm ? '我們很關心你' : '內容已被過濾',
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-              ),
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -68,10 +62,10 @@ class ContentWarningDialog extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.red.shade900.withValues(alpha: 0.2),
-                  borderRadius:
-                      BorderRadius.circular(AppTheme.radiusMd),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                   border: Border.all(
-                      color: Colors.red.shade300.withValues(alpha: 0.3)),
+                    color: Colors.red.shade300.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Text(
                   BlockedKeywords.mentalHealthHotlineInfo,
@@ -88,8 +82,7 @@ class ContentWarningDialog extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: AppTheme.bgCardLight,
-                  borderRadius:
-                      BorderRadius.circular(AppTheme.radiusMd),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,16 +114,14 @@ class ContentWarningDialog extends StatelessWidget {
         // Community guidelines link
         TextButton(
           onPressed: () async {
-            final uri =
-                Uri.parse('https://ailovekeyboard.com/guidelines');
+            final uri = Uri.parse(
+              'https://zli426491-byte.github.io/ai-love-keyboard/guidelines.html',
+            );
             if (await canLaunchUrl(uri)) {
               await launchUrl(uri, mode: LaunchMode.externalApplication);
             }
           },
-          child: const Text(
-            '社群準則',
-            style: TextStyle(fontSize: 13),
-          ),
+          child: const Text('社群準則', style: TextStyle(fontSize: 13)),
         ),
         // Dismiss
         ElevatedButton(

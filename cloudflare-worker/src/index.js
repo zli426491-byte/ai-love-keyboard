@@ -1,8 +1,15 @@
 const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
+  // Native apps do not need CORS; only the public web preview is allowed.
+  "Access-Control-Allow-Origin": "https://zli426491-byte.github.io",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, X-Device-Fingerprint",
+  "Access-Control-Allow-Headers":
+    "Content-Type, X-Device-Fingerprint, X-Request-Timestamp, X-Request-Nonce, X-Request-Signature",
 };
+
+const MAX_BODY_BYTES = 32 * 1024;
+const MAX_MESSAGE_LENGTH = 2000;
+const MAX_SYSTEM_PROMPT_LENGTH = 6000;
+const MAX_IDENTIFIER_LENGTH = 128;
 
 export default {
   async fetch(request, env) {
@@ -18,6 +25,11 @@ export default {
       return json({ error: "server_not_configured" }, 500);
     }
 
+    const declaredLength = Number(request.headers.get("Content-Length") || 0);
+    if (declaredLength > MAX_BODY_BYTES) {
+      return json({ error: "request_too_large" }, 413);
+    }
+
     const url = new URL(request.url);
     let body;
     try {
@@ -25,6 +37,15 @@ export default {
     } catch {
       return json({ error: "invalid_json" }, 400);
     }
+
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return json({ error: "invalid_body" }, 400);
+    }
+    if (new TextEncoder().encode(JSON.stringify(body)).byteLength > MAX_BODY_BYTES) {
+      return json({ error: "request_too_large" }, 413);
+    }
+    const validationError = validateBody(body);
+    if (validationError) return json({ error: validationError }, 400);
 
     try {
       if (url.pathname === "/v1/keyboard-reply") {
@@ -43,19 +64,23 @@ export default {
 };
 
 async function handleKeyboardReply(body, request, env) {
-  const message = clean(body.message);
+  const message = redactPii(boundedString(body.message, MAX_MESSAGE_LENGTH));
   if (!message) return json({ error: "missing_message" }, 400);
 
-  const userId = clean(body.user_id) || deviceId(request);
-  const isPro = body.is_pro === true;
+  const userId = boundedIdentifier(body.user_id) || deviceId(request);
+  const isPro = await resolveProAccess(body, env);
+  const rate = await checkRateLimit(env, request, userId);
+  if (!rate.ok) return json({ error: "rate_limited", retry_after: rate.retryAfter }, 429);
   const quota = await checkQuota(env, userId, isPro);
+  if (quota.unavailable) return json({ error: "server_not_configured" }, 503);
   if (!quota.ok) return json({ error: "quota_exceeded", upgrade: true }, 429);
 
-  const tone = clean(body.tone) || "自然";
-  const mode = clean(body.mode) || "接話";
-  const instruction = clean(body.instruction);
+  const tone = boundedString(body.tone, 64) || "自然";
+  const mode = boundedString(body.mode, 64) || "接話";
+  const instruction = boundedString(body.instruction, 500);
   const systemPrompt =
-    clean(body.system_prompt) || buildKeyboardSystemPrompt(tone, mode, instruction);
+    boundedString(body.system_prompt, MAX_SYSTEM_PROMPT_LENGTH) ||
+    buildKeyboardSystemPrompt(tone, mode, instruction);
 
   const content = await callOpenAI(env, {
     model: env.OPENAI_MODEL_LIGHT || "gpt-4o-mini",
@@ -78,18 +103,26 @@ async function handleKeyboardReply(body, request, env) {
 }
 
 async function handleChatCompletion(body, request, env) {
-  const systemPrompt = clean(body.system_prompt);
-  const userMessage = clean(body.user_message);
+  const systemPrompt = boundedString(body.system_prompt, MAX_SYSTEM_PROMPT_LENGTH);
+  const userMessage = redactPii(boundedString(body.user_message, MAX_MESSAGE_LENGTH));
   if (!systemPrompt || !userMessage) {
     return json({ error: "missing_fields" }, 400);
   }
 
-  const userId = clean(body.user_id) || deviceId(request);
-  const isPro = body.is_pro !== false;
+  const userId = boundedIdentifier(body.user_id) || deviceId(request);
+  // Never trust the client-provided is_pro flag. Verify RevenueCat below.
+  const isPro = await resolveProAccess(body, env);
+  const rate = await checkRateLimit(env, request, userId);
+  if (!rate.ok) return json({ error: "rate_limited", retry_after: rate.retryAfter }, 429);
   const quota = await checkQuota(env, userId, isPro);
+  if (quota.unavailable) return json({ error: "server_not_configured" }, 503);
   if (!quota.ok) return json({ error: "quota_exceeded", upgrade: true }, 429);
 
-  const useHeavy = body.use_heavy_model === true;
+  // Heavy models and large responses are paid-only server decisions.
+  const useHeavy = isPro && body.use_heavy_model === true;
+  const maxTokens = isPro
+    ? clampNumber(body.max_tokens, 64, 1600, 1024)
+    : clampNumber(body.max_tokens, 64, 600, 512);
   const content = await callOpenAI(env, {
     model: useHeavy
       ? env.OPENAI_MODEL_HEAVY || "gpt-4.1-mini"
@@ -99,7 +132,7 @@ async function handleChatCompletion(body, request, env) {
       { role: "user", content: userMessage },
     ],
     response_format: body.response_format || undefined,
-    max_tokens: clampNumber(body.max_tokens, 64, 1600, 1024),
+    max_tokens: maxTokens,
     temperature: clampNumber(body.temperature, 0, 1.2, 0.8),
   });
 
@@ -132,7 +165,8 @@ async function callOpenAI(env, payload) {
 }
 
 async function checkQuota(env, userId, isPro) {
-  if (isPro || !env.KV_USAGE) return { ok: true, remaining: null };
+  if (isPro) return { ok: true, remaining: null };
+  if (!env.KV_USAGE) return { ok: false, unavailable: true, remaining: null };
 
   const limit = clampNumber(env.FREE_DAILY_LIMIT, 1, 100, 3);
   const day = new Date().toISOString().slice(0, 10);
@@ -142,6 +176,68 @@ async function checkQuota(env, userId, isPro) {
 
   await env.KV_USAGE.put(key, String(count + 1), { expirationTtl: 86400 });
   return { ok: true, remaining: limit - count - 1 };
+}
+
+async function checkRateLimit(env, request, userId) {
+  if (!env.KV_USAGE) return { ok: true, retryAfter: 0 };
+
+  const limit = clampNumber(env.REQUESTS_PER_MINUTE, 1, 120, 30);
+  const bucket = Math.floor(Date.now() / 60000);
+  const ip = clean(request.headers.get("CF-Connecting-IP")) || "unknown-ip";
+  const key = `rate:${boundedIdentifier(userId) || "anonymous"}:${ip}:${bucket}`;
+  const count = Number.parseInt((await env.KV_USAGE.get(key)) || "0", 10) || 0;
+  if (count >= limit) {
+    return { ok: false, retryAfter: 60 - (Math.floor(Date.now() / 1000) % 60) };
+  }
+
+  await env.KV_USAGE.put(key, String(count + 1), { expirationTtl: 120 });
+  return { ok: true, retryAfter: 0 };
+}
+
+async function resolveProAccess(body, env) {
+  const appUserId = boundedIdentifier(body.revenuecat_app_user_id);
+  if (!appUserId || !env.REVENUECAT_SECRET_API_KEY) return false;
+
+  const cacheKey = `entitlement:${appUserId}`;
+  if (env.KV_USAGE) {
+    const cached = await env.KV_USAGE.get(cacheKey);
+    if (cached === "active") return true;
+    if (cached === "inactive") return false;
+  }
+
+  try {
+    const response = await fetch(
+      `https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(appUserId)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${env.REVENUECAT_SECRET_API_KEY}`,
+          Accept: "application/json",
+        },
+      },
+    );
+    if (!response.ok) return false;
+
+    const data = await response.json();
+    const entitlement = data?.subscriber?.entitlements?.[
+      env.REVENUECAT_ENTITLEMENT_ID || "pro"
+    ];
+    const expires = entitlement?.expires_date;
+    const lifetime = expires === null || expires === undefined;
+    const hasValidFutureExpiry =
+      typeof expires === "string" &&
+      !Number.isNaN(Date.parse(expires)) &&
+      Date.parse(expires) > Date.now();
+    const active = Boolean(entitlement && (lifetime || hasValidFutureExpiry));
+    if (env.KV_USAGE) {
+      await env.KV_USAGE.put(cacheKey, active ? "active" : "inactive", {
+        expirationTtl: 60,
+      });
+    }
+    return active;
+  } catch {
+    // Fail closed: an unavailable RevenueCat API must never unlock Pro.
+    return false;
+  }
 }
 
 function buildKeyboardSystemPrompt(tone, mode, instruction) {
@@ -192,11 +288,59 @@ function parseReply(content) {
 }
 
 function deviceId(request) {
-  return request.headers.get("X-Device-Fingerprint") || "anonymous";
+  return boundedIdentifier(request.headers.get("X-Device-Fingerprint")) || "anonymous";
 }
 
 function clean(value) {
   return String(value ?? "").trim();
+}
+
+function boundedString(value, maxLength) {
+  if (typeof value !== "string") return "";
+  return value.trim().slice(0, maxLength);
+}
+
+function boundedIdentifier(value) {
+  const identifier = boundedString(value, MAX_IDENTIFIER_LENGTH);
+  return /^[A-Za-z0-9._:@=+$\-]+$/.test(identifier) ? identifier : "";
+}
+
+function redactPii(value) {
+  return value
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[redacted-email]")
+    .replace(/(?:\+?886[- .]?)?0?9\d{2}[- .]?\d{3}[- .]?\d{3}/g, "[redacted-phone]")
+    .replace(/\b[A-Z][12]\d{8}\b/gi, "[redacted-id]");
+}
+
+function validateBody(body) {
+  const stringFields = {
+    user_id: MAX_IDENTIFIER_LENGTH,
+    revenuecat_app_user_id: MAX_IDENTIFIER_LENGTH,
+    message: MAX_MESSAGE_LENGTH,
+    user_message: MAX_MESSAGE_LENGTH,
+    system_prompt: MAX_SYSTEM_PROMPT_LENGTH,
+    tone: 64,
+    mode: 64,
+    instruction: 500,
+  };
+  for (const [field, maxLength] of Object.entries(stringFields)) {
+    if (
+      body[field] !== undefined &&
+      (typeof body[field] !== "string" || body[field].length > maxLength)
+    ) {
+      return `invalid_${field}`;
+    }
+  }
+  if (body.is_pro !== undefined && typeof body.is_pro !== "boolean") {
+    return "invalid_is_pro";
+  }
+  if (
+    body.use_heavy_model !== undefined &&
+    typeof body.use_heavy_model !== "boolean"
+  ) {
+    return "invalid_use_heavy_model";
+  }
+  return null;
 }
 
 function clampNumber(value, min, max, fallback) {

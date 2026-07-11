@@ -11,8 +11,10 @@ class PrivacyNoticeDialog extends StatelessWidget {
   const PrivacyNoticeDialog({super.key, required this.onAccept});
 
   /// Shows the dialog as a non-dismissible modal.
-  static Future<void> show(BuildContext context,
-      {required VoidCallback onAccept}) {
+  static Future<void> show(
+    BuildContext context, {
+    required VoidCallback onAccept,
+  }) {
     return showDialog(
       context: context,
       barrierDismissible: false,
@@ -37,8 +39,11 @@ class PrivacyNoticeDialog extends StatelessWidget {
               // Title
               Row(
                 children: [
-                  Icon(Icons.shield_outlined,
-                      color: AppTheme.primary, size: 28),
+                  Icon(
+                    Icons.shield_outlined,
+                    color: AppTheme.primary,
+                    size: 28,
+                  ),
                   const SizedBox(width: 10),
                   const Expanded(
                     child: Text(
@@ -99,11 +104,14 @@ class PrivacyNoticeDialog extends StatelessWidget {
               Center(
                 child: TextButton(
                   onPressed: () async {
-                    final uri =
-                        Uri.parse('https://ailovekeyboard.com/privacy');
+                    final uri = Uri.parse(
+                      'https://zli426491-byte.github.io/ai-love-keyboard/',
+                    );
                     if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri,
-                          mode: LaunchMode.externalApplication);
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
                     }
                   },
                   child: const Text(
@@ -131,8 +139,7 @@ class PrivacyNoticeDialog extends StatelessWidget {
                   ),
                   child: const Text(
                     '我同意',
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),

@@ -360,8 +360,9 @@ class SettingsView extends StatelessWidget {
                         color: Colors.grey.shade400,
                       ),
                       contentPadding: EdgeInsets.zero,
-                      onTap: () =>
-                          _launchUrl('https://ailovekeyboard.com/privacy'),
+                      onTap: () => _launchUrl(
+                        'https://zli426491-byte.github.io/ai-love-keyboard/',
+                      ),
                     ),
                   ],
                 ),
@@ -442,8 +443,9 @@ class SettingsView extends StatelessWidget {
                         color: Colors.grey.shade400,
                       ),
                       contentPadding: EdgeInsets.zero,
-                      onTap: () =>
-                          _launchUrl('https://ailovekeyboard.com/guidelines'),
+                      onTap: () => _launchUrl(
+                        'https://zli426491-byte.github.io/ai-love-keyboard/guidelines.html',
+                      ),
                     ),
                   ],
                 ),
@@ -474,12 +476,16 @@ class SettingsView extends StatelessWidget {
           _SettingsTile(
             icon: Icons.privacy_tip_outlined,
             title: '隱私權政策',
-            onTap: () => _launchUrl('https://ailovekeyboard.com/privacy'),
+            onTap: () => _launchUrl(
+              'https://zli426491-byte.github.io/ai-love-keyboard/',
+            ),
           ),
           _SettingsTile(
             icon: Icons.description_outlined,
             title: '服務條款',
-            onTap: () => _launchUrl('https://ailovekeyboard.com/terms'),
+            onTap: () => _launchUrl(
+              'https://zli426491-byte.github.io/ai-love-keyboard/terms.html',
+            ),
           ),
 
           const SizedBox(height: AppTheme.spacingLg),

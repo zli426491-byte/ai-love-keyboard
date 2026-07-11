@@ -31,6 +31,9 @@ class RevenueCatService extends ChangeNotifier {
   RevenueCatService._();
 
   static final RevenueCatService instance = RevenueCatService._();
+  static const MethodChannel _subscriptionChannel = MethodChannel(
+    'com.ailovekeyboard.app/subscription',
+  );
 
   bool _configured = false;
   bool _loading = false;
@@ -45,6 +48,37 @@ class RevenueCatService extends ChangeNotifier {
   bool get customerInfoSynced => _customerInfoSynced;
   String? get errorMessage => _errorMessage;
   bool get hasProducts => plans.any((plan) => plan.isAvailable);
+
+  /// RevenueCat app user ids are identifiers, not secrets. The Worker uses
+  /// this value to verify the active entitlement server-side.
+  Future<String?> get appUserId async {
+    if (!_configured || defaultTargetPlatform != TargetPlatform.iOS) {
+      return null;
+    }
+    try {
+      final value = (await Purchases.appUserID).trim();
+      return value.isEmpty ? null : value;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _syncIdentityToKeyboard() async {
+    if (defaultTargetPlatform != TargetPlatform.iOS) return;
+    try {
+      await _subscriptionChannel.invokeMethod<void>(
+        'setSubscriptionStatus',
+        <String, dynamic>{
+          'isSubscribed': _subscribed,
+          'revenueCatAppUserID': await appUserId,
+        },
+      );
+    } on PlatformException catch (error) {
+      debugPrint('Unable to sync RevenueCat identity: ${error.code}');
+    } on MissingPluginException {
+      debugPrint('RevenueCat keyboard bridge is unavailable on this build.');
+    }
+  }
 
   List<SubscriptionPlan> get plans {
     final lifetime = _findPackage(AppConstants.lifetimeProductId);
@@ -147,6 +181,7 @@ class RevenueCatService extends ChangeNotifier {
       _subscribed = _hasActiveEntitlement(customerInfo);
       _customerInfoSynced = true;
       _errorMessage = null;
+      await _syncIdentityToKeyboard();
       notifyListeners();
       return _subscribed;
     } catch (_) {
@@ -169,6 +204,7 @@ class RevenueCatService extends ChangeNotifier {
       _subscribed = _hasActiveEntitlement(result.customerInfo);
       _customerInfoSynced = true;
       _errorMessage = null;
+      await _syncIdentityToKeyboard();
       notifyListeners();
       return _subscribed;
     } on PlatformException catch (error) {
@@ -193,6 +229,7 @@ class RevenueCatService extends ChangeNotifier {
       final customerInfo = await Purchases.restorePurchases();
       _subscribed = _hasActiveEntitlement(customerInfo);
       _customerInfoSynced = true;
+      await _syncIdentityToKeyboard();
       _errorMessage = _subscribed ? null : '沒有找到可恢復的訂閱';
       notifyListeners();
       return _subscribed;
