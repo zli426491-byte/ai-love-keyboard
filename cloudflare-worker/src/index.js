@@ -1,3 +1,5 @@
+import { DurableObject } from "cloudflare:workers";
+
 const CORS_HEADERS = {
   // Native apps do not need CORS; only the public web preview is allowed.
   "Access-Control-Allow-Origin": "https://zli426491-byte.github.io",
@@ -10,6 +12,8 @@ const MAX_BODY_BYTES = 32 * 1024;
 const MAX_MESSAGE_LENGTH = 2000;
 const MAX_SYSTEM_PROMPT_LENGTH = 6000;
 const MAX_IDENTIFIER_LENGTH = 128;
+const OPENAI_TIMEOUT_MS = 20000;
+const REVENUECAT_TIMEOUT_MS = 5000;
 
 export default {
   async fetch(request, env) {
@@ -69,11 +73,16 @@ async function handleKeyboardReply(body, request, env) {
 
   const userId = boundedIdentifier(body.user_id) || deviceId(request);
   const isPro = await resolveProAccess(body, env);
-  const rate = await checkRateLimit(env, request, userId);
-  if (!rate.ok) return json({ error: "rate_limited", retry_after: rate.retryAfter }, 429);
-  const quota = await checkQuota(env, userId, isPro);
-  if (quota.unavailable) return json({ error: "server_not_configured" }, 503);
-  if (!quota.ok) return json({ error: "quota_exceeded", upgrade: true }, 429);
+  const usage = await checkUsage(env, request, userId, isPro);
+  if (usage.unavailable) return json({ error: "server_not_configured" }, 503);
+  if (!usage.ok) {
+    return json(
+      usage.reason === "rate"
+        ? { error: "rate_limited", retry_after: usage.retryAfter }
+        : { error: "quota_exceeded", upgrade: true },
+      429,
+    );
+  }
 
   const tone = boundedString(body.tone, 64) || "自然";
   const mode = boundedString(body.mode, 64) || "接話";
@@ -98,7 +107,7 @@ async function handleKeyboardReply(body, request, env) {
 
   return json({
     reply,
-    usage_remaining: quota.remaining,
+    usage_remaining: usage.remaining,
   });
 }
 
@@ -112,11 +121,16 @@ async function handleChatCompletion(body, request, env) {
   const userId = boundedIdentifier(body.user_id) || deviceId(request);
   // Never trust the client-provided is_pro flag. Verify RevenueCat below.
   const isPro = await resolveProAccess(body, env);
-  const rate = await checkRateLimit(env, request, userId);
-  if (!rate.ok) return json({ error: "rate_limited", retry_after: rate.retryAfter }, 429);
-  const quota = await checkQuota(env, userId, isPro);
-  if (quota.unavailable) return json({ error: "server_not_configured" }, 503);
-  if (!quota.ok) return json({ error: "quota_exceeded", upgrade: true }, 429);
+  const usage = await checkUsage(env, request, userId, isPro);
+  if (usage.unavailable) return json({ error: "server_not_configured" }, 503);
+  if (!usage.ok) {
+    return json(
+      usage.reason === "rate"
+        ? { error: "rate_limited", retry_after: usage.retryAfter }
+        : { error: "quota_exceeded", upgrade: true },
+      429,
+    );
+  }
 
   // Heavy models and large responses are paid-only server decisions.
   const useHeavy = isPro && body.use_heavy_model === true;
@@ -131,7 +145,7 @@ async function handleChatCompletion(body, request, env) {
       { role: "system", content: systemPrompt },
       { role: "user", content: userMessage },
     ],
-    response_format: body.response_format || undefined,
+    response_format: safeResponseFormat(body.response_format),
     max_tokens: maxTokens,
     temperature: clampNumber(body.temperature, 0, 1.2, 0.8),
   });
@@ -142,56 +156,121 @@ async function handleChatCompletion(body, request, env) {
         message: { content },
       },
     ],
-    usage_remaining: quota.remaining,
+    usage_remaining: usage.remaining,
   });
 }
 
 async function callOpenAI(env, payload) {
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
 
-  if (!response.ok) {
-    throw new Error(`openai_${response.status}`);
+    if (!response.ok) {
+      throw new Error(`openai_${response.status}`);
+    }
+
+    const data = await response.json();
+    return String(data?.choices?.[0]?.message?.content || "").trim();
+  } finally {
+    clearTimeout(timeout);
   }
-
-  const data = await response.json();
-  return String(data?.choices?.[0]?.message?.content || "").trim();
 }
 
-async function checkQuota(env, userId, isPro) {
-  if (isPro) return { ok: true, remaining: null };
-  if (!env.KV_USAGE) return { ok: false, unavailable: true, remaining: null };
-
-  const limit = clampNumber(env.FREE_DAILY_LIMIT, 1, 100, 3);
-  const day = new Date().toISOString().slice(0, 10);
-  const key = `usage:${userId}:${day}`;
-  const count = Number.parseInt((await env.KV_USAGE.get(key)) || "0", 10) || 0;
-  if (count >= limit) return { ok: false, remaining: 0 };
-
-  await env.KV_USAGE.put(key, String(count + 1), { expirationTtl: 86400 });
-  return { ok: true, remaining: limit - count - 1 };
-}
-
-async function checkRateLimit(env, request, userId) {
-  if (!env.KV_USAGE) return { ok: true, retryAfter: 0 };
-
-  const limit = clampNumber(env.REQUESTS_PER_MINUTE, 1, 120, 30);
-  const bucket = Math.floor(Date.now() / 60000);
+async function checkUsage(env, request, userId, isPro) {
   const ip = clean(request.headers.get("CF-Connecting-IP")) || "unknown-ip";
-  const key = `rate:${boundedIdentifier(userId) || "anonymous"}:${ip}:${bucket}`;
-  const count = Number.parseInt((await env.KV_USAGE.get(key)) || "0", 10) || 0;
-  if (count >= limit) {
-    return { ok: false, retryAfter: 60 - (Math.floor(Date.now() / 1000) % 60) };
+  const actor = boundedIdentifier(userId) || "anonymous";
+  const minuteLimit = isPro
+    ? clampNumber(env.PRO_REQUESTS_PER_MINUTE, 1, 120, 60)
+    : clampNumber(env.REQUESTS_PER_MINUTE, 1, 120, 30);
+  const dailyLimit = isPro
+    ? clampNumber(env.PRO_DAILY_LIMIT, 1, 10000, 300)
+    : clampNumber(env.FREE_DAILY_LIMIT, 1, 100, 3);
+
+  // An IP-only burst limit prevents attackers from rotating arbitrary client IDs.
+  const ipResult = await incrementUsage(env, `ip:${ip}`, null, clampNumber(
+    env.IP_REQUESTS_PER_MINUTE,
+    1,
+    600,
+    120,
+  ));
+  if (ipResult.unavailable) return ipResult;
+  if (!ipResult.ok) return { ...ipResult, reason: "rate" };
+
+  const actorResult = await incrementUsage(
+    env,
+    `actor:${actor}:${ip}`,
+    dailyLimit,
+    minuteLimit,
+  );
+  if (actorResult.unavailable) return actorResult;
+  if (!actorResult.ok) {
+    return {
+      ...actorResult,
+      reason: actorResult.dailyExceeded ? "quota" : "rate",
+    };
   }
 
-  await env.KV_USAGE.put(key, String(count + 1), { expirationTtl: 120 });
-  return { ok: true, retryAfter: 0 };
+  return actorResult;
+}
+
+async function incrementUsage(env, key, dailyLimit, minuteLimit) {
+  if (env.QUOTA_COUNTER) {
+    try {
+      const id = env.QUOTA_COUNTER.idFromName(key);
+      const response = await env.QUOTA_COUNTER.get(id).fetch(
+        "https://quota-counter/check",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key, dailyLimit, minuteLimit }),
+        },
+      );
+      if (!response.ok) return { ok: false, unavailable: true, remaining: null };
+      return await response.json();
+    } catch {
+      return { ok: false, unavailable: true, remaining: null };
+    }
+  }
+
+  // Local fallback only. Production uses the atomic Durable Object above.
+  if (!env.KV_USAGE) return { ok: false, unavailable: true, remaining: null };
+  const minuteBucket = Math.floor(Date.now() / 60000);
+  const day = new Date().toISOString().slice(0, 10);
+  const minuteKey = `fallback:${key}:minute:${minuteBucket}`;
+  const count = Number.parseInt((await env.KV_USAGE.get(minuteKey)) || "0", 10) || 0;
+  if (count >= minuteLimit) {
+    return {
+      ok: false,
+      retryAfter: 60 - (Math.floor(Date.now() / 1000) % 60),
+      remaining: 0,
+    };
+  }
+
+  const dayKey = `fallback:${key}:day:${day}`;
+  const dayCount = Number.parseInt((await env.KV_USAGE.get(dayKey)) || "0", 10) || 0;
+  if (dailyLimit !== null && dayCount >= dailyLimit) {
+    return { ok: false, retryAfter: 0, remaining: 0, dailyExceeded: true };
+  }
+
+  await env.KV_USAGE.put(minuteKey, String(count + 1), { expirationTtl: 120 });
+  if (dailyLimit !== null) {
+    await env.KV_USAGE.put(dayKey, String(dayCount + 1), { expirationTtl: 172800 });
+  }
+  return {
+    ok: true,
+    remaining: dailyLimit === null ? null : Math.max(0, dailyLimit - dayCount - 1),
+    retryAfter: 0,
+    dailyExceeded: false,
+  };
 }
 
 async function resolveProAccess(body, env) {
@@ -206,6 +285,8 @@ async function resolveProAccess(body, env) {
   }
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REVENUECAT_TIMEOUT_MS);
     const response = await fetch(
       `https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(appUserId)}`,
       {
@@ -213,27 +294,37 @@ async function resolveProAccess(body, env) {
           Authorization: `Bearer ${env.REVENUECAT_SECRET_API_KEY}`,
           Accept: "application/json",
         },
+        signal: controller.signal,
       },
     );
-    if (!response.ok) return false;
+    try {
+      if (!response.ok) {
+        if (env.KV_USAGE) {
+          await env.KV_USAGE.put(cacheKey, "inactive", { expirationTtl: 60 });
+        }
+        return false;
+      }
 
-    const data = await response.json();
-    const entitlement = data?.subscriber?.entitlements?.[
-      env.REVENUECAT_ENTITLEMENT_ID || "pro"
-    ];
-    const expires = entitlement?.expires_date;
-    const lifetime = expires === null || expires === undefined;
-    const hasValidFutureExpiry =
-      typeof expires === "string" &&
-      !Number.isNaN(Date.parse(expires)) &&
-      Date.parse(expires) > Date.now();
-    const active = Boolean(entitlement && (lifetime || hasValidFutureExpiry));
-    if (env.KV_USAGE) {
-      await env.KV_USAGE.put(cacheKey, active ? "active" : "inactive", {
-        expirationTtl: 60,
-      });
+      const data = await response.json();
+      const entitlement = data?.subscriber?.entitlements?.[
+        env.REVENUECAT_ENTITLEMENT_ID || "pro"
+      ];
+      const expires = entitlement?.expires_date;
+      const lifetime = expires === null || expires === undefined;
+      const hasValidFutureExpiry =
+        typeof expires === "string" &&
+        !Number.isNaN(Date.parse(expires)) &&
+        Date.parse(expires) > Date.now();
+      const active = Boolean(entitlement && (lifetime || hasValidFutureExpiry));
+      if (env.KV_USAGE) {
+        await env.KV_USAGE.put(cacheKey, active ? "active" : "inactive", {
+          expirationTtl: 60,
+        });
+      }
+      return active;
+    } finally {
+      clearTimeout(timeout);
     }
-    return active;
   } catch {
     // Fail closed: an unavailable RevenueCat API must never unlock Pro.
     return false;
@@ -343,6 +434,11 @@ function validateBody(body) {
   return null;
 }
 
+function safeResponseFormat(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  return value.type === "json_object" ? { type: "json_object" } : undefined;
+}
+
 function clampNumber(value, min, max, fallback) {
   const number = Number(value);
   if (!Number.isFinite(number)) return fallback;
@@ -354,7 +450,94 @@ function json(payload, status = 200) {
     status,
     headers: {
       "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
       ...CORS_HEADERS,
     },
   });
+}
+
+export class QuotaCounter extends DurableObject {
+  constructor(ctx, env) {
+    super(ctx, env);
+    this.sql = ctx.storage.sql;
+    this.sql.exec(`
+      CREATE TABLE IF NOT EXISTS usage_counters (
+        key TEXT PRIMARY KEY,
+        minute_bucket INTEGER NOT NULL,
+        minute_count INTEGER NOT NULL,
+        day_bucket TEXT NOT NULL,
+        day_count INTEGER NOT NULL
+      )
+    `);
+  }
+
+  async fetch(request) {
+    if (request.method !== "POST") return new Response("method_not_allowed", { status: 405 });
+
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return new Response("invalid_json", { status: 400 });
+    }
+
+    const key = boundedString(body?.key, 256);
+    const minuteLimit = clampNumber(body?.minuteLimit, 1, 600, 30);
+    const dailyLimit =
+      body?.dailyLimit === null || body?.dailyLimit === undefined
+        ? null
+        : clampNumber(body.dailyLimit, 1, 10000, 3);
+    if (!key) return new Response("invalid_key", { status: 400 });
+
+    const now = Math.floor(Date.now() / 1000);
+    const minuteBucket = Math.floor(now / 60);
+    const dayBucket = new Date(now * 1000).toISOString().slice(0, 10);
+    const row = this.sql
+      .exec(
+        "SELECT minute_bucket, minute_count, day_bucket, day_count FROM usage_counters WHERE key = ?",
+        key,
+      )
+      .toArray()[0];
+    const minuteCount = row?.minute_bucket === minuteBucket ? Number(row.minute_count) : 0;
+    const dayCount = row?.day_bucket === dayBucket ? Number(row.day_count) : 0;
+
+    if (minuteCount >= minuteLimit) {
+      return Response.json({
+        ok: false,
+        retryAfter: 60 - (now % 60),
+        remaining: dailyLimit === null ? null : Math.max(0, dailyLimit - dayCount),
+        dailyExceeded: false,
+      });
+    }
+    if (dailyLimit !== null && dayCount >= dailyLimit) {
+      return Response.json({
+        ok: false,
+        retryAfter: 0,
+        remaining: 0,
+        dailyExceeded: true,
+      });
+    }
+
+    const nextDayCount = dayCount + (dailyLimit === null ? 0 : 1);
+    this.sql.exec(
+      `INSERT INTO usage_counters (key, minute_bucket, minute_count, day_bucket, day_count)
+       VALUES (?, ?, 1, ?, ?)
+       ON CONFLICT(key) DO UPDATE SET
+         minute_bucket = excluded.minute_bucket,
+         minute_count = excluded.minute_count,
+         day_bucket = excluded.day_bucket,
+         day_count = excluded.day_count`,
+      key,
+      minuteBucket,
+      dayBucket,
+      nextDayCount,
+    );
+
+    return Response.json({
+      ok: true,
+      retryAfter: 0,
+      remaining: dailyLimit === null ? null : Math.max(0, dailyLimit - nextDayCount),
+      dailyExceeded: false,
+    });
+  }
 }

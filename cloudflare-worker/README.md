@@ -27,6 +27,27 @@ AI_PROXY_URL=https://lovekey-proxy.<your-subdomain>.workers.dev
 
 Do not put OpenAI API keys in the app, GitHub repo, or Xcode project.
 
+## P0 abuse controls
+
+Production uses the `QuotaCounter` Durable Object with SQLite storage for an
+atomic per-IP burst limit and a per-actor daily/minute quota. The current
+defaults are:
+
+- Free: 3 requests/day and 30 requests/minute per actor/IP pair.
+- Pro: 300 requests/day and 60 requests/minute per actor/IP pair.
+- IP burst ceiling: 120 requests/minute across rotating client identifiers.
+
+The Worker also caps request sizes, allow-lists `response_format`, times out
+OpenAI (20 seconds) and RevenueCat (5 seconds), fails closed when RevenueCat
+cannot verify Pro, and sends `Cache-Control: no-store` on API responses. The
+KV path is only a local fallback; production deployments must keep the
+`QUOTA_COUNTER` binding enabled so quota increments remain atomic.
+
+These controls limit spend and credential abuse, but a client-provided device
+fingerprint is not an identity proof. Before paid acquisition, add native
+Apple App Attest and Android Play Integrity verification at the Worker (P1),
+then bind the verified device/app instance to the RevenueCat app-user ID.
+
 ## Endpoints
 
 - `POST /v1/keyboard-reply`
