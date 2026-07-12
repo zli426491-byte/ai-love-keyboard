@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:ai_love_keyboard/services/analytics_service.dart';
+import 'package:ai_love_keyboard/services/account_service.dart';
 import 'package:ai_love_keyboard/services/revenuecat_service.dart';
 import 'package:ai_love_keyboard/services/usage_service.dart';
+import 'package:ai_love_keyboard/views/auth/account_view.dart';
 
 class PaywallView extends StatefulWidget {
   const PaywallView({super.key});
@@ -40,9 +42,11 @@ class _PaywallViewState extends State<PaywallView> {
       AnalyticsService.instance.trackPlanSelected(planType: plan.id);
       AnalyticsService.instance.trackPurchaseStarted(planType: plan.id);
       final purchased = await revenueCat.purchase(plan);
-      if (!mounted) return;
       if (purchased) {
+        // Persist entitlement before checking whether the paywall is still
+        // mounted. A purchase may finish after the sheet was dismissed.
         await usage.setSubscribed(true);
+        if (!mounted) return;
         AnalyticsService.instance.trackSubscriptionStarted(planType: plan.id);
         if (plan.amount > 0) {
           AnalyticsService.instance.trackRevenue(
@@ -53,22 +57,27 @@ class _PaywallViewState extends State<PaywallView> {
         }
         if (mounted) Navigator.pop(context);
       } else if (revenueCat.errorMessage != null) {
-        _showSnack(revenueCat.errorMessage!);
+        if (mounted) _showSnack(revenueCat.errorMessage!);
       }
     } catch (_) {
-      _showSnack('訂閱付款暫時無法使用，請確認 RevenueCat 產品設定');
+      if (mounted) {
+        _showSnack('訂閱付款暫時無法使用，請確認 RevenueCat 產品設定');
+      }
     }
   }
 
   Future<void> _restore() async {
     final revenueCat = context.read<RevenueCatService>();
+    final usage = context.read<UsageService>();
     final restored = await revenueCat.restore();
-    if (!mounted) return;
     if (restored) {
-      await context.read<UsageService>().setSubscribed(true);
+      // Restore can also finish after the paywall was dismissed. Persist the
+      // entitlement independently of the sheet lifecycle.
+      await usage.setSubscribed(true);
+      if (!mounted) return;
       if (mounted) Navigator.pop(context);
     } else if (revenueCat.errorMessage != null) {
-      _showSnack(revenueCat.errorMessage!);
+      if (mounted) _showSnack(revenueCat.errorMessage!);
     }
   }
 
@@ -85,10 +94,19 @@ class _PaywallViewState extends State<PaywallView> {
   @override
   Widget build(BuildContext context) {
     final revenueCat = context.watch<RevenueCatService>();
+    final account = context.watch<AccountService>();
     final plans = revenueCat.plans;
     final selected = plans[_selectedIndex];
     final isIos = defaultTargetPlatform == TargetPlatform.iOS;
-    final canPurchase = isIos && selected.isAvailable && !revenueCat.isLoading;
+    final isAndroid = defaultTargetPlatform == TargetPlatform.android;
+    final isNativeStore = isIos || isAndroid;
+    final canPurchase =
+        isNativeStore &&
+        account.isSignedIn &&
+        selected.isAvailable &&
+        !revenueCat.isLoading;
+    final canRestore =
+        isNativeStore && account.isSignedIn && !revenueCat.isLoading;
 
     return Container(
       decoration: const BoxDecoration(
@@ -142,8 +160,8 @@ class _PaywallViewState extends State<PaywallView> {
                 ],
               ),
               const SizedBox(height: 8),
-              const Text(
-                '解鎖鍵盤 AI 回覆、所有情境模式與不限次生成。付款透過 App Store 完成，價格會依所在地自動顯示。',
+              Text(
+                '解鎖鍵盤 AI 回覆、所有情境模式與不限次生成。付款透過 ${isAndroid ? 'Google Play' : 'App Store'} 完成，價格會依所在地自動顯示。',
                 style: TextStyle(
                   color: _muted,
                   fontSize: 14,
@@ -167,7 +185,7 @@ class _PaywallViewState extends State<PaywallView> {
                   ),
                 );
               }),
-              if (isIos && revenueCat.errorMessage != null) ...[
+              if (isNativeStore && revenueCat.errorMessage != null) ...[
                 const SizedBox(height: 2),
                 Text(
                   revenueCat.errorMessage!,
@@ -180,7 +198,17 @@ class _PaywallViewState extends State<PaywallView> {
               ],
               const SizedBox(height: 14),
               GestureDetector(
-                onTap: canPurchase ? () => _purchase(selected) : null,
+                onTap: () {
+                  if (!isNativeStore) return;
+                  if (!account.isSignedIn) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AccountView()),
+                    );
+                    return;
+                  }
+                  if (canPurchase) _purchase(selected);
+                },
                 child: AnimatedOpacity(
                   opacity: canPurchase ? 1 : 0.48,
                   duration: const Duration(milliseconds: 160),
@@ -211,9 +239,11 @@ class _PaywallViewState extends State<PaywallView> {
                         : Text(
                             canPurchase
                                 ? '立即解鎖 ${selected.price}'
-                                : isIos
-                                    ? '訂閱方案載入中'
-                                    : 'TestFlight 實機測試購買',
+                                : isNativeStore && !account.isSignedIn
+                                ? '請先登入 LoveKey 帳號'
+                                : isNativeStore
+                                ? '訂閱方案載入中'
+                                : '請在 iOS／Android 實機完成購買',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 17,
@@ -223,19 +253,41 @@ class _PaywallViewState extends State<PaywallView> {
                   ),
                 ),
               ),
+              if (!isNativeStore) ...[
+                const SizedBox(height: 10),
+                const Center(
+                  child: Text(
+                    '這是 Web 預覽，付款與恢復購買請在 TestFlight 實機完成。',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: _muted, fontSize: 12, height: 1.4),
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               Center(
                 child: TextButton(
-                  onPressed: isIos && !revenueCat.isLoading ? _restore : null,
-                  child: const Text(
-                    '恢復購買',
-                    style: TextStyle(color: _gold, fontWeight: FontWeight.w900),
+                  onPressed: canRestore
+                      ? _restore
+                      : isNativeStore
+                      ? () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AccountView(),
+                          ),
+                        )
+                      : null,
+                  child: Text(
+                    isNativeStore ? '恢復購買' : '請在實機恢復購買',
+                    style: const TextStyle(
+                      color: _gold,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
               ),
-              const Center(
+              Center(
                 child: Text(
-                  '訂閱會透過 Apple ID 扣款，可在設定中管理或取消',
+                  '訂閱會透過 ${isAndroid ? 'Google Play' : 'Apple ID'} 扣款，可在商店設定中管理或取消',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: _muted,

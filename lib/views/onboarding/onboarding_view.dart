@@ -52,6 +52,12 @@ class _OnboardingViewState extends State<OnboardingView> {
     final uri = Uri.parse('app-settings:com.ailovekeyboard.app');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('無法自動開啟設定，請到「設定 → 一般 → 鍵盤 → 鍵盤」手動開啟 LoveKey'),
+        ),
+      );
     }
   }
 

@@ -15,24 +15,38 @@ import 'package:ai_love_keyboard/views/components/particle_background.dart';
 class ReplyCardsView extends StatelessWidget {
   final String originalMessage;
   final ReplyStyle style;
+  final String? platform;
+  final String? goal;
 
   const ReplyCardsView({
     super.key,
     required this.originalMessage,
     required this.style,
+    this.platform,
+    this.goal,
   });
 
   Future<void> _regenerate(BuildContext context) async {
     final usage = context.read<UsageService>();
     if (!usage.canUse) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('暫時無法產生回覆，請稍後再試')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('暫時無法產生回覆，請稍後再試')));
       return;
     }
 
     final ai = context.read<AiService>();
-    final replies = await ai.generateReplies(originalMessage, style);
+    final previousReply = ai.replies.isNotEmpty ? ai.replies.first.text : null;
+    final instruction = previousReply == null
+        ? '請換一個不同角度，不要使用罐頭句。'
+        : '請換一個不同角度，不要重複上一則回覆：$previousReply';
+    final replies = await ai.generateReplies(
+      originalMessage,
+      style,
+      platform: platform,
+      goal: goal,
+      generationInstruction: instruction,
+    );
     if (replies.isNotEmpty) {
       await usage.recordUsage();
       AnalyticsService.instance.trackReplyGenerated(style: style.name);
@@ -57,8 +71,10 @@ class ReplyCardsView extends StatelessWidget {
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppTheme.textPrimary),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppTheme.textPrimary,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -105,10 +121,7 @@ class ReplyCardsView extends StatelessWidget {
                   children: [
                     Text(
                       '對方的訊息',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.textHint,
-                      ),
+                      style: TextStyle(fontSize: 12, color: AppTheme.textHint),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -123,14 +136,16 @@ class ReplyCardsView extends StatelessWidget {
               ).animate().fadeIn(),
 
               // ── Reply cards ─────────────────────────────────────
-              Expanded(
+              Flexible(
+                fit: FlexFit.loose,
                 child: ai.isLoading
                     ? Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const CircularProgressIndicator(
-                                color: AppTheme.accent),
+                              color: AppTheme.accent,
+                            ),
                             const SizedBox(height: 16),
                             Text(
                               'AI 正在思考最佳回覆...',
@@ -139,179 +154,181 @@ class ReplyCardsView extends StatelessWidget {
                           ],
                         ),
                       )
+                    : ai.replies.isEmpty
+                    ? const _ReplyEmptyState()
                     : ListView.builder(
+                        shrinkWrap: true,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: AppTheme.spacingMd),
+                          horizontal: AppTheme.spacingMd,
+                        ),
                         itemCount: ai.replies.length,
                         itemBuilder: (context, index) {
                           final reply = ai.replies[index];
                           return Container(
-                            margin: const EdgeInsets.only(
-                                bottom: AppTheme.spacingMd),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(
-                                  AppTheme.radiusLg),
-                              child: BackdropFilter(
-                                filter: ImageFilter.blur(
-                                    sigmaX: 10, sigmaY: 10),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.white
-                                        .withValues(alpha: 0.07),
-                                    borderRadius:
-                                        BorderRadius.circular(
-                                            AppTheme.radiusLg),
-                                    border: Border.all(
-                                      color: reply.style.color
-                                          .withValues(alpha: 0.2),
-                                    ),
+                                margin: const EdgeInsets.only(
+                                  bottom: AppTheme.spacingMd,
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(
+                                    AppTheme.radiusLg,
                                   ),
-                                  padding: const EdgeInsets.all(
-                                      AppTheme.spacingMd),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      // Style badge + copy button
-                                      Row(
-                                        children: [
-                                          Container(
-                                            padding:
-                                                const EdgeInsets
-                                                    .symmetric(
-                                                    horizontal: 10,
-                                                    vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: reply.style.color
-                                                  .withValues(
-                                                      alpha: 0.15),
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                      AppTheme
-                                                          .radiusFull),
-                                            ),
-                                            child: Text(
-                                              reply.style.displayName,
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                fontWeight:
-                                                    FontWeight.w600,
-                                                color:
-                                                    reply.style.color,
-                                              ),
-                                            ),
+                                  child: BackdropFilter(
+                                    filter: ImageFilter.blur(
+                                      sigmaX: 10,
+                                      sigmaY: 10,
+                                    ),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.07,
+                                        ),
+                                        borderRadius: BorderRadius.circular(
+                                          AppTheme.radiusLg,
+                                        ),
+                                        border: Border.all(
+                                          color: reply.style.color.withValues(
+                                            alpha: 0.2,
                                           ),
-                                          const Spacer(),
-                                          GestureDetector(
-                                            onTap: () {
-                                              Clipboard.setData(
-                                                  ClipboardData(
-                                                      text:
-                                                          reply.text));
-                                              AnalyticsService.instance
-                                                  .trackReplyCopied();
-                                              ScaffoldMessenger.of(
-                                                      context)
-                                                  .showSnackBar(
-                                                SnackBar(
-                                                  content: const Text(
-                                                      '已複製到剪貼簿'),
-                                                  backgroundColor:
-                                                      AppTheme.primary,
-                                                  behavior:
-                                                      SnackBarBehavior
-                                                          .floating,
-                                                  shape:
-                                                      RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius
-                                                            .circular(
-                                                                AppTheme
-                                                                    .radiusMd),
-                                                  ),
-                                                  duration:
-                                                      const Duration(
-                                                          seconds: 1),
-                                                ),
-                                              );
-                                            },
-                                            child: Container(
-                                              padding:
-                                                  const EdgeInsets
-                                                      .symmetric(
-                                                      horizontal: 12,
-                                                      vertical: 6),
-                                              decoration: BoxDecoration(
-                                                gradient: AppTheme
-                                                    .romanticGradient,
-                                                borderRadius:
-                                                    BorderRadius
-                                                        .circular(
-                                                            AppTheme
-                                                                .radiusFull),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: AppTheme
-                                                        .accent
-                                                        .withValues(
-                                                            alpha:
-                                                                0.3),
-                                                    blurRadius: 8,
-                                                  ),
-                                                ],
-                                              ),
-                                              child: const Row(
-                                                mainAxisSize:
-                                                    MainAxisSize.min,
-                                                children: [
-                                                  Icon(
-                                                    Icons.copy_rounded,
-                                                    size: 14,
-                                                    color:
-                                                        Colors.white,
-                                                  ),
-                                                  SizedBox(width: 4),
-                                                  Text(
-                                                    '複製',
-                                                    style: TextStyle(
-                                                      fontSize: 12,
-                                                      color:
-                                                          Colors.white,
-                                                      fontWeight:
-                                                          FontWeight
-                                                              .w600,
+                                        ),
+                                      ),
+                                      padding: const EdgeInsets.all(
+                                        AppTheme.spacingMd,
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          // Style badge + copy button
+                                          Row(
+                                            children: [
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 10,
+                                                      vertical: 4,
                                                     ),
+                                                decoration: BoxDecoration(
+                                                  color: reply.style.color
+                                                      .withValues(alpha: 0.15),
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                        AppTheme.radiusFull,
+                                                      ),
+                                                ),
+                                                child: Text(
+                                                  reply.style.displayName,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: reply.style.color,
                                                   ),
-                                                ],
+                                                ),
                                               ),
+                                              const Spacer(),
+                                              GestureDetector(
+                                                onTap: () {
+                                                  Clipboard.setData(
+                                                    ClipboardData(
+                                                      text: reply.text,
+                                                    ),
+                                                  );
+                                                  AnalyticsService.instance
+                                                      .trackReplyCopied();
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    SnackBar(
+                                                      content: const Text(
+                                                        '已複製到剪貼簿',
+                                                      ),
+                                                      backgroundColor:
+                                                          AppTheme.primary,
+                                                      behavior: SnackBarBehavior
+                                                          .floating,
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              AppTheme.radiusMd,
+                                                            ),
+                                                      ),
+                                                      duration: const Duration(
+                                                        seconds: 1,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 12,
+                                                        vertical: 6,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    gradient: AppTheme
+                                                        .romanticGradient,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          AppTheme.radiusFull,
+                                                        ),
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: AppTheme.accent
+                                                            .withValues(
+                                                              alpha: 0.3,
+                                                            ),
+                                                        blurRadius: 8,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  child: const Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.copy_rounded,
+                                                        size: 14,
+                                                        color: Colors.white,
+                                                      ),
+                                                      SizedBox(width: 4),
+                                                      Text(
+                                                        '複製',
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          color: Colors.white,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(
+                                            height: AppTheme.spacingMd,
+                                          ),
+                                          Text(
+                                            reply.text,
+                                            style: const TextStyle(
+                                              fontSize: 15,
+                                              color: AppTheme.textPrimary,
+                                              height: 1.6,
                                             ),
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(
-                                          height: AppTheme.spacingMd),
-                                      Text(
-                                        reply.text,
-                                        style: const TextStyle(
-                                          fontSize: 15,
-                                          color: AppTheme.textPrimary,
-                                          height: 1.6,
-                                        ),
-                                      ),
-                                    ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ),
-                          )
+                              )
                               .animate(
-                                  delay: Duration(
-                                      milliseconds: index * 150))
+                                delay: Duration(milliseconds: index * 150),
+                              )
                               .fadeIn()
                               .slideY(
                                 begin: 0.15,
-                                duration:
-                                    const Duration(milliseconds: 400),
+                                duration: const Duration(milliseconds: 400),
                                 curve: Curves.easeOutCubic,
                               );
                         },
@@ -324,27 +341,24 @@ class ReplyCardsView extends StatelessWidget {
                 child: Column(
                   children: [
                     GestureDetector(
-                      onTap: ai.isLoading
-                          ? null
-                          : () => _regenerate(context),
+                      onTap: ai.isLoading ? null : () => _regenerate(context),
                       child: Container(
                         width: double.infinity,
                         height: 52,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [
-                              Color(0xFFEC4899),
-                              Color(0xFFAB47BC),
-                            ],
+                            colors: [Color(0xFFEC4899), Color(0xFFAB47BC)],
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
                           ),
                           borderRadius: BorderRadius.circular(
-                              AppTheme.radiusLg),
+                            AppTheme.radiusLg,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFEC4899)
-                                  .withValues(alpha: 0.4),
+                              color: const Color(
+                                0xFFEC4899,
+                              ).withValues(alpha: 0.4),
                               blurRadius: 16,
                               offset: const Offset(0, 4),
                             ),
@@ -358,12 +372,16 @@ class ReplyCardsView extends StatelessWidget {
                                 width: 20,
                                 height: 20,
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white),
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
                               )
                             else
-                              const Icon(Icons.refresh_rounded,
-                                  color: Colors.white, size: 20),
+                              const Icon(
+                                Icons.refresh_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
                             const SizedBox(width: 8),
                             const Text(
                               '重新生成',
@@ -379,11 +397,8 @@ class ReplyCardsView extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '換一種方式，讓他更好的答案',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.textHint,
-                      ),
+                      '換個語氣，再試一次',
+                      style: TextStyle(fontSize: 12, color: AppTheme.textHint),
                     ),
                   ],
                 ),
@@ -391,6 +406,43 @@ class ReplyCardsView extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ReplyEmptyState extends StatelessWidget {
+  const _ReplyEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.chat_bubble_outline_rounded,
+              color: AppTheme.textHint,
+              size: 42,
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              '目前沒有可用的回覆',
+              style: TextStyle(
+                color: AppTheme.textPrimary,
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '請稍後再試，或調整訊息內容。',
+              style: TextStyle(color: AppTheme.textSecondary),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -4,7 +4,7 @@ class AppConstants {
   // ── App Info ──────────────────────────────────────────────────────────
   static const String appName = 'LoveKey';
   static const String bundleId = 'com.ailovekeyboard.app';
-  static const String appVersion = '1.0.0';
+  static const String appVersion = '1.0.4';
   static const String appStoreUrl = 'https://apps.apple.com/app/id6764681086';
   static const String appStoreReviewUrl =
       'https://apps.apple.com/app/id6764681086?action=write-review';
@@ -14,6 +14,13 @@ class AppConstants {
   // flutter build ipa --dart-define=AI_PROXY_URL=https://your-worker.workers.dev
   static const String aiProxyBaseUrl = String.fromEnvironment('AI_PROXY_URL');
   static const String aiProxyChatPath = '/v1/chat/completions';
+
+  // Optional cross-platform account service. Values are injected at build
+  // time and are safe to ship as public client configuration.
+  static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+  static const String supabaseAnonKey = String.fromEnvironment(
+    'SUPABASE_ANON_KEY',
+  );
   // Daily limit for heavy model usage in the client UI. The server still owns
   // the real API key and server-side rate limits.
   static const int heavyModelDailyLimit = 20;
@@ -33,11 +40,14 @@ class AppConstants {
   static const String keyboardBundleId = 'com.ailovekeyboard.app.keyboard';
   static const String keyboardDisplayName = 'LoveKey';
 
-  // Inject the LoveKey iOS Public SDK Key at build time. Keeping this empty
-  // makes a misconfigured release fail closed instead of loading another
-  // RevenueCat project's products.
+  // Inject the platform-specific LoveKey Public SDK Keys at build time.
+  // Keeping either empty makes a misconfigured native release fail closed
+  // instead of loading another RevenueCat project's products.
   static const String revenueCatIosPublicKey = String.fromEnvironment(
     'REVENUECAT_IOS_PUBLIC_KEY',
+  );
+  static const String revenueCatAndroidPublicKey = String.fromEnvironment(
+    'REVENUECAT_ANDROID_PUBLIC_KEY',
   );
   static const String proEntitlementId = 'pro';
   static const bool reviewFreeMode = false;

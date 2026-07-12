@@ -19,13 +19,19 @@ class KeyboardGuideView extends StatelessWidget {
   static const _muted = Color(0xFF786873);
   static const _line = Color(0xFFF0DDE7);
 
-  Future<void> _openSettings() async {
+  Future<void> _openSettings(BuildContext context) async {
     try {
       AnalyticsService.instance.trackKeyboardEnabled();
     } catch (_) {}
     final uri = Uri.parse('app-settings:com.ailovekeyboard.app');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
+    } else if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('無法自動開啟設定，請到「設定 → 一般 → 鍵盤 → 鍵盤」手動開啟 LoveKey'),
+        ),
+      );
     }
   }
 
@@ -93,7 +99,7 @@ class KeyboardGuideView extends StatelessWidget {
             const SizedBox(height: 20),
             const _PracticeCard(),
             const SizedBox(height: 20),
-            _SetupCard(onOpenSettings: _openSettings),
+            _SetupCard(onOpenSettings: () => _openSettings(context)),
             const SizedBox(height: 20),
             const _FullAccessCard(),
             const SizedBox(height: 20),
@@ -102,7 +108,7 @@ class KeyboardGuideView extends StatelessWidget {
             SizedBox(
               height: 54,
               child: ElevatedButton.icon(
-                onPressed: _openSettings,
+                onPressed: () => _openSettings(context),
                 icon: const Icon(Icons.settings_rounded),
                 label: const Text('打開 iPhone 設定'),
                 style: ElevatedButton.styleFrom(

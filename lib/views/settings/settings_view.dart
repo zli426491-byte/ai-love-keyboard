@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:ai_love_keyboard/models/user_locale.dart';
+import 'package:ai_love_keyboard/services/account_service.dart';
 import 'package:ai_love_keyboard/services/content_filter.dart';
 import 'package:ai_love_keyboard/services/locale_service.dart';
 import 'package:ai_love_keyboard/services/privacy_manager.dart';
@@ -13,6 +14,7 @@ import 'package:ai_love_keyboard/services/usage_service.dart';
 import 'package:ai_love_keyboard/utils/app_theme.dart';
 import 'package:ai_love_keyboard/utils/constants.dart';
 import 'package:ai_love_keyboard/views/keyboard/keyboard_guide_view.dart';
+import 'package:ai_love_keyboard/views/auth/account_view.dart';
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});
@@ -20,6 +22,7 @@ class SettingsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final usage = context.watch<UsageService>();
+    final account = context.watch<AccountService>();
 
     return Scaffold(
       appBar: AppBar(
@@ -53,7 +56,7 @@ class SettingsView extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '免費版',
+                        usage.isSubscribed ? 'Pro 會員' : '免費版',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -64,7 +67,9 @@ class SettingsView extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        usage.isSubscribed ? '享受無限 AI 功能' : '目前版本所有功能免費開放',
+                        usage.isSubscribed
+                            ? '享受無限 AI 功能'
+                            : '今日剩餘免費回覆 ${usage.remainingFree} 次',
                         style: TextStyle(
                           fontSize: 13,
                           color: usage.isSubscribed
@@ -74,6 +79,59 @@ class SettingsView extends StatelessWidget {
                       ),
                     ],
                   ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: AppTheme.spacingLg),
+
+          // ── Cross-platform account ─────────────────────────────
+          _SectionHeader(title: '帳號與跨平台會員'),
+          Container(
+            padding: const EdgeInsets.all(AppTheme.spacingMd),
+            decoration: BoxDecoration(
+              color: AppTheme.bgCard,
+              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+              border: Border.all(color: const Color(0xFFF0DDE7)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  account.isSignedIn
+                      ? Icons.verified_user_rounded
+                      : Icons.account_circle_outlined,
+                  color: AppTheme.primary,
+                  size: 26,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        account.isSignedIn ? '已登入帳號' : '尚未登入帳號',
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        account.isSignedIn
+                            ? (account.email ?? '')
+                            : '登入後可同步 iOS／Android 會員身份',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AccountView()),
+                  ),
+                  child: Text(account.isSignedIn ? '管理' : '登入'),
                 ),
               ],
             ),
@@ -248,6 +306,12 @@ class SettingsView extends StatelessWidget {
                       );
                       if (await canLaunchUrl(uri)) {
                         await launchUrl(uri);
+                      } else if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('請手動前往系統設定 → 鍵盤 → 新增鍵盤'),
+                          ),
+                        );
                       }
                     },
                     icon: const Icon(Icons.open_in_new_rounded, size: 18),

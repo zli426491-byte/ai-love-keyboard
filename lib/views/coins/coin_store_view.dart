@@ -45,10 +45,7 @@ class CoinStoreView extends StatelessWidget {
             ),
             child: Column(
               children: [
-                const Text(
-                  '\u{1FA99}',
-                  style: TextStyle(fontSize: 40),
-                ),
+                const Text('\u{1FA99}', style: TextStyle(fontSize: 40)),
                 const SizedBox(height: 8),
                 Text(
                   '${coinService.balance}',
@@ -60,10 +57,7 @@ class CoinStoreView extends StatelessWidget {
                 ),
                 const Text(
                   '金幣餘額',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
                 ),
               ],
             ),
@@ -72,39 +66,38 @@ class CoinStoreView extends StatelessWidget {
           const SizedBox(height: AppTheme.spacingLg),
 
           // Free coin grants for this review build.
-          Text(
-            '免費獲得金幣',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('免費獲得金幣', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: AppTheme.spacingSm),
 
           ...CoinPackage.allPackages.map(
             (pkg) => _CoinPackageCard(
               package: pkg,
-              onPurchase: () async {
-                await coinService.addCoins(
-                  pkg.totalCoins,
-                  feature: '免費領取 ${pkg.coins} 金幣包',
-                );
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                          '已免費領取 ${pkg.totalCoins} 金幣'),
-                    ),
-                  );
-                }
-              },
+              claimed: coinService.hasClaimedFreePackage(pkg.id),
+              onPurchase: coinService.hasClaimedFreePackage(pkg.id)
+                  ? null
+                  : () async {
+                      final added = await coinService.claimFreePackage(
+                        packageId: pkg.id,
+                        amount: pkg.totalCoins,
+                        feature: '免費領取 ${pkg.coins} 金幣包',
+                      );
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              added ? '已免費領取 ${pkg.totalCoins} 金幣' : '此金幣包已領取',
+                            ),
+                          ),
+                        );
+                      }
+                    },
             ),
           ),
 
           const SizedBox(height: AppTheme.spacingLg),
 
           // Coin costs reference
-          Text(
-            '金幣用途',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('金幣用途', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: AppTheme.spacingSm),
 
           _CoinCostTile(
@@ -136,10 +129,7 @@ class CoinStoreView extends StatelessWidget {
           const SizedBox(height: AppTheme.spacingLg),
 
           // Other free coin sources
-          Text(
-            '其他免費來源',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('其他免費來源', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: AppTheme.spacingSm),
 
           _FreeCoinTile(
@@ -168,19 +158,17 @@ class CoinStoreView extends StatelessWidget {
 
           // Transaction history link
           if (coinService.history.isNotEmpty) ...[
-            Text(
-              '最近交易',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text('最近交易', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: AppTheme.spacingSm),
-            ...coinService.history.reversed.take(10).map(
+            ...coinService.history.reversed
+                .take(10)
+                .map(
                   (tx) => Container(
                     margin: const EdgeInsets.only(bottom: 6),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: AppTheme.bgCard,
-                      borderRadius:
-                          BorderRadius.circular(AppTheme.radiusMd),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                     ),
                     child: Row(
                       children: [
@@ -228,10 +216,12 @@ class CoinStoreView extends StatelessWidget {
 
 class _CoinPackageCard extends StatelessWidget {
   final CoinPackage package;
-  final VoidCallback onPurchase;
+  final bool claimed;
+  final VoidCallback? onPurchase;
 
   const _CoinPackageCard({
     required this.package,
+    required this.claimed,
     required this.onPurchase,
   });
 
@@ -247,8 +237,8 @@ class _CoinPackageCard extends StatelessWidget {
           color: package.isPopular
               ? AppTheme.accent.withValues(alpha: 0.4)
               : package.isBestValue
-                  ? AppTheme.gold.withValues(alpha: 0.4)
-                  : Colors.white.withValues(alpha: 0.06),
+              ? AppTheme.gold.withValues(alpha: 0.4)
+              : Colors.white.withValues(alpha: 0.06),
         ),
       ),
       child: Row(
@@ -289,11 +279,14 @@ class _CoinPackageCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: AppTheme.accent,
-                          borderRadius:
-                              BorderRadius.circular(AppTheme.radiusFull),
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.radiusFull,
+                          ),
                         ),
                         child: const Text(
                           '最熱門',
@@ -309,11 +302,14 @@ class _CoinPackageCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: AppTheme.gold,
-                          borderRadius:
-                              BorderRadius.circular(AppTheme.radiusFull),
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.radiusFull,
+                          ),
                         ),
                         child: const Text(
                           '最超值',
@@ -346,21 +342,23 @@ class _CoinPackageCard extends StatelessWidget {
           GestureDetector(
             onTap: onPurchase,
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                gradient: package.isPopular
+                gradient: claimed
+                    ? const LinearGradient(
+                        colors: [Color(0xFFB8B8B8), Color(0xFF8E8E8E)],
+                      )
+                    : package.isPopular
                     ? AppTheme.accentGradient
                     : package.isBestValue
-                        ? const LinearGradient(
-                            colors: [Color(0xFFFFD700), Color(0xFFFFA000)],
-                          )
-                        : AppTheme.primaryGradient,
-                borderRadius:
-                    BorderRadius.circular(AppTheme.radiusFull),
+                    ? const LinearGradient(
+                        colors: [Color(0xFFFFD700), Color(0xFFFFA000)],
+                      )
+                    : AppTheme.primaryGradient,
+                borderRadius: BorderRadius.circular(AppTheme.radiusFull),
               ),
               child: Text(
-                '領取',
+                claimed ? '已領取' : '領取',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,
@@ -402,10 +400,7 @@ class _CoinCostTile extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
-                color: AppTheme.textPrimary,
-                fontSize: 13,
-              ),
+              style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
             ),
           ),
           Text(
@@ -451,10 +446,7 @@ class _FreeCoinTile extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
-                color: AppTheme.textPrimary,
-                fontSize: 13,
-              ),
+              style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
             ),
           ),
           Text(

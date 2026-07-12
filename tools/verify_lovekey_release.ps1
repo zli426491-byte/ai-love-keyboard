@@ -78,11 +78,17 @@ foreach ($path in @($runnerEntitlements, $keyboardEntitlements)) {
     throw "Missing LoveKey App Group in $path"
   }
 }
+# The keyboard must never send a client-controlled entitlement flag. The Worker
+# resolves RevenueCat entitlements server-side; the extension only reads the
+# shared App Group for local UI state and sends the authenticated account data.
 if (Select-String -LiteralPath $keyboardSource -SimpleMatch '"is_pro": true' -Quiet) {
   throw "LoveKeyboard must not hard-code paid entitlement."
 }
-if (-not (Select-String -LiteralPath $keyboardSource -SimpleMatch '"is_pro": SharedConfig.isPro' -Quiet)) {
-  throw "LoveKeyboard paid entitlement is not sourced from the shared App Group."
+if (-not (Select-String -LiteralPath $keyboardSource -SimpleMatch 'static var isPro: Bool' -Quiet)) {
+  throw "LoveKeyboard is missing the shared App Group entitlement reader."
+}
+if (-not (Select-String -LiteralPath $keyboardSource -SimpleMatch 'UserDefaults(suiteName: appGroupID)?.bool(forKey: subscriptionKey)' -Quiet)) {
+  throw "LoveKeyboard entitlement is not read from the shared App Group."
 }
 $entitlementWiring = @(Select-String -LiteralPath $projectFile -SimpleMatch "CODE_SIGN_ENTITLEMENTS")
 if ($entitlementWiring.Count -lt 6) {

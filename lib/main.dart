@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:ai_love_keyboard/services/ai_service.dart';
+import 'package:ai_love_keyboard/services/account_service.dart';
 import 'package:ai_love_keyboard/services/analytics_service.dart';
 import 'package:ai_love_keyboard/services/coin_service.dart';
 import 'package:ai_love_keyboard/services/attribution_service.dart';
@@ -22,11 +24,15 @@ import 'package:ai_love_keyboard/services/usage_service.dart';
 import 'package:ai_love_keyboard/utils/app_theme.dart';
 import 'package:ai_love_keyboard/utils/constants.dart';
 import 'package:ai_love_keyboard/views/achievements/achievements_view.dart';
+import 'package:ai_love_keyboard/views/auth/account_view.dart';
 import 'package:ai_love_keyboard/views/characters/character_market_view.dart';
 import 'package:ai_love_keyboard/views/characters/create_persona_view.dart';
 import 'package:ai_love_keyboard/views/emergency/emergency_coach_view.dart';
+import 'package:ai_love_keyboard/views/analysis/chat_analysis_view.dart';
 import 'package:ai_love_keyboard/views/packages/package_store_view.dart';
 import 'package:ai_love_keyboard/views/packages/seasonal_packages_view.dart';
+import 'package:ai_love_keyboard/views/opener/opener_view.dart';
+import 'package:ai_love_keyboard/views/paywall/paywall_view.dart';
 import 'package:ai_love_keyboard/views/components/privacy_notice_dialog.dart';
 import 'package:ai_love_keyboard/views/home/home_view.dart';
 import 'package:ai_love_keyboard/views/keyboard/keyboard_guide_view.dart';
@@ -62,49 +68,102 @@ void main() async {
   final referralService = ReferralService();
   final coinService = CoinService();
   final privacyManager = PrivacyManager.instance;
+  final accountService = AccountService.instance;
+
+  try {
+    await accountService.init();
+  } catch (error) {
+    _logInitFailure('account', error);
+  }
 
   try {
     await AnalyticsService.instance.init();
-  } catch (_) {}
+  } catch (error) {
+    _logInitFailure('analytics', error);
+  }
   try {
     await AttributionService.instance.init();
-  } catch (_) {}
+  } catch (error) {
+    _logInitFailure('attribution', error);
+  }
   try {
     await DeepLinkService.instance.init();
-  } catch (_) {}
+  } catch (error) {
+    _logInitFailure('deep_link', error);
+  }
   try {
     await usageService.init();
-  } catch (_) {}
+  } catch (error) {
+    _logInitFailure('usage', error);
+  }
   try {
     final subscribed = await RevenueCatService.instance.init();
-    if (RevenueCatService.instance.customerInfoSynced) {
+    // Never trust a cached local Pro boolean when StoreKit/Play has not
+    // successfully returned customer info. The backend remains authoritative,
+    // but the UI and keyboard must fail closed too.
+    final storePlatform =
+        defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.android;
+    if (storePlatform) {
+      await usageService.setSubscribed(
+        accountService.isSignedIn &&
+            RevenueCatService.instance.customerInfoSynced &&
+            subscribed,
+      );
+    } else if (accountService.isSignedIn &&
+        RevenueCatService.instance.customerInfoSynced) {
       await usageService.setSubscribed(subscribed);
     }
-  } catch (_) {}
+    if (accountService.isSignedIn && accountService.accessToken != null) {
+      await RevenueCatService.instance.bindAccount(
+        accountService.userId!,
+        accountService.accessToken!,
+      );
+      await usageService.setSubscribed(RevenueCatService.instance.isSubscribed);
+    }
+  } catch (error) {
+    _logInitFailure('revenuecat', error);
+  }
   try {
     await localeService.init();
-  } catch (_) {}
+  } catch (error) {
+    _logInitFailure('locale', error);
+  }
   try {
     await packageManager.init();
-  } catch (_) {}
+  } catch (error) {
+    _logInitFailure('package_manager', error);
+  }
   try {
     await seasonalService.init();
-  } catch (_) {}
+  } catch (error) {
+    _logInitFailure('seasonal', error);
+  }
   try {
     await achievementService.init();
-  } catch (_) {}
+  } catch (error) {
+    _logInitFailure('achievement', error);
+  }
   try {
     await emergencyService.init();
-  } catch (_) {}
+  } catch (error) {
+    _logInitFailure('emergency', error);
+  }
   try {
     await referralService.init();
-  } catch (_) {}
+  } catch (error) {
+    _logInitFailure('referral', error);
+  }
   try {
     await coinService.init();
-  } catch (_) {}
+  } catch (error) {
+    _logInitFailure('coins', error);
+  }
   try {
     await privacyManager.init();
-  } catch (_) {}
+  } catch (error) {
+    _logInitFailure('privacy', error);
+  }
 
   try {
     ContentFilter.instance.setLevel(
@@ -112,7 +171,9 @@ void main() async {
           ? ContentFilterLevel.strict
           : ContentFilterLevel.standard,
     );
-  } catch (_) {}
+  } catch (error) {
+    _logInitFailure('content_filter', error);
+  }
 
   try {
     PromptTemplates.cultureContext = localeService.currentLocale.culturePrompt;
@@ -120,7 +181,9 @@ void main() async {
       PromptTemplates.cultureContext =
           localeService.currentLocale.culturePrompt;
     });
-  } catch (_) {}
+  } catch (error) {
+    _logInitFailure('prompt_templates', error);
+  }
 
   // Check onboarding and gender status
   final prefs = await SharedPreferences.getInstance();
@@ -131,11 +194,14 @@ void main() async {
 
   try {
     AnalyticsService.instance.trackAppOpen();
-  } catch (_) {}
+  } catch (error) {
+    _logInitFailure('analytics_app_open', error);
+  }
 
   runApp(
     AiLoveKeyboardApp(
       usageService: usageService,
+      accountService: accountService,
       localeService: localeService,
       privacyManager: privacyManager,
       packageManager: packageManager,
@@ -151,8 +217,15 @@ void main() async {
   );
 }
 
+void _logInitFailure(String service, Object error) {
+  // Keep user-facing screens usable while leaving enough context to diagnose
+  // a broken release. Never log tokens, prompts, or raw backend responses.
+  debugPrint('[LoveKey] $service initialization failed: ${error.runtimeType}');
+}
+
 class AiLoveKeyboardApp extends StatelessWidget {
   final UsageService usageService;
+  final AccountService accountService;
   final LocaleService localeService;
   final PrivacyManager privacyManager;
   final PackageManager packageManager;
@@ -168,6 +241,7 @@ class AiLoveKeyboardApp extends StatelessWidget {
   const AiLoveKeyboardApp({
     super.key,
     required this.usageService,
+    required this.accountService,
     required this.localeService,
     required this.privacyManager,
     required this.packageManager,
@@ -207,6 +281,7 @@ class AiLoveKeyboardApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AiService()),
+        ChangeNotifierProvider.value(value: accountService),
         ChangeNotifierProvider.value(value: usageService),
         ChangeNotifierProvider.value(value: RevenueCatService.instance),
         ChangeNotifierProvider.value(value: localeService),
@@ -233,8 +308,12 @@ class AiLoveKeyboardApp extends StatelessWidget {
           '/seasonal-packages': (context) => const SeasonalPackagesView(),
           '/referral': (context) => const ReferralView(),
           '/emergency': (context) => const EmergencyCoachView(),
+          '/opener': (context) => const OpenerView(),
+          '/paywall': (context) => const PaywallView(),
+          '/analysis': (context) => const ChatAnalysisView(),
           '/coin-store': (context) => const CoinStoreView(),
           '/keyboard-guide': (context) => const KeyboardGuideView(),
+          '/account': (context) => const AccountView(),
         },
       ),
     );

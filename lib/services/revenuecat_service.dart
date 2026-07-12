@@ -52,7 +52,7 @@ class RevenueCatService extends ChangeNotifier {
   /// RevenueCat app user ids are identifiers, not secrets. The Worker uses
   /// this value to verify the active entitlement server-side.
   Future<String?> get appUserId async {
-    if (!_configured || defaultTargetPlatform != TargetPlatform.iOS) {
+    if (!_configured || !_supportsStoreBilling) {
       return null;
     }
     try {
@@ -63,15 +63,19 @@ class RevenueCatService extends ChangeNotifier {
     }
   }
 
-  Future<void> _syncIdentityToKeyboard() async {
-    if (defaultTargetPlatform != TargetPlatform.iOS) return;
+  Future<void> _syncIdentityToKeyboard({String? accountAccessToken}) async {
+    if (!_supportsStoreBilling) return;
     try {
+      final arguments = <String, dynamic>{
+        'isSubscribed': _subscribed,
+        'revenueCatAppUserID': await appUserId,
+      };
+      if (accountAccessToken != null) {
+        arguments['accountAccessToken'] = accountAccessToken;
+      }
       await _subscriptionChannel.invokeMethod<void>(
         'setSubscriptionStatus',
-        <String, dynamic>{
-          'isSubscribed': _subscribed,
-          'revenueCatAppUserID': await appUserId,
-        },
+        arguments,
       );
     } on PlatformException catch (error) {
       debugPrint('Unable to sync RevenueCat identity: ${error.code}');
@@ -114,24 +118,24 @@ class RevenueCatService extends ChangeNotifier {
   }
 
   Future<bool> init() async {
-    if (defaultTargetPlatform != TargetPlatform.iOS) {
-      // Keep web/desktop previews clean. Real purchases are validated on iOS.
+    if (!_supportsStoreBilling) {
+      // Keep web/desktop previews clean. Real purchases are validated on the
+      // native stores.
       _errorMessage = null;
       notifyListeners();
       return false;
     }
 
-    if (AppConstants.revenueCatIosPublicKey.trim().isEmpty) {
-      _errorMessage = 'RevenueCat iOS 金鑰尚未設定';
+    final publicKey = _publicKeyForCurrentPlatform;
+    if (publicKey.isEmpty) {
+      _errorMessage = 'RevenueCat $_platformLabel 金鑰尚未設定';
       notifyListeners();
       return false;
     }
 
     try {
       if (!_configured) {
-        await Purchases.configure(
-          PurchasesConfiguration(AppConstants.revenueCatIosPublicKey),
-        );
+        await Purchases.configure(PurchasesConfiguration(publicKey));
         _configured = true;
       }
       await refreshCustomerInfo();
@@ -145,7 +149,7 @@ class RevenueCatService extends ChangeNotifier {
   }
 
   Future<void> loadOfferings() async {
-    if (defaultTargetPlatform != TargetPlatform.iOS) {
+    if (!_supportsStoreBilling) {
       _errorMessage = null;
       notifyListeners();
       return;
@@ -192,7 +196,54 @@ class RevenueCatService extends ChangeNotifier {
     }
   }
 
+  /// Binds the store customer to the same account ID on iOS and Android.
+  /// The access token is also passed to the native keyboard bridge so the
+  /// keyboard can satisfy the Worker auth gate without trusting a local Pro
+  /// boolean.
+  Future<bool> bindAccount(String accountId, String accessToken) async {
+    final normalizedId = accountId.trim();
+    final token = accessToken.trim();
+    if (normalizedId.isEmpty || token.isEmpty) return false;
+
+    if (_supportsStoreBilling && !_configured) {
+      await init();
+    }
+
+    try {
+      if (_configured) {
+        final result = await Purchases.logIn(normalizedId);
+        _subscribed = _hasActiveEntitlement(result.customerInfo);
+        _customerInfoSynced = true;
+      }
+      await _syncIdentityToKeyboard(accountAccessToken: token);
+      notifyListeners();
+      return true;
+    } on PlatformException catch (_) {
+      _errorMessage = '會員帳號綁定失敗，請稍後再試';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<void> unbindAccount() async {
+    try {
+      if (_configured) await Purchases.logOut();
+    } on PlatformException catch (_) {
+      // Local account sign-out still needs to complete.
+    }
+    _subscribed = false;
+    _customerInfoSynced = false;
+    await _syncIdentityToKeyboard(accountAccessToken: '');
+    notifyListeners();
+  }
+
   Future<bool> purchase(SubscriptionPlan plan) async {
+    if (!_supportsStoreBilling) {
+      _errorMessage = '此平台尚未啟用商店購買';
+      notifyListeners();
+      return false;
+    }
+
     final package = plan.package;
     if (package == null) {
       throw StateError('RevenueCat 產品尚未設定');
@@ -220,6 +271,12 @@ class RevenueCatService extends ChangeNotifier {
   }
 
   Future<bool> restore() async {
+    if (!_supportsStoreBilling) {
+      _errorMessage = '此平台尚未啟用商店恢復購買';
+      notifyListeners();
+      return false;
+    }
+
     if (!_configured) {
       await init();
     }
@@ -257,6 +314,19 @@ class RevenueCatService extends ChangeNotifier {
       AppConstants.proEntitlementId,
     );
   }
+
+  bool get _supportsStoreBilling =>
+      defaultTargetPlatform == TargetPlatform.iOS ||
+      defaultTargetPlatform == TargetPlatform.android;
+
+  String get _publicKeyForCurrentPlatform => switch (defaultTargetPlatform) {
+    TargetPlatform.iOS => AppConstants.revenueCatIosPublicKey.trim(),
+    TargetPlatform.android => AppConstants.revenueCatAndroidPublicKey.trim(),
+    _ => '',
+  };
+
+  String get _platformLabel =>
+      defaultTargetPlatform == TargetPlatform.android ? 'Android' : 'iOS';
 
   void _setLoading(bool value) {
     _loading = value;

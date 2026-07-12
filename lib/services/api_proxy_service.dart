@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
@@ -5,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:ai_love_keyboard/utils/constants.dart';
+import 'package:ai_love_keyboard/services/account_service.dart';
 import 'package:ai_love_keyboard/services/revenuecat_service.dart';
 
 /// Service layer for the backend AI proxy.
@@ -26,6 +28,7 @@ class ApiProxyService {
 
   /// Max requests per day (hard limit to prevent abuse).
   static const int maxRequestsPerDay = 5000;
+  static const Duration requestTimeout = Duration(seconds: 25);
 
   // ── Init ─────────────────────────────────────────────────────────────
 
@@ -156,6 +159,10 @@ class ApiProxyService {
       'Content-Type': 'application/json',
       ..._generateRequestHeaders(),
     };
+    final accountToken = AccountService.instance.accessToken;
+    if (accountToken != null && accountToken.trim().isNotEmpty) {
+      headers['Authorization'] = 'Bearer ${accountToken.trim()}';
+    }
     final revenueCatAppUserId = await RevenueCatService.instance.appUserId;
 
     final requestBody = <String, dynamic>{
@@ -172,10 +179,30 @@ class ApiProxyService {
       requestBody['revenuecat_app_user_id'] = id;
     }
 
-    return http.post(
-      Uri.parse('$normalizedBase${AppConstants.aiProxyChatPath}'),
-      headers: headers,
-      body: jsonEncode(requestBody),
-    );
+    final uri = Uri.parse('$normalizedBase${AppConstants.aiProxyChatPath}');
+    final response = await _post(uri, headers, requestBody);
+    if (response.statusCode == 401 && AccountService.instance.isSignedIn) {
+      final refreshed = await AccountService.instance.refreshSession();
+      final refreshedToken = AccountService.instance.accessToken;
+      if (refreshed && refreshedToken != null && refreshedToken.isNotEmpty) {
+        headers['Authorization'] = 'Bearer ${refreshedToken.trim()}';
+        return _post(uri, headers, requestBody);
+      }
+    }
+    return response;
+  }
+
+  Future<http.Response> _post(
+    Uri uri,
+    Map<String, String> headers,
+    Map<String, dynamic> body,
+  ) async {
+    try {
+      return await http
+          .post(uri, headers: headers, body: jsonEncode(body))
+          .timeout(requestTimeout);
+    } on TimeoutException {
+      throw Exception('AI 請求逾時，請檢查網路後再試一次');
+    }
   }
 }

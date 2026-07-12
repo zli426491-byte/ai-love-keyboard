@@ -1,5 +1,3 @@
-import 'dart:io' show Platform;
-
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -17,7 +15,7 @@ class LocaleService extends ChangeNotifier {
   Future<void> init() async {
     // Detect system locale
     try {
-      final systemLocale = Platform.localeName;
+      final systemLocale = PlatformDispatcher.instance.locale.toLanguageTag();
       _detectedLocale = UserLocale.fromSystemLocale(systemLocale);
     } catch (_) {
       _detectedLocale = UserLocale.taiwan;

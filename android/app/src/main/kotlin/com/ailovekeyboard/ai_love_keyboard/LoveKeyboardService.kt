@@ -6,6 +6,7 @@ import android.graphics.drawable.GradientDrawable
 import android.inputmethodservice.InputMethodService
 import android.os.Handler
 import android.os.Looper
+import android.util.Base64
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
@@ -17,6 +18,7 @@ import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.SecureRandom
 import java.util.concurrent.Executors
 
 class LoveKeyboardService : InputMethodService() {
@@ -192,9 +194,9 @@ class LoveKeyboardService : InputMethodService() {
                     statusText.text = "點擊回覆即可輸入"
                     showReplies(replies)
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 mainHandler.post {
-                    statusText.text = "錯誤: ${e.message}"
+                    statusText.text = "AI 暫時無法回覆，請稍後再試"
                 }
             }
         }
@@ -205,7 +207,23 @@ class LoveKeyboardService : InputMethodService() {
         val conn = url.openConnection() as HttpURLConnection
         conn.requestMethod = "POST"
         conn.setRequestProperty("Content-Type", "application/json")
-        conn.setRequestProperty("X-Device-Fingerprint", getDeviceFingerprint())
+        val fingerprint = getDeviceFingerprint()
+        val timestamp = System.currentTimeMillis().toString()
+        val nonceBytes = ByteArray(16).also { SecureRandom().nextBytes(it) }
+        val nonce = Base64.encodeToString(nonceBytes, Base64.URL_SAFE or Base64.NO_WRAP)
+        val signaturePayload = "$timestamp:$nonce:$fingerprint"
+        val signature = Base64.encodeToString(
+            signaturePayload.toByteArray(Charsets.UTF_8),
+            Base64.URL_SAFE or Base64.NO_WRAP,
+        )
+        conn.setRequestProperty("X-Device-Fingerprint", fingerprint)
+        conn.setRequestProperty("X-Request-Timestamp", timestamp)
+        conn.setRequestProperty("X-Request-Nonce", nonce)
+        conn.setRequestProperty("X-Request-Signature", signature)
+        val sharedPrefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+        sharedPrefs.getString("lovekey_account_access_token", null)
+            ?.takeIf { it.isNotBlank() }
+            ?.let { conn.setRequestProperty("Authorization", "Bearer $it") }
         conn.doOutput = true
         conn.connectTimeout = 15000
         conn.readTimeout = 30000
@@ -215,6 +233,9 @@ class LoveKeyboardService : InputMethodService() {
             put("message", message)
             put("tone", style)
             put("mode", "接話")
+            sharedPrefs.getString("lovekey_revenuecat_app_user_id", null)
+                ?.takeIf { it.isNotBlank() }
+                ?.let { put("revenuecat_app_user_id", it) }
             // Paid access is verified by the Worker using RevenueCat. Never
             // send a client-controlled Pro flag from the keyboard.
         }
@@ -225,9 +246,7 @@ class LoveKeyboardService : InputMethodService() {
         writer.close()
 
         if (conn.responseCode != 200) {
-            val errorStream = conn.errorStream ?: conn.inputStream
-            val error = BufferedReader(InputStreamReader(errorStream, "UTF-8")).readText()
-            throw Exception("API ${conn.responseCode}: $error")
+            throw IllegalStateException("proxy_${conn.responseCode}")
         }
 
         val response = BufferedReader(InputStreamReader(conn.inputStream, "UTF-8")).readText()

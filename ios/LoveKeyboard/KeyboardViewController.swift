@@ -1,4 +1,5 @@
 import UIKit
+import Foundation
 
 final class KeyboardViewController: UIInputViewController {
     private enum ReplyStyle: Int, CaseIterable {
@@ -94,6 +95,7 @@ final class KeyboardViewController: UIInputViewController {
         static let appGroupID = "group.com.ailovekeyboard.app"
         static let subscriptionKey = "is_subscribed"
         static let revenueCatAppUserIDKey = "revenuecat_app_user_id"
+        static let accountAccessTokenKey = "lovekey_account_access_token"
 
         static var isPro: Bool {
             UserDefaults(suiteName: appGroupID)?.bool(forKey: subscriptionKey) ?? false
@@ -102,6 +104,13 @@ final class KeyboardViewController: UIInputViewController {
         static var revenueCatAppUserID: String? {
             let value = UserDefaults(suiteName: appGroupID)?
                 .string(forKey: revenueCatAppUserIDKey)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return value?.isEmpty == false ? value : nil
+        }
+
+        static var accountAccessToken: String? {
+            let value = UserDefaults(suiteName: appGroupID)?
+                .string(forKey: accountAccessTokenKey)?
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             return value?.isEmpty == false ? value : nil
         }
@@ -138,7 +147,10 @@ final class KeyboardViewController: UIInputViewController {
     private var currentReplies: [String] = []
     private var displayedReplies: [String] = []
     private var selectedStyle: ReplyStyle = .gentle
-    private var selectedMode: KeyboardMode = .invite
+    // A pasted message should start in the general reply mode.  Starting in
+    // invite mode made ordinary messages look like date invitations until the
+    // user manually changed the mode.
+    private var selectedMode: KeyboardMode = .reply
     private var currentMessage = ""
     private var statusMode: StatusMode = .idle
     private var generationIndex = 0
@@ -202,7 +214,7 @@ final class KeyboardViewController: UIInputViewController {
         row.heightAnchor.constraint(equalToConstant: 40).isActive = true
 
         let modeButton = UIButton(type: .system)
-        modeButton.setTitle("開場邀約", for: .normal)
+        modeButton.setTitle(headerModeTitle(), for: .normal)
         modeButton.setImage(UIImage(systemName: "arrow.left.arrow.right"), for: .normal)
         modeButton.semanticContentAttribute = .forceRightToLeft
         modeButton.titleLabel?.font = .systemFont(ofSize: 14.5, weight: .heavy)
@@ -1420,6 +1432,19 @@ final class KeyboardViewController: UIInputViewController {
         request.timeoutInterval = 18
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(userID, forHTTPHeaderField: "X-Device-Fingerprint")
+        let timestamp = String(Int(Date().timeIntervalSince1970 * 1000))
+        let nonce = UUID().uuidString
+        let signaturePayload = "\(timestamp):\(nonce):\(userID)"
+        let signature = Data(signaturePayload.utf8)
+            .base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+        request.setValue(timestamp, forHTTPHeaderField: "X-Request-Timestamp")
+        request.setValue(nonce, forHTTPHeaderField: "X-Request-Nonce")
+        request.setValue(signature, forHTTPHeaderField: "X-Request-Signature")
+        if let accessToken = SharedConfig.accountAccessToken {
+            request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        }
 
         var payload: [String: Any] = [
             "user_id": userID,
@@ -1429,7 +1454,6 @@ final class KeyboardViewController: UIInputViewController {
             "tone": style.title,
             "mode": mode.title,
             "instruction": instruction ?? "",
-            "is_pro": SharedConfig.isPro
         ]
         if let appUserID = SharedConfig.revenueCatAppUserID {
             payload["revenuecat_app_user_id"] = appUserID
@@ -1469,21 +1493,10 @@ final class KeyboardViewController: UIInputViewController {
             guard requestID == self.generationIndex else { return }
             self.isGenerating = false
 
-            var cleaned = replies
+            let cleaned = replies
                 .map { self.cleanReply($0) }
                 .filter { !$0.isEmpty }
                 .prefix(1)
-
-            if cleaned.isEmpty {
-                cleaned = self.makeReplies(
-                    for: self.selectedStyle,
-                    mode: self.selectedMode,
-                    message: self.currentMessage
-                )
-                .map { self.cleanReply($0) }
-                .filter { !$0.isEmpty }
-                .prefix(1)
-            }
 
             if !cleaned.isEmpty && self.statusMode != .filled {
                 self.currentReplies = Array(cleaned)
@@ -1491,6 +1504,8 @@ final class KeyboardViewController: UIInputViewController {
                 self.statusMode = .ready
             } else if let errorText, self.statusMode != .filled {
                 self.aiErrorText = errorText
+            } else if cleaned.isEmpty && self.statusMode != .filled {
+                self.aiErrorText = "AI 沒有產生可用回覆，請再試一次"
             }
 
             self.renderContent()
@@ -1641,6 +1656,8 @@ final class KeyboardViewController: UIInputViewController {
         return String(text.prefix(limit)) + "..."
     }
 
+    // Deterministic suggestions are reserved for a future explicit offline
+    // mode. They must not silently replace a failed server response.
     private func makeReplies(for style: ReplyStyle, mode: KeyboardMode, message: String) -> [String] {
         let text = message.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {

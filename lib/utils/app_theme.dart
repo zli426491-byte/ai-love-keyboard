@@ -134,7 +134,6 @@ class AppTheme {
         surface: bgCard,
       ),
       scaffoldBackgroundColor: bgDark,
-      fontFamily: 'NotoSansTC',
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,

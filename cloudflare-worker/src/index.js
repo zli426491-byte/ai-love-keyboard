@@ -3,9 +3,9 @@ import { DurableObject } from "cloudflare:workers";
 const CORS_HEADERS = {
   // Native apps do not need CORS; only the public web preview is allowed.
   "Access-Control-Allow-Origin": "https://zli426491-byte.github.io",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers":
-    "Content-Type, X-Device-Fingerprint, X-Request-Timestamp, X-Request-Nonce, X-Request-Signature",
+    "Authorization, Content-Type, X-Device-Fingerprint, X-Request-Timestamp, X-Request-Nonce, X-Request-Signature",
 };
 
 const MAX_BODY_BYTES = 32 * 1024;
@@ -14,11 +14,49 @@ const MAX_SYSTEM_PROMPT_LENGTH = 6000;
 const MAX_IDENTIFIER_LENGTH = 128;
 const OPENAI_TIMEOUT_MS = 20000;
 const REVENUECAT_TIMEOUT_MS = 5000;
+const AUTH_TIMEOUT_MS = 5000;
+const REQUEST_MAX_SKEW_MS = 5 * 60 * 1000;
+const REQUEST_NONCE_TTL_SECONDS = 300;
 
 export default {
   async fetch(request, env) {
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: CORS_HEADERS });
+    }
+
+    const url = new URL(request.url);
+    if (url.pathname === "/v1/admin/summary") {
+      if (request.method !== "GET") {
+        return json({ error: "method_not_allowed" }, 405);
+      }
+      const auth = await validateSupabaseAuth(request, env);
+      if (!auth.ok) return json({ error: auth.error }, 401);
+      if (!isAdminUser(auth.user, env)) return json({ error: "admin_required" }, 403);
+      return json(await buildAdminSummary(env));
+    }
+
+    if (url.pathname === "/v1/account/delete") {
+      if (request.method !== "POST") {
+        return json({ error: "method_not_allowed" }, 405);
+      }
+      const auth = await validateSupabaseAuth(request, env);
+      if (!auth.ok) return json({ error: auth.error }, 401);
+      if (!auth.user?.id) return json({ error: "auth_required" }, 401);
+      const result = await deleteSupabaseUser(auth.user.id, env);
+      return result.ok ? json({ deleted: true }) : json({ error: result.error }, result.status);
+    }
+
+    if (url.pathname === "/v1/analytics/events") {
+      if (request.method !== "POST") {
+        return json({ error: "method_not_allowed" }, 405);
+      }
+      const auth = await validateSupabaseAuth(request, env);
+      if (!auth.ok) return json({ error: auth.error }, 401);
+      if (!auth.user?.id) return json({ error: "auth_required" }, 401);
+      const event = await readAnalyticsEvent(request);
+      if (!event) return json({ error: "invalid_event" }, 400);
+      await recordAnalyticsEvent(env, auth.user, event);
+      return json({ accepted: true }, 202);
     }
 
     if (request.method !== "POST") {
@@ -34,7 +72,6 @@ export default {
       return json({ error: "request_too_large" }, 413);
     }
 
-    const url = new URL(request.url);
     let body;
     try {
       body = await request.json();
@@ -51,13 +88,19 @@ export default {
     const validationError = validateBody(body);
     if (validationError) return json({ error: validationError }, 400);
 
+    const metadata = await validateRequestMetadata(request, env);
+    if (!metadata.ok) return json({ error: metadata.error }, 401);
+
+    const auth = await validateSupabaseAuth(request, env);
+    if (!auth.ok) return json({ error: auth.error }, 401);
+
     try {
       if (url.pathname === "/v1/keyboard-reply") {
-        return await handleKeyboardReply(body, request, env);
+        return await handleKeyboardReply(body, request, env, auth.user);
       }
 
       if (url.pathname === "/v1/chat/completions") {
-        return await handleChatCompletion(body, request, env);
+        return await handleChatCompletion(body, request, env, auth.user);
       }
     } catch (error) {
       return json({ error: "ai_failed" }, 502);
@@ -67,13 +110,22 @@ export default {
   },
 };
 
-async function handleKeyboardReply(body, request, env) {
+async function handleKeyboardReply(body, request, env, authUser) {
   const message = redactPii(boundedString(body.message, MAX_MESSAGE_LENGTH));
   if (!message) return json({ error: "missing_message" }, 400);
+  const identityError = validateRevenueCatIdentity(body, authUser);
+  if (identityError) return json({ error: identityError }, 401);
 
-  const userId = boundedIdentifier(body.user_id) || deviceId(request);
-  const isPro = await resolveProAccess(body, env);
-  const usage = await checkUsage(env, request, userId, isPro);
+  const isPro = await resolveProAccess(body, env, authUser);
+  if (requiresActivePro(env) && !isPro) {
+    return json({ error: "active_subscription_required" }, 403);
+  }
+  const usage = await checkUsage(
+    env,
+    request,
+    quotaActor(body, request, isPro, authUser),
+    isPro,
+  );
   if (usage.unavailable) return json({ error: "server_not_configured" }, 503);
   if (!usage.ok) {
     return json(
@@ -83,6 +135,7 @@ async function handleKeyboardReply(body, request, env) {
       429,
     );
   }
+  await recordUsageEvent(env, "keyboard-reply", authUser, isPro, usage);
 
   const tone = boundedString(body.tone, 64) || "自然";
   const mode = boundedString(body.mode, 64) || "接話";
@@ -111,17 +164,31 @@ async function handleKeyboardReply(body, request, env) {
   });
 }
 
-async function handleChatCompletion(body, request, env) {
+async function handleChatCompletion(body, request, env, authUser) {
   const systemPrompt = boundedString(body.system_prompt, MAX_SYSTEM_PROMPT_LENGTH);
   const userMessage = redactPii(boundedString(body.user_message, MAX_MESSAGE_LENGTH));
   if (!systemPrompt || !userMessage) {
     return json({ error: "missing_fields" }, 400);
   }
+  const identityError = validateRevenueCatIdentity(body, authUser);
+  if (identityError) return json({ error: identityError }, 401);
 
-  const userId = boundedIdentifier(body.user_id) || deviceId(request);
   // Never trust the client-provided is_pro flag. Verify RevenueCat below.
-  const isPro = await resolveProAccess(body, env);
-  const usage = await checkUsage(env, request, userId, isPro);
+  const isPro = await resolveProAccess(body, env, authUser);
+  // Heavy-model usage has its own server-side budget because it is more
+  // expensive than normal replies. The client flag only selects a request;
+  // entitlement and quota decisions remain here.
+  const useHeavy = isPro && body.use_heavy_model === true;
+  if (requiresActivePro(env) && !isPro) {
+    return json({ error: "active_subscription_required" }, 403);
+  }
+  const usage = await checkUsage(
+    env,
+    request,
+    quotaActor(body, request, isPro, authUser),
+    isPro,
+    useHeavy,
+  );
   if (usage.unavailable) return json({ error: "server_not_configured" }, 503);
   if (!usage.ok) {
     return json(
@@ -131,9 +198,9 @@ async function handleChatCompletion(body, request, env) {
       429,
     );
   }
+  await recordUsageEvent(env, "chat-completion", authUser, isPro, usage);
 
   // Heavy models and large responses are paid-only server decisions.
-  const useHeavy = isPro && body.use_heavy_model === true;
   const maxTokens = isPro
     ? clampNumber(body.max_tokens, 64, 1600, 1024)
     : clampNumber(body.max_tokens, 64, 600, 512);
@@ -185,18 +252,27 @@ async function callOpenAI(env, payload) {
   }
 }
 
-async function checkUsage(env, request, userId, isPro) {
+async function checkUsage(env, request, userId, isPro, useHeavy = false) {
   const ip = clean(request.headers.get("CF-Connecting-IP")) || "unknown-ip";
   const actor = boundedIdentifier(userId) || "anonymous";
   const minuteLimit = isPro
     ? clampNumber(env.PRO_REQUESTS_PER_MINUTE, 1, 120, 60)
     : clampNumber(env.REQUESTS_PER_MINUTE, 1, 120, 30);
   const dailyLimit = isPro
-    ? clampNumber(env.PRO_DAILY_LIMIT, 1, 10000, 300)
+    ? clampNumber(
+        useHeavy ? env.PRO_HEAVY_DAILY_LIMIT : env.PRO_DAILY_LIMIT,
+        1,
+        10000,
+        useHeavy ? 50 : 300,
+      )
     : clampNumber(env.FREE_DAILY_LIMIT, 1, 100, 3);
 
-  // An IP-only burst limit prevents attackers from rotating arbitrary client IDs.
-  const ipResult = await incrementUsage(env, `ip:${ip}`, null, clampNumber(
+  // IP limits are both burst and daily limits so rotating client identifiers
+  // cannot turn the free tier into an unlimited API budget.
+  const ipDailyLimit = isPro
+    ? clampNumber(env.PRO_IP_DAILY_LIMIT, 1, 100000, 1000)
+    : clampNumber(env.FREE_IP_DAILY_LIMIT, 1, 10000, 60);
+  const ipResult = await incrementUsage(env, `ip:${ip}`, ipDailyLimit, clampNumber(
     env.IP_REQUESTS_PER_MINUTE,
     1,
     600,
@@ -207,7 +283,7 @@ async function checkUsage(env, request, userId, isPro) {
 
   const actorResult = await incrementUsage(
     env,
-    `actor:${actor}:${ip}`,
+    `actor:${actor}:${ip}${useHeavy ? ":heavy" : ""}`,
     dailyLimit,
     minuteLimit,
   );
@@ -220,6 +296,284 @@ async function checkUsage(env, request, userId, isPro) {
   }
 
   return actorResult;
+}
+
+function requiresActivePro(env) {
+  return String(env.REQUIRE_ACTIVE_PRO || "false").toLowerCase() === "true";
+}
+
+function requiresAuth(env) {
+  return String(env.REQUIRE_AUTH || "false").toLowerCase() === "true";
+}
+
+async function validateSupabaseAuth(request, env) {
+  const header = clean(request.headers.get("Authorization"));
+  const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+  if (!token) {
+    return requiresAuth(env)
+      ? { ok: false, error: "auth_required" }
+      : { ok: true, user: null };
+  }
+
+  const supabaseUrl = clean(env.SUPABASE_URL).replace(/\/+$/, "");
+  const anonKey = clean(env.SUPABASE_ANON_KEY);
+  if (!supabaseUrl || !anonKey) {
+    return requiresAuth(env)
+      ? { ok: false, error: "auth_not_configured" }
+      : { ok: true, user: null };
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), AUTH_TIMEOUT_MS);
+  try {
+    const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: {
+        apikey: anonKey,
+        Authorization: `Bearer ${token}`,
+      },
+      signal: controller.signal,
+    });
+    if (!response.ok) return { ok: false, error: "auth_invalid" };
+    const user = await response.json();
+    if (!user?.id) return { ok: false, error: "auth_invalid" };
+    return {
+      ok: true,
+      user: {
+        id: boundedIdentifier(user.id),
+        email: clean(user.email),
+        role: clean(user.app_metadata?.role),
+      },
+    };
+  } catch {
+    return { ok: false, error: "auth_unavailable" };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function deleteSupabaseUser(userId, env) {
+  const supabaseUrl = clean(env.SUPABASE_URL).replace(/\/+$/, "");
+  const serviceRoleKey = clean(env.SUPABASE_SERVICE_ROLE_KEY);
+  if (!supabaseUrl || !serviceRoleKey) {
+    return { ok: false, error: "account_deletion_not_configured", status: 503 };
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), AUTH_TIMEOUT_MS);
+  try {
+    const response = await fetch(
+      `${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(userId)}`,
+      {
+        method: "DELETE",
+        headers: {
+          apikey: serviceRoleKey,
+          Authorization: `Bearer ${serviceRoleKey}`,
+        },
+        signal: controller.signal,
+      },
+    );
+    if (!response.ok) return { ok: false, error: "account_deletion_failed", status: 502 };
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "account_deletion_unavailable", status: 503 };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function readAnalyticsEvent(request) {
+  const declaredLength = Number(request.headers.get("Content-Length") || 0);
+  if (declaredLength > 8 * 1024) return null;
+  try {
+    const body = await request.json();
+    if (!body || typeof body !== "object" || Array.isArray(body)) return null;
+    const name = boundedString(body.name, 64);
+    const params = body.params;
+    if (!/^[a-zA-Z0-9_.-]+$/.test(name)) return null;
+    if (params !== undefined &&
+        (!params || typeof params !== "object" || Array.isArray(params))) {
+      return null;
+    }
+    const safeParams = {};
+    for (const [key, value] of Object.entries(params || {})) {
+      if (!/^[a-zA-Z0-9_.-]{1,32}$/.test(key)) continue;
+      const normalized = boundedString(value, 128);
+      if (normalized) safeParams[key] = normalized;
+    }
+    return { name, params: safeParams };
+  } catch {
+    return null;
+  }
+}
+
+async function recordAnalyticsEvent(env, authUser, event) {
+  if (!env.KV_USAGE) return;
+  const key = `analytics:event:${Date.now()}:${crypto.randomUUID()}`;
+  try {
+    await env.KV_USAGE.put(
+      key,
+      JSON.stringify({
+        at: new Date().toISOString(),
+        account_id: authUser.id,
+        name: event.name,
+        params: event.params,
+      }),
+      { expirationTtl: 90 * 24 * 60 * 60 },
+    );
+  } catch {
+    // Analytics must never block a user action.
+  }
+}
+
+function validateRevenueCatIdentity(body, authUser) {
+  if (!authUser?.id) return null;
+  const declared = boundedIdentifier(body.revenuecat_app_user_id);
+  return declared && declared !== authUser.id ? "identity_mismatch" : null;
+}
+
+function isAdminUser(user, env) {
+  if (!user) return false;
+  if (user.role === "admin") return true;
+  const allowedEmails = clean(env.ADMIN_EMAILS)
+    .split(",")
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean);
+  return Boolean(user.email && allowedEmails.includes(user.email.toLowerCase()));
+}
+
+async function recordUsageEvent(env, endpoint, authUser, isPro, usage) {
+  if (!env.KV_USAGE) return;
+  const key = `admin:event:${Date.now()}:${crypto.randomUUID()}`;
+  try {
+    await env.KV_USAGE.put(
+      key,
+      JSON.stringify({
+        at: new Date().toISOString(),
+        endpoint,
+        account_id: authUser?.id || null,
+        is_pro: isPro,
+        remaining: usage.remaining ?? null,
+      }),
+      { expirationTtl: 90 * 24 * 60 * 60 },
+    );
+  } catch {
+    // Usage telemetry must never block a paid request.
+  }
+}
+
+async function buildAdminSummary(env) {
+  if (!env.KV_USAGE) return { error: "admin_storage_not_configured" };
+  const listed = await env.KV_USAGE.list({ prefix: "admin:event:", limit: 1000 });
+  const analyticsListed = await env.KV_USAGE.list({
+    prefix: "analytics:event:",
+    limit: 1000,
+  });
+  const events = [];
+  for (const key of listed.keys || []) {
+    try {
+      const value = await env.KV_USAGE.get(key.name, "json");
+      if (value) events.push(value);
+    } catch {
+      // Ignore an individual expired/corrupt event.
+    }
+  }
+  events.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  const analyticsEvents = [];
+  for (const key of analyticsListed.keys || []) {
+    try {
+      const value = await env.KV_USAGE.get(key.name, "json");
+      if (value) analyticsEvents.push(value);
+    } catch {
+      // Ignore an individual expired/corrupt analytics event.
+    }
+  }
+  analyticsEvents.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  const uniqueAccounts = new Set(
+    events.map((event) => event.account_id).filter(Boolean),
+  );
+  return {
+    generated_at: new Date().toISOString(),
+    event_count: events.length,
+    unique_authenticated_accounts: uniqueAccounts.size,
+    paid_events: events.filter((event) => event.is_pro).length,
+    free_events: events.filter((event) => !event.is_pro).length,
+    analytics_event_count: analyticsEvents.length,
+    recent_analytics_events: analyticsEvents.slice(0, 100),
+    recent_events: events.slice(0, 100),
+    note: "Only account/quota metadata is stored; raw chat messages are never recorded.",
+  };
+}
+
+async function validateRequestMetadata(request, env) {
+  const timestamp = clean(request.headers.get("X-Request-Timestamp"));
+  const nonce = clean(request.headers.get("X-Request-Nonce"));
+  const signature = clean(request.headers.get("X-Request-Signature"));
+  const fingerprint = boundedIdentifier(
+    request.headers.get("X-Device-Fingerprint"),
+  );
+
+  // Older keyboard builds did not send metadata. Keep a migration window;
+  // REQUIRE_REQUEST_METADATA can be enabled after all clients are updated.
+  if (!timestamp && !nonce && !signature && !fingerprint) {
+    return String(env.REQUIRE_REQUEST_METADATA || "false").toLowerCase() ===
+        "true"
+      ? { ok: false, error: "request_metadata_required" }
+      : { ok: true };
+  }
+
+  // Keep old released keyboard builds working during the migration. A
+  // fingerprint-only request is rate-limited but has no replay protection.
+  if (!timestamp && !nonce && !signature && fingerprint) {
+    return String(env.REQUIRE_REQUEST_METADATA || "false").toLowerCase() ===
+        "true"
+      ? { ok: false, error: "request_metadata_required" }
+      : { ok: true };
+  }
+
+  if (!timestamp || !nonce || !signature || !fingerprint) {
+    return { ok: false, error: "invalid_request_metadata" };
+  }
+
+  const timestampMs = Number(timestamp);
+  if (!Number.isSafeInteger(timestampMs) ||
+      Math.abs(Date.now() - timestampMs) > REQUEST_MAX_SKEW_MS) {
+    return { ok: false, error: "stale_request" };
+  }
+
+  const expectedSignature = base64UrlEncode(`${timestamp}:${nonce}:${fingerprint}`);
+  if (signature !== expectedSignature) {
+    return { ok: false, error: "invalid_request_signature" };
+  }
+
+  // This is replay protection only, not authentication. The client can
+  // generate a fresh signature, so entitlement/account verification remains
+  // the authority for Pro access.
+  if (env.KV_USAGE) {
+    const replayKey = `request_nonce:${nonce}`;
+    if (await env.KV_USAGE.get(replayKey)) {
+      return { ok: false, error: "replayed_request" };
+    }
+    await env.KV_USAGE.put(replayKey, "1", {
+      expirationTtl: REQUEST_NONCE_TTL_SECONDS,
+    });
+  }
+
+  return { ok: true };
+}
+
+function quotaActor(body, request, isPro, authUser) {
+  // A body-provided user_id is not an identity proof and must never be the
+  // free-quota key. Verified RevenueCat users get an account-scoped quota;
+  // everyone else is limited by the device fingerprint plus IP.
+  if (authUser?.id) {
+    if (isPro) return `rc:${authUser.id}`;
+    return `account:${authUser.id}`;
+  }
+  if (isPro) {
+    const appUserId = boundedIdentifier(body.revenuecat_app_user_id);
+    if (appUserId) return `rc:${appUserId}`;
+  }
+  return `device:${deviceId(request)}`;
 }
 
 async function incrementUsage(env, key, dailyLimit, minuteLimit) {
@@ -273,8 +627,9 @@ async function incrementUsage(env, key, dailyLimit, minuteLimit) {
   };
 }
 
-async function resolveProAccess(body, env) {
-  const appUserId = boundedIdentifier(body.revenuecat_app_user_id);
+async function resolveProAccess(body, env, authUser) {
+  const appUserId = boundedIdentifier(authUser?.id) ||
+    boundedIdentifier(body.revenuecat_app_user_id);
   if (!appUserId || !env.REVENUECAT_SECRET_API_KEY) return false;
 
   const cacheKey = `entitlement:${appUserId}`;
@@ -380,6 +735,10 @@ function parseReply(content) {
 
 function deviceId(request) {
   return boundedIdentifier(request.headers.get("X-Device-Fingerprint")) || "anonymous";
+}
+
+function base64UrlEncode(value) {
+  return btoa(value).replace(/\+/g, "-").replace(/\//g, "_");
 }
 
 function clean(value) {

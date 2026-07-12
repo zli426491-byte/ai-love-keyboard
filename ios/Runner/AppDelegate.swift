@@ -6,6 +6,7 @@ import UIKit
   private static let appGroupID = "group.com.ailovekeyboard.app"
   private static let subscriptionKey = "is_subscribed"
   private static let revenueCatAppUserIDKey = "revenuecat_app_user_id"
+  private static let accountAccessTokenKey = "lovekey_account_access_token"
 
   override func application(
     _ application: UIApplication,
@@ -39,12 +40,24 @@ import UIKit
         }
 
         defaults.set(isSubscribed, forKey: AppDelegate.subscriptionKey)
-        if let appUserID = arguments["revenueCatAppUserID"] as? String,
-           !appUserID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-          defaults.set(
-            appUserID.trimmingCharacters(in: .whitespacesAndNewlines),
-            forKey: AppDelegate.revenueCatAppUserIDKey
-          )
+        if arguments.keys.contains("revenueCatAppUserID") {
+          if let appUserID = arguments["revenueCatAppUserID"] as? String,
+             !appUserID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            defaults.set(
+              appUserID.trimmingCharacters(in: .whitespacesAndNewlines),
+              forKey: AppDelegate.revenueCatAppUserIDKey
+            )
+          } else {
+            defaults.removeObject(forKey: AppDelegate.revenueCatAppUserIDKey)
+          }
+        }
+        if let token = arguments["accountAccessToken"] as? String {
+          let normalizedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
+          if normalizedToken.isEmpty {
+            defaults.removeObject(forKey: AppDelegate.accountAccessTokenKey)
+          } else {
+            defaults.set(normalizedToken, forKey: AppDelegate.accountAccessTokenKey)
+          }
         }
         result(nil)
       }

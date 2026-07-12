@@ -54,11 +54,21 @@ jobs:
       - name: Validate RevenueCat release config
         env:
           REVENUECAT_IOS_PUBLIC_KEY: ${{ secrets.REVENUECAT_IOS_PUBLIC_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           if [ -z "$REVENUECAT_IOS_PUBLIC_KEY" ]; then
             echo "REVENUECAT_IOS_PUBLIC_KEY secret is empty; configure the LoveKey RevenueCat app before uploading a build."
             exit 1
           fi
+          test -n "$SUPABASE_URL" || {
+            echo "Missing SUPABASE_URL GitHub secret" >&2
+            exit 1
+          }
+          test -n "$SUPABASE_ANON_KEY" || {
+            echo "Missing SUPABASE_ANON_KEY GitHub secret" >&2
+            exit 1
+          }
 
       - name: Setup App Store Connect API Key
         run: |
@@ -114,6 +124,8 @@ jobs:
         env:
           AI_PROXY_URL: ${{ secrets.AI_PROXY_URL }}
           REVENUECAT_IOS_PUBLIC_KEY: ${{ secrets.REVENUECAT_IOS_PUBLIC_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           FACEBOOK_APP_ID: ${{ secrets.FACEBOOK_APP_ID }}
           ADJUST_APP_TOKEN: ${{ secrets.ADJUST_APP_TOKEN }}
           ADJUST_ENVIRONMENT: ${{ secrets.ADJUST_ENVIRONMENT || 'production' }}
@@ -123,6 +135,8 @@ jobs:
             --release \
             --dart-define=AI_PROXY_URL="$AI_PROXY_URL" \
             --dart-define=REVENUECAT_IOS_PUBLIC_KEY="$REVENUECAT_IOS_PUBLIC_KEY" \
+            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+            --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
             --dart-define=FACEBOOK_APP_ID="$FACEBOOK_APP_ID" \
             --dart-define=ADJUST_APP_TOKEN="$ADJUST_APP_TOKEN" \
             --dart-define=ADJUST_ENVIRONMENT="$ADJUST_ENVIRONMENT" \

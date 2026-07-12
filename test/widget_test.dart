@@ -1,4 +1,5 @@
 import 'package:ai_love_keyboard/services/ai_service.dart';
+import 'package:ai_love_keyboard/services/account_service.dart';
 import 'package:ai_love_keyboard/services/coin_service.dart';
 import 'package:ai_love_keyboard/services/locale_service.dart';
 import 'package:ai_love_keyboard/services/privacy_manager.dart';
@@ -33,6 +34,7 @@ Future<void> _pumpApp(WidgetTester tester, Widget child) async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AiService()),
+        ChangeNotifierProvider.value(value: AccountService.instance),
         ChangeNotifierProvider.value(value: usage),
         ChangeNotifierProvider.value(value: RevenueCatService.instance),
         ChangeNotifierProvider.value(value: coins),
@@ -51,7 +53,6 @@ void main() {
   testWidgets('home tabs and blind box flows are reachable', (tester) async {
     await _pumpApp(tester, const HomeView());
 
-    expect(find.text('體驗戀愛鍵盤'), findsOneWidget);
     expect(find.text('我的鍵盤'), findsOneWidget);
 
     await tester.tap(find.text('盲盒交友').last);

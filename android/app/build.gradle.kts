@@ -34,8 +34,10 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.ailovekeyboard.ai_love_keyboard"
+        // Keep the Play package aligned with the iOS bundle and RevenueCat
+        // product configuration. The Kotlin namespace remains unchanged so
+        // native class names stay stable.
+        applicationId = "com.ailovekeyboard.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
