@@ -112,6 +112,7 @@ void main() {
     expect(find.text('鍵盤設定'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('為 App 評分'), 500);
     expect(find.text('為 App 評分'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('分享給朋友'), 200);
     expect(find.text('分享給朋友'), findsOneWidget);
   });
 }
