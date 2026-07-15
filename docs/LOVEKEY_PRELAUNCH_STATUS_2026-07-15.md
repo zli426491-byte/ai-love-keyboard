@@ -49,6 +49,7 @@ LoveKey 已進入「內部實機驗收」階段，但目前仍不應直接提交
 - Android 開發人員驗證：已完成。
 - Play package：`com.ailovekeyboard.app`。
 - Play 內部測試最新版：`LoveKey P0 驗收 fd01c8a`，版本名稱 1.0.4、`versionCode 7`，已提供給內部測試人員。
+- Android 內部測試加入連結：`https://play.google.com/apps/internaltest/4701075647262505689`
 - RevenueCat Play Store app configuration 已建立。
 - RevenueCat Google service account：有效。
 - Google developer notifications / RTDN：已連線。
