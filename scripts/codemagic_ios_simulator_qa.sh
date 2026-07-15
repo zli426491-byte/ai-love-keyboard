@@ -27,6 +27,28 @@ FLUTTER_TEST_EXIT=$?
 set -e
 cat "$QA_DIR/flutter-tests.stderr.log"
 if [[ "$FLUTTER_TEST_EXIT" -ne 0 ]]; then
+  echo "== Flutter test failure details =="
+  python3 - "$QA_DIR/flutter-tests.json" <<'PY'
+import json
+import sys
+
+path = sys.argv[1]
+with open(path, encoding="utf-8") as stream:
+    for raw_line in stream:
+        try:
+            event = json.loads(raw_line)
+        except json.JSONDecodeError:
+            continue
+
+        event_type = event.get("type")
+        if event_type == "error":
+            print(event.get("error", "Unknown Flutter test error"))
+            stack = event.get("stackTrace")
+            if stack:
+                print(stack)
+        elif event_type == "testDone" and event.get("result") in {"error", "failure"}:
+            print(json.dumps(event, ensure_ascii=False))
+PY
   echo "Flutter tests failed with exit code $FLUTTER_TEST_EXIT."
   exit "$FLUTTER_TEST_EXIT"
 fi
