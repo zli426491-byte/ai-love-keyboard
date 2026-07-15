@@ -33,21 +33,39 @@ import json
 import sys
 
 path = sys.argv[1]
+tests = {}
+
+
+def iter_events(value):
+    if isinstance(value, dict):
+        yield value
+    elif isinstance(value, list):
+        for item in value:
+            yield from iter_events(item)
+
+
 with open(path, encoding="utf-8") as stream:
     for raw_line in stream:
         try:
-            event = json.loads(raw_line)
+            decoded = json.loads(raw_line)
         except json.JSONDecodeError:
             continue
 
-        event_type = event.get("type")
-        if event_type == "error":
-            print(event.get("error", "Unknown Flutter test error"))
-            stack = event.get("stackTrace")
-            if stack:
-                print(stack)
-        elif event_type == "testDone" and event.get("result") in {"error", "failure"}:
-            print(json.dumps(event, ensure_ascii=False))
+        for event in iter_events(decoded):
+            event_type = event.get("type")
+            if event_type == "testStart":
+                test = event.get("test") or {}
+                tests[test.get("id")] = test.get("name", "Unknown test")
+            elif event_type == "error":
+                test_id = event.get("testID")
+                print(f"Test: {tests.get(test_id, test_id or 'Unknown test')}")
+                print(event.get("error", "Unknown Flutter test error"))
+                stack = event.get("stackTrace")
+                if stack:
+                    print(stack)
+            elif event_type == "testDone" and event.get("result") in {"error", "failure"}:
+                test_id = event.get("testID")
+                print(f"Result: {event.get('result')} - {tests.get(test_id, test_id or 'Unknown test')}")
 PY
   echo "Flutter tests failed with exit code $FLUTTER_TEST_EXIT."
   exit "$FLUTTER_TEST_EXIT"
