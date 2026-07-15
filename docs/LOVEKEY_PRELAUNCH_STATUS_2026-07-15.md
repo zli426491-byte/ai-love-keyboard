@@ -20,6 +20,10 @@ LoveKey 已進入「內部實機驗收」階段，但目前仍不應直接提交
 - iOS／Android release signing gate：通過。
 - Supabase Email、Google、Apple provider 已啟用。
 - Apple App ID `com.ailovekeyboard.app` 已啟用 Sign in with Apple。
+- 公開隱私政策、使用條款與使用指南均已發布並回應 HTTP 200：
+  - `https://zli426491-byte.github.io/ai-love-keyboard/`
+  - `https://zli426491-byte.github.io/ai-love-keyboard/terms.html`
+  - `https://zli426491-byte.github.io/ai-love-keyboard/guidelines.html`
 
 ### iOS / App Store Connect
 
