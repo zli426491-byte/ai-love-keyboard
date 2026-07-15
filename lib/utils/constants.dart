@@ -21,6 +21,18 @@ class AppConstants {
   static const String supabaseAnonKey = String.fromEnvironment(
     'SUPABASE_ANON_KEY',
   );
+  // OAuth client configuration. These are public client IDs, not secrets.
+  // Inject them at build time; never put Google/Apple private keys in the app.
+  static const String googleWebClientId = String.fromEnvironment(
+    'GOOGLE_WEB_CLIENT_ID',
+  );
+  static const String googleIosClientId = String.fromEnvironment(
+    'GOOGLE_IOS_CLIENT_ID',
+  );
+  static const String authRedirectUri = String.fromEnvironment(
+    'AUTH_REDIRECT_URI',
+    defaultValue: 'com.ailovekeyboard.app://login-callback',
+  );
   // Daily limit for heavy model usage in the client UI. The server still owns
   // the real API key and server-side rate limits.
   static const int heavyModelDailyLimit = 20;

@@ -1425,6 +1425,10 @@ final class KeyboardViewController: UIInputViewController {
             finishAIRequest(requestID: requestID, replies: [], errorText: "AI 尚未設定")
             return
         }
+        guard let accessToken = SharedConfig.accountAccessToken else {
+            finishAIRequest(requestID: requestID, replies: [], errorText: "請先開啟 LoveKey 登入")
+            return
+        }
 
         let userID = keyboardUserID()
         var request = URLRequest(url: endpoint)
@@ -1442,9 +1446,7 @@ final class KeyboardViewController: UIInputViewController {
         request.setValue(timestamp, forHTTPHeaderField: "X-Request-Timestamp")
         request.setValue(nonce, forHTTPHeaderField: "X-Request-Nonce")
         request.setValue(signature, forHTTPHeaderField: "X-Request-Signature")
-        if let accessToken = SharedConfig.accountAccessToken {
-            request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
-        }
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
 
         var payload: [String: Any] = [
             "user_id": userID,
@@ -1474,7 +1476,7 @@ final class KeyboardViewController: UIInputViewController {
             if error != nil {
                 errorText = "AI 網路失敗"
             } else if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-                errorText = "AI 服務忙碌"
+                errorText = self.aiRequestErrorText(statusCode: http.statusCode, data: data)
             } else if let data {
                 replies = self.parseAIReplies(from: data)
                 if replies.isEmpty {
@@ -1486,6 +1488,40 @@ final class KeyboardViewController: UIInputViewController {
 
             self.finishAIRequest(requestID: requestID, replies: replies, errorText: errorText)
         }.resume()
+    }
+
+    private func aiRequestErrorText(statusCode: Int, data: Data?) -> String {
+        var errorCode: String?
+        if
+            let data,
+            let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        {
+            errorCode = object["error"] as? String
+        }
+
+        switch errorCode {
+        case "auth_required", "invalid_auth", "invalid_token":
+            return "請先開啟 LoveKey 重新登入"
+        case "revenuecat_identity_mismatch":
+            return "請開啟 LoveKey 同步會員"
+        case "active_subscription_required", "quota_exceeded":
+            return "請先開啟 LoveKey 升級 Pro"
+        case "rate_limited":
+            return "請稍候再試"
+        case "server_not_configured":
+            return "AI 服務尚未設定"
+        default:
+            if statusCode == 401 {
+                return "請先開啟 LoveKey 重新登入"
+            }
+            if statusCode == 403 {
+                return "請先開啟 LoveKey 升級 Pro"
+            }
+            if statusCode == 429 {
+                return "請稍候再試"
+            }
+            return "AI 暫時不可用"
+        }
     }
 
     private func finishAIRequest(requestID: Int, replies: [String], errorText: String?) {

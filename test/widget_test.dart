@@ -101,6 +101,8 @@ void main() {
     await _pumpApp(tester, const KeyboardGuideView());
     expect(find.text('鍵盤教學'), findsOneWidget);
     expect(find.textContaining('切到 AI 戀愛鍵盤'), findsWidgets);
+    expect(find.text('先登入 LoveKey'), findsOneWidget);
+    expect(find.text('前往登入'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('只在生成回覆時送出必要文字'), 420);
     expect(find.text('只在生成回覆時送出必要文字'), findsOneWidget);
 

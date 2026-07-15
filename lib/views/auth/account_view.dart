@@ -28,6 +28,51 @@ class _AccountViewState extends State<AccountView> {
     super.dispose();
   }
 
+  Future<void> _finishLogin(AccountService account) async {
+    final token = account.accessToken;
+    final userId = account.userId;
+    if (token != null && userId != null) {
+      final usage = context.read<UsageService>();
+      await RevenueCatService.instance.bindAccount(userId, token);
+      await usage.setSubscribed(RevenueCatService.instance.isSubscribed);
+    }
+  }
+
+  Future<void> _submitSocial(String provider) async {
+    final account = context.read<AccountService>();
+    final success = provider == 'apple'
+        ? await account.signInWithApple()
+        : await account.signInWithGoogle();
+    if (!mounted) return;
+
+    if (!success) {
+      final message = account.errorMessage ?? '第三方登入失敗，請稍後再試。';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+      );
+      return;
+    }
+
+    await _finishLogin(account);
+    if (!mounted) return;
+    Navigator.pop(context);
+  }
+
+  Future<void> _linkSocial(String provider) async {
+    final account = context.read<AccountService>();
+    final success = provider == 'apple'
+        ? await account.linkAppleIdentity()
+        : await account.linkGoogleIdentity();
+    if (!mounted) return;
+
+    final message = success
+        ? '已綁定 ${provider == 'apple' ? 'Apple' : 'Google'} 登入。'
+        : (account.errorMessage ?? '綁定失敗，請稍後再試。');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
+  }
+
   Future<void> _submit() async {
     final account = context.read<AccountService>();
     final success = _isRegister
@@ -49,13 +94,7 @@ class _AccountViewState extends State<AccountView> {
       return;
     }
 
-    final token = account.accessToken;
-    final userId = account.userId;
-    if (token != null && userId != null) {
-      final usage = context.read<UsageService>();
-      await RevenueCatService.instance.bindAccount(userId, token);
-      await usage.setSubscribed(RevenueCatService.instance.isSubscribed);
-    }
+    await _finishLogin(account);
     if (!mounted) return;
     Navigator.pop(context);
   }
@@ -156,6 +195,22 @@ class _AccountViewState extends State<AccountView> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                OutlinedButton.icon(
+                  onPressed: account.isLoading
+                      ? null
+                      : () => _linkSocial('apple'),
+                  icon: const Icon(Icons.login_rounded),
+                  label: const Text('綁定 Apple 登入'),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: account.isLoading
+                      ? null
+                      : () => _linkSocial('google'),
+                  icon: const Icon(Icons.account_circle_rounded),
+                  label: const Text('綁定 Google 登入'),
+                ),
+                const SizedBox(height: 10),
                 FilledButton.icon(
                   onPressed: account.isLoading ? null : _signOut,
                   icon: const Icon(Icons.logout_rounded),
@@ -174,6 +229,40 @@ class _AccountViewState extends State<AccountView> {
               ],
             )
           else ...[
+            FilledButton.icon(
+              onPressed: account.isLoading
+                  ? null
+                  : () => _submitSocial('apple'),
+              icon: const Icon(Icons.login_rounded),
+              label: const Text('使用 Apple 登入'),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: account.isLoading
+                  ? null
+                  : () => _submitSocial('google'),
+              icon: const Icon(Icons.account_circle_rounded),
+              label: const Text('使用 Google 登入'),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                const Expanded(child: Divider()),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    '或使用 Email／密碼',
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
+                ),
+                const Expanded(child: Divider()),
+              ],
+            ),
+            const SizedBox(height: 18),
             TextField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,

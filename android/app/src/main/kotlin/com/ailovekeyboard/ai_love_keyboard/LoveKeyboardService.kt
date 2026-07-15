@@ -194,6 +194,10 @@ class LoveKeyboardService : InputMethodService() {
                     statusText.text = "點擊回覆即可輸入"
                     showReplies(replies)
                 }
+            } catch (error: ProxyException) {
+                mainHandler.post {
+                    statusText.text = error.userMessage
+                }
             } catch (_: Exception) {
                 mainHandler.post {
                     statusText.text = "AI 暫時無法回覆，請稍後再試"
@@ -221,9 +225,10 @@ class LoveKeyboardService : InputMethodService() {
         conn.setRequestProperty("X-Request-Nonce", nonce)
         conn.setRequestProperty("X-Request-Signature", signature)
         val sharedPrefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-        sharedPrefs.getString("lovekey_account_access_token", null)
+        val accessToken = sharedPrefs.getString("lovekey_account_access_token", null)
             ?.takeIf { it.isNotBlank() }
-            ?.let { conn.setRequestProperty("Authorization", "Bearer $it") }
+            ?: throw ProxyException("請先開啟 LoveKey 登入")
+        conn.setRequestProperty("Authorization", "Bearer $accessToken")
         conn.doOutput = true
         conn.connectTimeout = 15000
         conn.readTimeout = 30000
@@ -245,8 +250,17 @@ class LoveKeyboardService : InputMethodService() {
         writer.flush()
         writer.close()
 
-        if (conn.responseCode != 200) {
-            throw IllegalStateException("proxy_${conn.responseCode}")
+        val statusCode = conn.responseCode
+        if (statusCode != 200) {
+            val responseBody = conn.errorStream
+                ?.bufferedReader(Charsets.UTF_8)
+                ?.use { it.readText() }
+                .orEmpty()
+            val errorCode = runCatching {
+                JSONObject(responseBody).optString("error", "")
+            }.getOrDefault("")
+            conn.disconnect()
+            throw ProxyException(proxyErrorMessage(statusCode, errorCode))
         }
 
         val response = BufferedReader(InputStreamReader(conn.inputStream, "UTF-8")).readText()
@@ -256,6 +270,26 @@ class LoveKeyboardService : InputMethodService() {
         val reply = json.optString("reply", "").trim()
         return if (reply.isNotEmpty()) listOf(reply) else emptyList()
     }
+
+    private fun proxyErrorMessage(statusCode: Int, errorCode: String): String {
+        return when (errorCode) {
+            "auth_required", "invalid_auth", "invalid_token" ->
+                "請先開啟 LoveKey 重新登入"
+            "revenuecat_identity_mismatch" -> "請開啟 LoveKey 同步會員"
+            "active_subscription_required", "quota_exceeded" ->
+                "請先開啟 LoveKey 升級 Pro"
+            "rate_limited" -> "請稍候再試"
+            "server_not_configured" -> "AI 服務尚未設定"
+            else -> when (statusCode) {
+                401 -> "請先開啟 LoveKey 重新登入"
+                403 -> "請先開啟 LoveKey 升級 Pro"
+                429 -> "請稍候再試"
+                else -> "AI 暫時不可用"
+            }
+        }
+    }
+
+    private class ProxyException(val userMessage: String) : Exception(userMessage)
 
     private fun showReplies(replies: List<String>) {
         replyContainer.removeAllViews()

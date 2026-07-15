@@ -20,6 +20,15 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Supabase OAuth callback for Apple on Android and web OAuth fallbacks. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="com.ailovekeyboard.app"
+                    android:host="login-callback" />
+            </intent-filter>
         </activity>
         <service
             android:name="com.ailovekeyboard.ai_love_keyboard.LoveKeyboardService"
