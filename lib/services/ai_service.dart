@@ -8,9 +8,11 @@ import 'package:ai_love_keyboard/models/chat_analysis.dart';
 import 'package:ai_love_keyboard/models/chat_persona.dart';
 import 'package:ai_love_keyboard/models/reply_style.dart';
 import 'package:ai_love_keyboard/services/api_proxy_service.dart';
+import 'package:ai_love_keyboard/services/ai_response_parser.dart';
 import 'package:ai_love_keyboard/services/content_filter.dart';
 import 'package:ai_love_keyboard/services/privacy_manager.dart';
 import 'package:ai_love_keyboard/services/prompt_templates.dart';
+import 'package:ai_love_keyboard/services/reply_quality_validator.dart';
 import 'package:ai_love_keyboard/utils/constants.dart';
 
 class AiService extends ChangeNotifier {
@@ -112,20 +114,12 @@ class AiService extends ChangeNotifier {
         throw Exception(_proxyErrorMessage(response));
       }
 
-      final body = jsonDecode(response.body);
-      final content = body['choices'][0]['message']['content'] as String;
+      final content = AiResponseParser.extractContent(response.body);
 
       // Filter AI output
       final safeContent = _sanitizeOutput(content);
 
-      // Extract JSON from the response (handle possible markdown wrapping)
-      String jsonStr = safeContent.trim();
-      if (jsonStr.startsWith('```')) {
-        jsonStr = jsonStr.replaceAll(RegExp(r'^```\w*\n?'), '');
-        jsonStr = jsonStr.replaceAll(RegExp(r'\n?```$'), '');
-      }
-
-      return jsonDecode(jsonStr.trim()) as Map<String, dynamic>;
+      return AiResponseParser.decodeJsonObject(safeContent);
     } on ContentBlockedException {
       rethrow;
     } on FormatException {
@@ -167,8 +161,7 @@ class AiService extends ChangeNotifier {
         throw Exception(_proxyErrorMessage(response));
       }
 
-      final body = jsonDecode(response.body);
-      final content = body['choices'][0]['message']['content'] as String;
+      final content = AiResponseParser.extractContent(response.body);
 
       // Filter AI output
       return _sanitizeOutput(content.trim());
@@ -253,7 +246,7 @@ class AiService extends ChangeNotifier {
             }
             return '';
           })
-          .where(_isUsableReply)
+          .where(ReplyQualityValidator.isUsable)
           .take(1)
           .map(
             (text) => AiReply(
@@ -275,13 +268,6 @@ class AiService extends ChangeNotifier {
       _setLoading(false);
       return [];
     }
-  }
-
-  bool _isUsableReply(String text) {
-    final value = text.trim();
-    if (value.isEmpty || value.length > 240) return false;
-    if (value == '回覆內容' || value == 'actual message') return false;
-    return true;
   }
 
   String _proxyErrorMessage(http.Response response) {

@@ -3438,7 +3438,7 @@ class _MembershipCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         height: 106,
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: subscribed
@@ -3465,16 +3465,19 @@ class _MembershipCard extends StatelessWidget {
                     subscribed ? '會員' : '非會員',
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 26,
+                      fontSize: 24,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Text(
                     subscribed ? '已解鎖所有回覆' : '今日還可回覆 $remainingFree 次',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Color(0xF2FFFFFF),
-                      fontSize: 15,
+                      fontSize: 13,
+                      height: 1.25,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -3482,7 +3485,7 @@ class _MembershipCard extends StatelessWidget {
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.88),
                 borderRadius: BorderRadius.circular(999),
@@ -3491,7 +3494,7 @@ class _MembershipCard extends StatelessWidget {
                 subscribed ? '會員' : '升級 Pro',
                 style: const TextStyle(
                   color: _HomeViewState._ink,
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -3544,15 +3547,18 @@ class _MenuRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         child: Row(
           children: [
-            Text(
-              title,
-              style: const TextStyle(
-                color: _HomeViewState._ink,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: _HomeViewState._ink,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
-            const Spacer(),
             if (trailing != null)
               Flexible(
                 child: Text(
@@ -3620,15 +3626,13 @@ class _AppBottomNav extends StatelessWidget {
               ],
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: List.generate(_items.length, (index) {
                 final item = _items[index];
                 final selected = index == currentIndex;
-                return GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => onTap(index),
-                  child: SizedBox(
-                    width: 74,
+                return Expanded(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => onTap(index),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

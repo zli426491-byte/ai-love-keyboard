@@ -27,123 +27,129 @@ class PrivacyNoticeDialog extends StatelessWidget {
     return PopScope(
       canPop: false,
       child: Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(AppTheme.spacingLg),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Title
-              Row(
-                children: [
-                  Icon(
-                    Icons.shield_outlined,
-                    color: AppTheme.primary,
-                    size: 28,
-                  ),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Text(
-                      '隱私權與使用條款',
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(AppTheme.spacingLg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title
+                Row(
+                  children: [
+                    Icon(
+                      Icons.shield_outlined,
+                      color: AppTheme.primary,
+                      size: 28,
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
+                        '隱私權與使用條款',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: AppTheme.spacingMd),
+
+                // Explanation
+                const Text(
+                  '歡迎使用 AI 戀愛鍵盤！在開始之前，請了解以下重要資訊：',
+                  style: TextStyle(fontSize: 14, height: 1.5),
+                ),
+
+                const SizedBox(height: AppTheme.spacingMd),
+
+                // Data collection info
+                _InfoSection(
+                  icon: Icons.cloud_upload_outlined,
+                  title: '訊息處理',
+                  description: '你輸入的訊息會傳送至 AI 服務（OpenAI）進行處理，以生成回覆建議。',
+                ),
+
+                const SizedBox(height: AppTheme.spacingSm),
+
+                _InfoSection(
+                  icon: Icons.check_circle_outline,
+                  title: '我們收集的資料',
+                  description: '使用次數統計、裝置語言設定、訂閱狀態。',
+                ),
+
+                const SizedBox(height: AppTheme.spacingSm),
+
+                _InfoSection(
+                  icon: Icons.block_outlined,
+                  title: '我們不收集的資料',
+                  description: '聊天內容不會儲存在我們的伺服器上、不收集通訊錄、不追蹤你的位置。',
+                ),
+
+                const SizedBox(height: AppTheme.spacingSm),
+
+                _InfoSection(
+                  icon: Icons.security_outlined,
+                  title: '隱私保護',
+                  description: '個人資訊（電話、信箱等）會在傳送前自動移除。你可以在設定中管理隱私選項。',
+                ),
+
+                const SizedBox(height: AppTheme.spacingMd),
+
+                // Privacy policy link
+                Center(
+                  child: TextButton(
+                    onPressed: () async {
+                      final uri = Uri.parse(
+                        'https://zli426491-byte.github.io/ai-love-keyboard/',
+                      );
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(
+                          uri,
+                          mode: LaunchMode.externalApplication,
+                        );
+                      }
+                    },
+                    child: const Text(
+                      '查看完整隱私權政策',
                       style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        decoration: TextDecoration.underline,
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
 
-              const SizedBox(height: AppTheme.spacingMd),
+                const SizedBox(height: AppTheme.spacingMd),
 
-              // Explanation
-              const Text(
-                '歡迎使用 AI 戀愛鍵盤！在開始之前，請了解以下重要資訊：',
-                style: TextStyle(fontSize: 14, height: 1.5),
-              ),
-
-              const SizedBox(height: AppTheme.spacingMd),
-
-              // Data collection info
-              _InfoSection(
-                icon: Icons.cloud_upload_outlined,
-                title: '訊息處理',
-                description: '你輸入的訊息會傳送至 AI 服務（OpenAI）進行處理，以生成回覆建議。',
-              ),
-
-              const SizedBox(height: AppTheme.spacingSm),
-
-              _InfoSection(
-                icon: Icons.check_circle_outline,
-                title: '我們收集的資料',
-                description: '使用次數統計、裝置語言設定、訂閱狀態。',
-              ),
-
-              const SizedBox(height: AppTheme.spacingSm),
-
-              _InfoSection(
-                icon: Icons.block_outlined,
-                title: '我們不收集的資料',
-                description: '聊天內容不會儲存在我們的伺服器上、不收集通訊錄、不追蹤你的位置。',
-              ),
-
-              const SizedBox(height: AppTheme.spacingSm),
-
-              _InfoSection(
-                icon: Icons.security_outlined,
-                title: '隱私保護',
-                description: '個人資訊（電話、信箱等）會在傳送前自動移除。你可以在設定中管理隱私選項。',
-              ),
-
-              const SizedBox(height: AppTheme.spacingMd),
-
-              // Privacy policy link
-              Center(
-                child: TextButton(
-                  onPressed: () async {
-                    final uri = Uri.parse(
-                      'https://zli426491-byte.github.io/ai-love-keyboard/',
-                    );
-                    if (await canLaunchUrl(uri)) {
-                      await launchUrl(
-                        uri,
-                        mode: LaunchMode.externalApplication,
-                      );
-                    }
-                  },
-                  child: const Text(
-                    '查看完整隱私權政策',
-                    style: TextStyle(
-                      fontSize: 13,
-                      decoration: TextDecoration.underline,
+                // Accept button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      onAccept();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: const Text(
+                      '我同意',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
-              ),
-
-              const SizedBox(height: AppTheme.spacingMd),
-
-              // Accept button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    onAccept();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  child: const Text(
-                    '我同意',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

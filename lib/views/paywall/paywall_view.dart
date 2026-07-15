@@ -119,184 +119,195 @@ class _PaywallViewState extends State<PaywallView> {
       ),
       child: SafeArea(
         top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Align(
-                alignment: Alignment.center,
-                child: Container(
-                  width: 46,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.22),
-                    borderRadius: BorderRadius.circular(999),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * 0.94,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Align(
+                  alignment: Alignment.center,
+                  child: Container(
+                    width: 46,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.22),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  const Expanded(
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'LoveKey Pro',
+                        style: TextStyle(
+                          color: _ink,
+                          fontSize: 31,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.8,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, color: _muted),
+                      onPressed: () {
+                        AnalyticsService.instance.trackPaywallClosed();
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '解鎖鍵盤 AI 回覆、所有情境模式與不限次生成。付款透過 ${isAndroid ? 'Google Play' : 'App Store'} 完成，價格會依所在地自動顯示。',
+                  style: TextStyle(
+                    color: _muted,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    height: 1.45,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                const _FeatureRow(text: '鍵盤內直接生成一則可貼上的回覆'),
+                const _FeatureRow(text: '接話、破冰、邀約、安撫、自訂模式'),
+                const _FeatureRow(text: '依語氣調整：溫柔、幽默、曖昧、深情'),
+                const SizedBox(height: 14),
+                ...List.generate(plans.length, (index) {
+                  final plan = plans[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _PlanCard(
+                      plan: plan,
+                      selected: index == _selectedIndex,
+                      onTap: () => setState(() => _selectedIndex = index),
+                    ),
+                  );
+                }),
+                if (isNativeStore && revenueCat.errorMessage != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    revenueCat.errorMessage!,
+                    style: const TextStyle(
+                      color: _pink,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 14),
+                GestureDetector(
+                  onTap: () {
+                    if (!isNativeStore) return;
+                    if (!account.isSignedIn) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const AccountView()),
+                      );
+                      return;
+                    }
+                    if (canPurchase) _purchase(selected);
+                  },
+                  child: AnimatedOpacity(
+                    opacity: canPurchase ? 1 : 0.48,
+                    duration: const Duration(milliseconds: 160),
+                    child: Container(
+                      height: 58,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [_pink, _violet],
+                        ),
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x55EC4899),
+                            blurRadius: 24,
+                            offset: Offset(0, 12),
+                          ),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: revenueCat.isLoading
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              canPurchase
+                                  ? '立即解鎖 ${selected.price}'
+                                  : isNativeStore && !account.isSignedIn
+                                  ? '請先登入 LoveKey 帳號'
+                                  : isNativeStore
+                                  ? '訂閱方案載入中'
+                                  : '請在 iOS／Android 實機完成購買',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+                if (!isNativeStore) ...[
+                  const SizedBox(height: 10),
+                  const Center(
                     child: Text(
-                      'LoveKey Pro',
+                      '這是 Web 預覽，付款與恢復購買請在 TestFlight 實機完成。',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: _ink,
-                        fontSize: 31,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.8,
+                        color: _muted,
+                        fontSize: 12,
+                        height: 1.4,
                       ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded, color: _muted),
-                    onPressed: () {
-                      AnalyticsService.instance.trackPaywallClosed();
-                      Navigator.pop(context);
-                    },
-                  ),
                 ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '解鎖鍵盤 AI 回覆、所有情境模式與不限次生成。付款透過 ${isAndroid ? 'Google Play' : 'App Store'} 完成，價格會依所在地自動顯示。',
-                style: TextStyle(
-                  color: _muted,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  height: 1.45,
-                ),
-              ),
-              const SizedBox(height: 18),
-              const _FeatureRow(text: '鍵盤內直接生成一則可貼上的回覆'),
-              const _FeatureRow(text: '接話、破冰、邀約、安撫、自訂模式'),
-              const _FeatureRow(text: '依語氣調整：溫柔、幽默、曖昧、深情'),
-              const SizedBox(height: 14),
-              ...List.generate(plans.length, (index) {
-                final plan = plans[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _PlanCard(
-                    plan: plan,
-                    selected: index == _selectedIndex,
-                    onTap: () => setState(() => _selectedIndex = index),
-                  ),
-                );
-              }),
-              if (isNativeStore && revenueCat.errorMessage != null) ...[
-                const SizedBox(height: 2),
-                Text(
-                  revenueCat.errorMessage!,
-                  style: const TextStyle(
-                    color: _pink,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 14),
-              GestureDetector(
-                onTap: () {
-                  if (!isNativeStore) return;
-                  if (!account.isSignedIn) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const AccountView()),
-                    );
-                    return;
-                  }
-                  if (canPurchase) _purchase(selected);
-                },
-                child: AnimatedOpacity(
-                  opacity: canPurchase ? 1 : 0.48,
-                  duration: const Duration(milliseconds: 160),
-                  child: Container(
-                    height: 58,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [_pink, _violet]),
-                      borderRadius: BorderRadius.circular(22),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x55EC4899),
-                          blurRadius: 24,
-                          offset: Offset(0, 12),
-                        ),
-                      ],
-                    ),
-                    alignment: Alignment.center,
-                    child: revenueCat.isLoading
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
+                const SizedBox(height: 12),
+                Center(
+                  child: TextButton(
+                    onPressed: canRestore
+                        ? _restore
+                        : isNativeStore
+                        ? () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AccountView(),
                             ),
                           )
-                        : Text(
-                            canPurchase
-                                ? '立即解鎖 ${selected.price}'
-                                : isNativeStore && !account.isSignedIn
-                                ? '請先登入 LoveKey 帳號'
-                                : isNativeStore
-                                ? '訂閱方案載入中'
-                                : '請在 iOS／Android 實機完成購買',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 17,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                  ),
-                ),
-              ),
-              if (!isNativeStore) ...[
-                const SizedBox(height: 10),
-                const Center(
-                  child: Text(
-                    '這是 Web 預覽，付款與恢復購買請在 TestFlight 實機完成。',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: _muted, fontSize: 12, height: 1.4),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 12),
-              Center(
-                child: TextButton(
-                  onPressed: canRestore
-                      ? _restore
-                      : isNativeStore
-                      ? () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const AccountView(),
-                          ),
-                        )
-                      : null,
-                  child: Text(
-                    isNativeStore ? '恢復購買' : '請在實機恢復購買',
-                    style: const TextStyle(
-                      color: _gold,
-                      fontWeight: FontWeight.w900,
+                        : null,
+                    child: Text(
+                      isNativeStore ? '恢復購買' : '請在實機恢復購買',
+                      style: const TextStyle(
+                        color: _gold,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              Center(
-                child: Text(
-                  '訂閱會透過 ${isAndroid ? 'Google Play' : 'Apple ID'} 扣款，可在商店設定中管理或取消',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: _muted,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
+                Center(
+                  child: Text(
+                    '訂閱會透過 ${isAndroid ? 'Google Play' : 'Apple ID'} 扣款，可在商店設定中管理或取消',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: _muted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
