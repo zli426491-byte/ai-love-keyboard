@@ -1,17 +1,18 @@
 # LoveKey 上線前驗收清單
 
-> 更新日期：2026-06-04
+> 更新日期：2026-07-15
 > 目的：判斷 AI 戀愛鍵盤是否可以正式上架收費、開始買量。
 > 結論規則：所有 P0 必須通過；P1 至少不能影響購買、AI 回覆、鍵盤啟用與審核。
 
 ## 目前結論
 
-暫定狀態：不建議直接正式賣。可以先推 TestFlight 做內部驗收。
+暫定狀態：不建議直接正式賣。iOS Build 55 與 Android versionCode 7 已進入內部驗收。
 
 主要原因：
 - iOS 鍵盤 extension 必須用 TestFlight 實機驗證，Web/Flutter test 無法覆蓋。
-- RevenueCat 產品必須在 TestFlight 沙盒完成真實購買、恢復購買、Pro 解鎖驗證。
-- GitHub Actions 必須確認已設定 `AI_PROXY_URL` secret，否則正式 IPA 的鍵盤 AI endpoint 不會注入。
+- RevenueCat iOS 商品設定已核對，但仍必須在 TestFlight 沙盒完成真實購買、恢復購買、Pro 解鎖驗證。
+- Google Play 商家帳戶尚未設定，Android 週／年／永久商品目前無法建立。
+- Google Play 正式版仍需 12 名封閉測試人員連續參加至少 14 天。
 
 ## 已完成的自動檢查
 
@@ -23,6 +24,10 @@
 - [x] iOS 鍵盤 extension 沒硬編 OpenAI key。
 - [x] GitHub iOS workflow 有 build 前注入 `AI_PROXY_URL` 到鍵盤 extension 的步驟。
 - [x] RevenueCat iOS Public SDK Key 已設定。
+- [x] RevenueCat `pro` 已綁定週、年、永久三個 App Store 商品。
+- [x] Supabase Email、Google、Apple provider 已啟用。
+- [x] TestFlight Build 55 已加入 Internal Testing。
+- [x] Google Play `versionCode 7` 已發布到內部測試。
 - [x] 首頁 / 盲盒 / Paywall 相關 UI 可 Web build。
 
 ## P0：正式賣之前必須通過
@@ -38,20 +43,20 @@
 - [ ] 關掉 App 再打開，Pro 狀態仍保留。
 - [ ] 恢復購買可用。
 - [ ] Apple ID 設定裡能看到訂閱。
-- [ ] App Store Connect 產品 ID 與程式內一致：
+- [x] App Store Connect / RevenueCat 產品 ID 與程式內一致：
   - `com.ailovekeyboard.pro.weekly`
   - `com.ailovekeyboard.pro.yearly`
   - `com.ailovekeyboard.pro.lifetime`
 
 ### 2. AI Proxy
 
-- [ ] Cloudflare Worker 已部署。
-- [ ] Worker 已設定 `OPENAI_API_KEY` secret。
-- [ ] Worker 已綁定 `KV_USAGE`。
+- [x] Cloudflare Worker 已部署。
+- [x] Worker 已設定 `OPENAI_API_KEY` secret。
+- [x] Worker 已綁定 `KV_USAGE`。
 - [ ] Worker `/v1/chat/completions` 可回應。
 - [ ] Worker `/v1/keyboard-reply` 可回應。
-- [ ] GitHub Secrets 已設定 `AI_PROXY_URL`。
-- [ ] GitHub build log 顯示 `Runtime AI proxy config injected into LoveKeyboard extension.`
+- [x] GitHub Secrets 已設定 `AI_PROXY_URL`。
+- [x] GitHub build log 顯示 `Runtime AI proxy config injected into LoveKeyboard extension.`
 - [ ] TestFlight 版鍵盤不顯示「AI 尚未設定」。
 
 ### 3. iOS 鍵盤核心流程
