@@ -332,15 +332,17 @@ class SettingsView extends StatelessWidget {
           _SectionHeader(title: '隱私設定'),
           Consumer<PrivacyManager>(
             builder: (context, privacy, _) {
-              return Container(
-                padding: const EdgeInsets.all(AppTheme.spacingMd),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardTheme.color ?? Colors.white,
+              return Material(
+                color: Theme.of(context).cardTheme.color ?? Colors.white,
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                  border: Border.all(color: Colors.grey.shade200),
+                  side: BorderSide(color: Colors.grey.shade200),
                 ),
-                child: Column(
-                  children: [
+                clipBehavior: Clip.antiAlias,
+                child: Padding(
+                  padding: const EdgeInsets.all(AppTheme.spacingMd),
+                  child: Column(
+                    children: [
                     SwitchListTile(
                       title: const Text(
                         '自動移除個人資訊',
@@ -428,7 +430,8 @@ class SettingsView extends StatelessWidget {
                         'https://zli426491-byte.github.io/ai-love-keyboard/',
                       ),
                     ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             },
@@ -441,15 +444,17 @@ class SettingsView extends StatelessWidget {
           Consumer<PrivacyManager>(
             builder: (context, privacy, _) {
               final isStrict = privacy.filterLevel == 'strict';
-              return Container(
-                padding: const EdgeInsets.all(AppTheme.spacingMd),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardTheme.color ?? Colors.white,
+              return Material(
+                color: Theme.of(context).cardTheme.color ?? Colors.white,
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                  border: Border.all(color: Colors.grey.shade200),
+                  side: BorderSide(color: Colors.grey.shade200),
                 ),
-                child: Column(
-                  children: [
+                clipBehavior: Clip.antiAlias,
+                child: Padding(
+                  padding: const EdgeInsets.all(AppTheme.spacingMd),
+                  child: Column(
+                    children: [
                     ListTile(
                       leading: const Icon(
                         Icons.shield_outlined,
@@ -511,7 +516,8 @@ class SettingsView extends StatelessWidget {
                         'https://zli426491-byte.github.io/ai-love-keyboard/guidelines.html',
                       ),
                     ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             },

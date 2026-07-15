@@ -34,6 +34,8 @@ import sys
 
 path = sys.argv[1]
 tests = {}
+output = {}
+reported = set()
 
 
 def iter_events(value):
@@ -42,6 +44,14 @@ def iter_events(value):
     elif isinstance(value, list):
         for item in value:
             yield from iter_events(item)
+
+
+def print_test_output(test_id):
+    if test_id in reported:
+        return
+    for message in output.get(test_id, []):
+        print(message)
+    reported.add(test_id)
 
 
 with open(path, encoding="utf-8") as stream:
@@ -56,15 +66,21 @@ with open(path, encoding="utf-8") as stream:
             if event_type == "testStart":
                 test = event.get("test") or {}
                 tests[test.get("id")] = test.get("name", "Unknown test")
+            elif event_type == "print":
+                output.setdefault(event.get("testID"), []).append(
+                    event.get("message", "")
+                )
             elif event_type == "error":
                 test_id = event.get("testID")
                 print(f"Test: {tests.get(test_id, test_id or 'Unknown test')}")
+                print_test_output(test_id)
                 print(event.get("error", "Unknown Flutter test error"))
                 stack = event.get("stackTrace")
                 if stack:
                     print(stack)
             elif event_type == "testDone" and event.get("result") in {"error", "failure"}:
                 test_id = event.get("testID")
+                print_test_output(test_id)
                 print(f"Result: {event.get('result')} - {tests.get(test_id, test_id or 'Unknown test')}")
 PY
   echo "Flutter tests failed with exit code $FLUTTER_TEST_EXIT."
