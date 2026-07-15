@@ -84,6 +84,14 @@ class RevenueCatService extends ChangeNotifier {
     }
   }
 
+  /// Refreshes the access token copied to the native keyboard without
+  /// changing the RevenueCat customer identity. Supabase can rotate this
+  /// token while the app is running, so the extension must receive each new
+  /// value instead of waiting for the next full login.
+  Future<void> syncAccountAccessToken(String? accessToken) async {
+    await _syncIdentityToKeyboard(accountAccessToken: accessToken ?? '');
+  }
+
   List<SubscriptionPlan> get plans {
     final lifetime = _findPackage(AppConstants.lifetimeProductId);
     final yearly = _findPackage(AppConstants.yearlyProductId);

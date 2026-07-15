@@ -11,6 +11,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:ai_love_keyboard/services/revenuecat_service.dart';
 import 'package:ai_love_keyboard/utils/constants.dart';
 
 /// The authenticated LoveKey account returned by the account provider.
@@ -409,6 +410,9 @@ class AccountService extends ChangeNotifier {
     }
     await _write(_userIdKey, session.user.id);
     if (email.isNotEmpty) await _write(_emailKey, email);
+    await RevenueCatService.instance.syncAccountAccessToken(
+      session.accessToken,
+    );
     _errorMessage = null;
     notifyListeners();
   }
@@ -685,6 +689,7 @@ class AccountService extends ChangeNotifier {
       await _secureStorage.delete(key: _userIdKey);
       await _secureStorage.delete(key: _emailKey);
     }
+    await RevenueCatService.instance.syncAccountAccessToken(null);
     notifyListeners();
   }
 
