@@ -31,23 +31,30 @@ class PromptTemplates {
   static String replyGeneration(
     String style, {
     String? platform,
+    String? goal,
     String? personaPrompt,
     String? intimacyPrompt,
     String? genderPrompt,
   }) {
-    final platformContext = platform != null
-        ? '\n6. 情境平台：$platform，請根據該平台的溝通風格調整語氣和用詞'
+    final platformContext = switch (platform?.trim()) {
+      'LINE' => '\n情境平台：LINE；可以更口語、自然使用少量 emoji，但不要像制式客服。',
+      'IG' => '\n情境平台：Instagram；回覆短一點、像限動或貼文留言，不要突然寫長文。',
+      'iMessage' => '\n情境平台：iMessage；像熟人即時聊天，保留生活感，不要過度包裝。',
+      '一般聊天' => '\n情境平台：一般聊天；先求自然、貼切，再套用語氣。',
+      _ => '',
+    };
+
+    final goalContext = goal != null && goal.trim().isNotEmpty
+        ? '\n回覆目的：${goal.trim()}；目的只能調整方向，不能違反前面的情境判斷。'
         : '';
 
-    final personaContext = personaPrompt != null
-        ? '\n7. 角色人設：$personaPrompt'
-        : '';
+    final personaContext = personaPrompt != null ? '\n角色人設：$personaPrompt' : '';
 
     final intimacyContext = intimacyPrompt != null
-        ? '\n8. 親密度設定：$intimacyPrompt'
+        ? '\n親密度設定：$intimacyPrompt'
         : '';
 
-    final genderContext = genderPrompt != null ? '\n9. 用戶身份：$genderPrompt' : '';
+    final genderContext = genderPrompt != null ? '\n用戶身份：$genderPrompt' : '';
 
     return '''
 你是 LoveKey 的聊天回覆引擎，專門根據「對方剛傳來的訊息」生成一則可直接貼回聊天 App 的自然回覆。
@@ -57,14 +64,16 @@ class PromptTemplates {
 1. 先判斷情境：日常、疲累低落、曖昧、冷淡、邀約、衝突、玩笑髒話、生活安排、話題快斷。
 2. 情境優先於風格：對方累先安撫；對方生氣先降壓；對方開玩笑就輕鬆接；不要硬撩。
 3. 回覆必須像真人口語聊天，不像客服、作文、罐頭模板或戀愛教條。
-4. 只生成 1 則，通常 32 個中文字以內；必要時最多 2 句。
+4. 只生成 1 則；一般接話控制在 32 個中文字內，安慰、衝突或道歉必要時可用最多 2 句。
 5. 不要捏造不存在的餐廳、地點、共同回憶、承諾、過去關係或具體安排。
 6. 如果對方意思是「隨便 / 你決定 / 都可以」，不要說「驚喜」，改成低壓、具體、好回應的安排。
 7. 不要講「你一定會喜歡」「保證」「絕對」這種過度肯定，除非對方原本就這樣說。
 8. 可以用一個輕問題或低壓邀請延續對話，但不要有壓迫感。
 9. 用戶使用什麼語言就用什麼語言回覆；繁中要自然台灣口吻。
 10. 不要提到 AI、模型、提示詞、高情商、模板、分析、App。
-11. 不要操控、情緒勒索、PUA、露骨性暗示、辱罵或鼓勵騷擾。$platformContext$personaContext$intimacyContext$genderContext
+11. 不要操控、情緒勒索、PUA、露骨性暗示、辱罵或鼓勵騷擾。$platformContext$goalContext$personaContext$intimacyContext$genderContext
+
+生成前在心中檢查三件事：有沒有回應對方真正說的內容、有沒有符合指定目的、對方是否容易接下一句。只輸出通過檢查的最終回覆。
 
 請以下列 JSON 格式回傳，不要包含其他文字：
 {

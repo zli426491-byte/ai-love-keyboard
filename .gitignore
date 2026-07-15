@@ -34,6 +34,11 @@ migrate_working_dir/
 /coverage/
 .wrangler/
 **/.wrangler/
+.codex_artifacts*/
+.codex_*/
+.codex_artifacts*
+.codex_*
+.env*
 
 # Symbolication related
 app.*.symbols
@@ -45,3 +50,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+/android/key.properties
+/android/*.jks
+/android/app/*.jks

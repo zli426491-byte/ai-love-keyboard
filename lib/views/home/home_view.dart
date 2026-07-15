@@ -36,6 +36,7 @@ class _HomeViewState extends State<HomeView> {
   final _messageController = TextEditingController();
   int _tabIndex = 0;
   ReplyStyle _selectedStyle = ReplyStyle.warm;
+  String _selectedGoal = '自然接話';
 
   static const _keyboardStyles = [
     _KeyboardTone('😁', '幽默', ReplyStyle.humorous),
@@ -61,7 +62,8 @@ class _HomeViewState extends State<HomeView> {
     }
 
     if (_messageController.text.trim().isEmpty) {
-      _messageController.text = '我今天真的有點累';
+      _showSnack('請先貼上對方的訊息，再生成回覆');
+      return;
     }
 
     final usage = context.read<UsageService>();
@@ -72,7 +74,11 @@ class _HomeViewState extends State<HomeView> {
 
     final text = _messageController.text.trim();
     final ai = context.read<AiService>();
-    final replies = await ai.generateReplies(text, _selectedStyle);
+    final replies = await ai.generateReplies(
+      text,
+      _selectedStyle,
+      goal: _selectedGoal,
+    );
     if (!mounted) return;
 
     if (replies.isEmpty) {
@@ -87,8 +93,11 @@ class _HomeViewState extends State<HomeView> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            ReplyCardsView(originalMessage: text, style: _selectedStyle),
+        builder: (_) => ReplyCardsView(
+          originalMessage: text,
+          style: _selectedStyle,
+          goal: _selectedGoal,
+        ),
       ),
     );
   }
@@ -185,7 +194,7 @@ class _HomeViewState extends State<HomeView> {
   Future<void> _sendFeedback() async {
     final uri = Uri(
       scheme: 'mailto',
-      path: '362666@gmail.com',
+      path: 'zli426491@gmail.com',
       queryParameters: {
         'subject': 'LoveKey 反饋建議',
         'body': '我想回報：\n\n手機型號：\niOS 版本：\nTestFlight Build：',
@@ -222,7 +231,7 @@ class _HomeViewState extends State<HomeView> {
   }
 
   void _copyBusinessEmail() {
-    Clipboard.setData(const ClipboardData(text: '362666@gmail.com'));
+    Clipboard.setData(const ClipboardData(text: 'zli426491@gmail.com'));
     _showSnack('已複製商務合作信箱');
   }
 
@@ -242,10 +251,16 @@ class _HomeViewState extends State<HomeView> {
     final usage = context.watch<UsageService>();
     final revenueCat = context.watch<RevenueCatService>();
     final subscribed = usage.isSubscribed || revenueCat.isSubscribed;
+    final remainingFree = usage.remainingFree;
 
     final pages = [
       _HomeTab(
         loading: ai.isLoading,
+        messageController: _messageController,
+        selectedGoal: _selectedGoal,
+        onGoalChanged: (value) => setState(() => _selectedGoal = value),
+        subscribed: subscribed,
+        remainingFree: remainingFree,
         keyboardStyles: _keyboardStyles,
         onGenerate: () => _generateReplies(),
         onToneTap: (tone) => _generateReplies(style: tone.style),
@@ -266,6 +281,7 @@ class _HomeViewState extends State<HomeView> {
       ),
       _ProfileTab(
         subscribed: subscribed,
+        remainingFree: remainingFree,
         onPaywall: _showPaywall,
         onSettings: _openSettings,
         onKeyboardGuide: _openKeyboardGuide,
@@ -293,6 +309,11 @@ class _HomeViewState extends State<HomeView> {
 
 class _HomeTab extends StatelessWidget {
   final bool loading;
+  final TextEditingController messageController;
+  final String selectedGoal;
+  final ValueChanged<String> onGoalChanged;
+  final bool subscribed;
+  final int remainingFree;
   final List<_KeyboardTone> keyboardStyles;
   final VoidCallback onGenerate;
   final ValueChanged<_KeyboardTone> onToneTap;
@@ -303,6 +324,11 @@ class _HomeTab extends StatelessWidget {
 
   const _HomeTab({
     required this.loading,
+    required this.messageController,
+    required this.selectedGoal,
+    required this.onGoalChanged,
+    required this.subscribed,
+    required this.remainingFree,
     required this.keyboardStyles,
     required this.onGenerate,
     required this.onToneTap,
@@ -323,13 +349,18 @@ class _HomeTab extends StatelessWidget {
             _HomeHeader(onPaywall: onPaywall),
             const SizedBox(height: 8),
             const _IntimacyHero(percent: 30),
-            const SizedBox(height: 16),
-            _MainCtaButton(loading: loading, onTap: onGenerate),
-            const SizedBox(height: 18),
-            _FeatureGrid(
-              onPaywall: onPaywall,
-              onRewrite: onRewrite,
+            const SizedBox(height: 10),
+            _MessageComposer(
+              controller: messageController,
+              goal: selectedGoal,
+              onGoalChanged: onGoalChanged,
             ),
+            const SizedBox(height: 14),
+            _MainCtaButton(loading: loading, onTap: onGenerate),
+            const SizedBox(height: 10),
+            _UsageSummary(subscribed: subscribed, remainingFree: remainingFree),
+            const SizedBox(height: 18),
+            _FeatureGrid(onPaywall: onPaywall, onRewrite: onRewrite),
             const SizedBox(height: 10),
             _BlindBanner(onTap: onBlindBox),
             const SizedBox(height: 16),
@@ -488,6 +519,8 @@ class _MessagesTab extends StatelessWidget {
               icon: Icons.card_giftcard_rounded,
               onTap: onBlindBox,
             ),
+            const SizedBox(height: 34),
+            _MessagesEmptyState(onStart: onHome),
           ],
         ),
       ),
@@ -495,8 +528,77 @@ class _MessagesTab extends StatelessWidget {
   }
 }
 
+class _MessagesEmptyState extends StatelessWidget {
+  final VoidCallback onStart;
+
+  const _MessagesEmptyState({required this.onStart});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(22, 26, 22, 24),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFF0DDE7)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 54,
+            height: 54,
+            decoration: const BoxDecoration(
+              color: Color(0xFFFFE4ED),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.auto_awesome_rounded,
+              color: _HomeViewState._pink,
+              size: 26,
+            ),
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            '你的回覆會出現在這裡',
+            style: TextStyle(
+              color: _HomeViewState._ink,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            '貼上一段聊天訊息，先生成一則自然的回覆吧。',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: _HomeViewState._muted,
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: onStart,
+            icon: const Icon(Icons.home_rounded, size: 17),
+            label: const Text('回到首頁開始'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _HomeViewState._pink,
+              side: const BorderSide(color: Color(0xFFFFA9C0)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ProfileTab extends StatelessWidget {
   final bool subscribed;
+  final int remainingFree;
   final VoidCallback onPaywall;
   final VoidCallback onSettings;
   final VoidCallback onKeyboardGuide;
@@ -507,6 +609,7 @@ class _ProfileTab extends StatelessWidget {
 
   const _ProfileTab({
     required this.subscribed,
+    required this.remainingFree,
     required this.onPaywall,
     required this.onSettings,
     required this.onKeyboardGuide,
@@ -525,7 +628,11 @@ class _ProfileTab extends StatelessWidget {
           children: [
             const _ProfileHeader(),
             const SizedBox(height: 28),
-            _MembershipCard(subscribed: subscribed, onTap: onPaywall),
+            _MembershipCard(
+              subscribed: subscribed,
+              remainingFree: remainingFree,
+              onTap: onPaywall,
+            ),
             const SizedBox(height: 34),
             _MenuSection(
               children: [
@@ -543,7 +650,7 @@ class _ProfileTab extends StatelessWidget {
                 _MenuRow(title: '關於我們', onTap: onAbout),
                 _MenuRow(
                   title: '商務合作',
-                  trailing: '362666@gmail.com',
+                  trailing: 'zli426491@gmail.com',
                   copy: true,
                   onTap: onCopyEmail,
                 ),
@@ -919,11 +1026,172 @@ class _GlossyHeart extends StatelessWidget {
         SizedBox(
           width: 170,
           height: 146,
-          child: CustomPaint(
-            painter: _HeartGaugePainter(percent / 100),
+          child: CustomPaint(painter: _HeartGaugePainter(percent / 100)),
+        ),
+      ],
+    );
+  }
+}
+
+class _MessageComposer extends StatelessWidget {
+  final TextEditingController controller;
+  final String goal;
+  final ValueChanged<String> onGoalChanged;
+
+  const _MessageComposer({
+    required this.controller,
+    required this.goal,
+    required this.onGoalChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.86),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFFFC4D4)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x16FF467C),
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: controller,
+            minLines: 1,
+            maxLines: 3,
+            textInputAction: TextInputAction.newline,
+            decoration: InputDecoration(
+              labelText: '對方的訊息',
+              hintText: '貼上聊天內容，LoveKey 幫你生成回覆',
+              hintStyle: const TextStyle(
+                color: Color(0xFFB4A4AE),
+                fontSize: 14,
+              ),
+              labelStyle: const TextStyle(
+                color: _HomeViewState._pink,
+                fontWeight: FontWeight.w800,
+              ),
+              border: InputBorder.none,
+              suffixIcon: IconButton(
+                tooltip: '清除',
+                onPressed: controller.clear,
+                icon: const Icon(Icons.close_rounded, color: Color(0xFFB4A4AE)),
+              ),
+            ),
+          ),
+          const Divider(height: 12, color: Color(0x22FF467C)),
+          _ContextChoiceRow(
+            label: '目的',
+            values: const ['自然接話', '安慰', '邀約', '道歉'],
+            selected: goal,
+            onChanged: onGoalChanged,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ContextChoiceRow extends StatelessWidget {
+  final String label;
+  final List<String> values;
+  final String selected;
+  final ValueChanged<String> onChanged;
+
+  const _ContextChoiceRow({
+    required this.label,
+    required this.values,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 6,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: _HomeViewState._muted,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        ...values.map(
+          (value) => ChoiceChip(
+            label: Text(value),
+            selected: value == selected,
+            onSelected: (_) => onChanged(value),
+            selectedColor: _HomeViewState._pink.withValues(alpha: 0.16),
+            backgroundColor: Colors.white.withValues(alpha: 0.72),
+            side: BorderSide(
+              color: value == selected
+                  ? _HomeViewState._pink
+                  : const Color(0x22FF467C),
+            ),
+            labelStyle: TextStyle(
+              color: value == selected
+                  ? _HomeViewState._pink
+                  : _HomeViewState._muted,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: 4),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _UsageSummary extends StatelessWidget {
+  final bool subscribed;
+  final int remainingFree;
+
+  const _UsageSummary({required this.subscribed, required this.remainingFree});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = subscribed ? const Color(0xFF8D47C7) : _HomeViewState._muted;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.56),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.82)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            subscribed ? Icons.workspace_premium_rounded : Icons.bolt_rounded,
+            size: 17,
+            color: color,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            subscribed ? 'Pro 已解鎖無限回覆' : '今日剩餘免費回覆 $remainingFree 次',
+            style: TextStyle(
+              color: color,
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1330,7 +1598,7 @@ class _MainCtaButton extends StatelessWidget {
                       ),
                     const SizedBox(width: 10),
                     Text(
-                      loading ? '生成中...' : '體驗戀愛鍵盤',
+                      loading ? '生成中...' : '生成一則回覆',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 21,
@@ -3155,9 +3423,14 @@ class _ProfileHeader extends StatelessWidget {
 
 class _MembershipCard extends StatelessWidget {
   final bool subscribed;
+  final int remainingFree;
   final VoidCallback onTap;
 
-  const _MembershipCard({required this.subscribed, required this.onTap});
+  const _MembershipCard({
+    required this.subscribed,
+    required this.remainingFree,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -3198,7 +3471,7 @@ class _MembershipCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    subscribed ? '已解鎖所有回覆' : '無限鍵盤回覆',
+                    subscribed ? '已解鎖所有回覆' : '今日還可回覆 $remainingFree 次',
                     style: const TextStyle(
                       color: Color(0xF2FFFFFF),
                       fontSize: 15,
@@ -3215,7 +3488,7 @@ class _MembershipCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(999),
               ),
               child: Text(
-                subscribed ? '已開通' : '未開通',
+                subscribed ? '會員' : '升級 Pro',
                 style: const TextStyle(
                   color: _HomeViewState._ink,
                   fontSize: 18,

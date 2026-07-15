@@ -28,11 +28,13 @@ class _EmergencyCoachViewState extends State<EmergencyCoachView> {
   }
 
   Future<void> _startAnalysis() async {
+    if (_isAnalyzing) return;
+
     final text = _chatController.text.trim();
     if (text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('請先貼上完整的聊天紀錄')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('請先貼上完整的聊天紀錄')));
       return;
     }
 
@@ -51,22 +53,35 @@ class _EmergencyCoachViewState extends State<EmergencyCoachView> {
     final ai = context.read<AiService>();
     try {
       final result = await ai.analyzeEmergency(text);
+      if (!mounted) return;
+
+      // Never charge for a blocked, failed, or empty AI response.
+      if (result == null || result.trim().isEmpty) {
+        setState(() => _isAnalyzing = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('分析失敗，未扣金幣，請稍後重試')));
+        return;
+      }
+
       final consumed = await coinService.spendCoins(
-          CoinCost.emergencyCoach, '緊急求助 AI 教練');
+        CoinCost.emergencyCoach,
+        '緊急求助 AI 教練',
+      );
       if (mounted && consumed) {
         setState(() {
           _analysisResult = result;
           _isAnalyzing = false;
           _showResult = true;
         });
+      } else if (mounted) {
+        setState(() => _isAnalyzing = false);
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isAnalyzing = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content:
-                  Text(e.toString().replaceFirst('Exception: ', ''))),
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
         );
       }
     }
@@ -108,10 +123,7 @@ class _EmergencyCoachViewState extends State<EmergencyCoachView> {
             const Text(
               '使用最強 AI 模型深度分析整段對話，'
               '給你精確的回覆建議和戀愛策略。',
-              style: TextStyle(
-                color: AppTheme.textSecondary,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
               textAlign: TextAlign.center,
             ),
           ],
@@ -126,9 +138,7 @@ class _EmergencyCoachViewState extends State<EmergencyCoachView> {
               Navigator.pop(ctx);
               Navigator.pushNamed(context, '/coin-store');
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.gold,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.gold),
             child: const Text('前往金幣商店'),
           ),
         ],
@@ -154,11 +164,12 @@ class _EmergencyCoachViewState extends State<EmergencyCoachView> {
                   onTap: () => Navigator.pushNamed(context, '/coin-store'),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppTheme.gold.withValues(alpha: 0.15),
-                      borderRadius:
-                          BorderRadius.circular(AppTheme.radiusFull),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusFull),
                     ),
                     child: Text(
                       '\u{1FA99} ${coinSvc.balance}',
@@ -201,10 +212,7 @@ class _EmergencyCoachViewState extends State<EmergencyCoachView> {
             ),
             child: const Column(
               children: [
-                Text(
-                  '\u{1F6A8}',
-                  style: TextStyle(fontSize: 40),
-                ),
+                Text('\u{1F6A8}', style: TextStyle(fontSize: 40)),
                 SizedBox(height: 8),
                 Text(
                   '緊急戀愛教練',
@@ -217,10 +225,7 @@ class _EmergencyCoachViewState extends State<EmergencyCoachView> {
                 SizedBox(height: 4),
                 Text(
                   '貼上完整對話，AI 深度分析幫你化解危機',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(color: Colors.white70, fontSize: 13),
                 ),
               ],
             ),
@@ -229,17 +234,11 @@ class _EmergencyCoachViewState extends State<EmergencyCoachView> {
           const SizedBox(height: AppTheme.spacingLg),
 
           // Instructions
-          Text(
-            '貼上完整聊天紀錄',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('貼上完整聊天紀錄', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 4),
           const Text(
             '包含雙方的所有對話，越完整分析越精準',
-            style: TextStyle(
-              color: AppTheme.textHint,
-              fontSize: 12,
-            ),
+            style: TextStyle(color: AppTheme.textHint, fontSize: 12),
           ),
           const SizedBox(height: AppTheme.spacingSm),
 
@@ -249,7 +248,8 @@ class _EmergencyCoachViewState extends State<EmergencyCoachView> {
             maxLines: 12,
             maxLength: 5000,
             decoration: const InputDecoration(
-              hintText: '在此貼上聊天紀錄...\n\n例如：\n我：今天天氣好好\n她：對啊好想出去走走\n我：那我們一起去啊\n她：哈哈再說吧',
+              hintText:
+                  '在此貼上聊天紀錄...\n\n例如：\n我：今天天氣好好\n她：對啊好想出去走走\n我：那我們一起去啊\n她：哈哈再說吧',
               alignLabelWithHint: true,
             ),
           ),
@@ -274,8 +274,9 @@ class _EmergencyCoachViewState extends State<EmergencyCoachView> {
                     ? null
                     : [
                         BoxShadow(
-                          color: const Color(0xFFEF4444)
-                              .withValues(alpha: 0.35),
+                          color: const Color(
+                            0xFFEF4444,
+                          ).withValues(alpha: 0.35),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
@@ -292,7 +293,8 @@ class _EmergencyCoachViewState extends State<EmergencyCoachView> {
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
                               valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white),
+                                Colors.white,
+                              ),
                             ),
                           ),
                           SizedBox(width: 12),
@@ -382,8 +384,7 @@ class _EmergencyCoachViewState extends State<EmergencyCoachView> {
             decoration: BoxDecoration(
               color: AppTheme.bgCard,
               borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-              border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.08)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
             ),
             child: SelectableText(
               _analysisResult!,
@@ -394,9 +395,9 @@ class _EmergencyCoachViewState extends State<EmergencyCoachView> {
               ),
             ),
           ).animate().fadeIn(
-                delay: const Duration(milliseconds: 200),
-                duration: const Duration(milliseconds: 500),
-              ),
+            delay: const Duration(milliseconds: 200),
+            duration: const Duration(milliseconds: 500),
+          ),
 
           const SizedBox(height: AppTheme.spacingMd),
 
@@ -406,11 +407,10 @@ class _EmergencyCoachViewState extends State<EmergencyCoachView> {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () {
-                    Clipboard.setData(
-                        ClipboardData(text: _analysisResult!));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('已複製分析報告')),
-                    );
+                    Clipboard.setData(ClipboardData(text: _analysisResult!));
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(const SnackBar(content: Text('已複製分析報告')));
                   },
                   icon: const Icon(Icons.copy_rounded, size: 18),
                   label: const Text('複製報告'),
@@ -461,10 +461,7 @@ class _InfoChip extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             label,
-            style: const TextStyle(
-              color: AppTheme.textSecondary,
-              fontSize: 12,
-            ),
+            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
           ),
         ],
       ),

@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -5,10 +7,22 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val signingProperties = Properties()
+val signingPropertiesFile = rootProject.file("key.properties")
+if (signingPropertiesFile.exists()) {
+    signingPropertiesFile.inputStream().use { signingProperties.load(it) }
+}
+val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+    .all { signingProperties.getProperty(it).orEmpty().isNotBlank() }
+
 android {
     namespace = "com.ailovekeyboard.ai_love_keyboard"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
+
+    buildFeatures {
+        buildConfig = true
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -20,8 +34,10 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.ailovekeyboard.ai_love_keyboard"
+        // Keep the Play package aligned with the iOS bundle and RevenueCat
+        // product configuration. The Kotlin namespace remains unchanged so
+        // native class names stay stable.
+        applicationId = "com.ailovekeyboard.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -35,11 +51,26 @@ android {
         )
     }
 
+    signingConfigs {
+        create("release") {
+            if (hasReleaseSigning) {
+                storeFile = file(signingProperties.getProperty("storeFile"))
+                storePassword = signingProperties.getProperty("storePassword")
+                keyAlias = signingProperties.getProperty("keyAlias")
+                keyPassword = signingProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            if (!hasReleaseSigning) {
+                throw GradleException(
+                    "Release signing is not configured. Create android/key.properties " +
+                        "from the production keystore before building a release."
+                )
+            }
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }

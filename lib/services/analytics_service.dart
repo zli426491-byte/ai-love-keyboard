@@ -1,6 +1,12 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 
 import 'package:ai_love_keyboard/config/ad_tracking_config.dart';
+import 'package:ai_love_keyboard/services/account_service.dart';
+import 'package:ai_love_keyboard/utils/constants.dart';
 
 /// Singleton analytics service that wraps all ad-tracking / analytics SDKs
 /// and provides a single API surface for the rest of the app.
@@ -52,16 +58,18 @@ class AnalyticsService {
   }
 
   void trackGenderSelected({required String gender}) {
-    _trackEvent(AdTrackingConfig.eventGenderSelected, params: {
-      'gender': gender,
-    });
+    _trackEvent(
+      AdTrackingConfig.eventGenderSelected,
+      params: {'gender': gender},
+    );
     setUserProperty(AdTrackingConfig.propGender, gender);
   }
 
   void trackLocaleSelected({required String locale}) {
-    _trackEvent(AdTrackingConfig.eventLocaleSelected, params: {
-      'locale': locale,
-    });
+    _trackEvent(
+      AdTrackingConfig.eventLocaleSelected,
+      params: {'locale': locale},
+    );
     setUserProperty(AdTrackingConfig.propLocale, locale);
   }
 
@@ -70,9 +78,7 @@ class AnalyticsService {
     String? persona,
     int? intimacyLevel,
   }) {
-    final params = <String, String>{
-      'style': style,
-    };
+    final params = <String, String>{'style': style};
     if (persona != null) params['persona'] = persona;
     if (intimacyLevel != null) {
       params['intimacy_level'] = intimacyLevel.toString();
@@ -85,9 +91,10 @@ class AnalyticsService {
   }
 
   void trackFeatureUsed({required String feature}) {
-    _trackEvent(AdTrackingConfig.eventFeatureUsed, params: {
-      'feature': feature,
-    });
+    _trackEvent(
+      AdTrackingConfig.eventFeatureUsed,
+      params: {'feature': feature},
+    );
   }
 
   void trackKeyboardEnabled() {
@@ -105,9 +112,10 @@ class AnalyticsService {
   }
 
   void trackPlanSelected({required String planType}) {
-    _trackEvent(AdTrackingConfig.eventPlanSelected, params: {
-      'plan_type': planType,
-    });
+    _trackEvent(
+      AdTrackingConfig.eventPlanSelected,
+      params: {'plan_type': planType},
+    );
   }
 
   void trackFreeTrialStarted() {
@@ -115,21 +123,24 @@ class AnalyticsService {
   }
 
   void trackPurchaseStarted({required String planType}) {
-    _trackEvent(AdTrackingConfig.eventPurchaseStarted, params: {
-      'plan_type': planType,
-    });
+    _trackEvent(
+      AdTrackingConfig.eventPurchaseStarted,
+      params: {'plan_type': planType},
+    );
   }
 
   void trackSubscriptionStarted({required String planType}) {
-    _trackEvent(AdTrackingConfig.eventSubscriptionStarted, params: {
-      'plan_type': planType,
-    });
+    _trackEvent(
+      AdTrackingConfig.eventSubscriptionStarted,
+      params: {'plan_type': planType},
+    );
   }
 
   void trackSubscriptionRenewed({required String planType}) {
-    _trackEvent(AdTrackingConfig.eventSubscriptionRenewed, params: {
-      'plan_type': planType,
-    });
+    _trackEvent(
+      AdTrackingConfig.eventSubscriptionRenewed,
+      params: {'plan_type': planType},
+    );
   }
 
   // ── Revenue Tracking (for ROAS) ──────────────────────────────────────
@@ -139,11 +150,14 @@ class AnalyticsService {
     required String currency,
     required String planType,
   }) {
-    _trackEvent(AdTrackingConfig.eventPurchase, params: {
-      'value': amount.toString(),
-      'currency': currency,
-      'plan_type': planType,
-    });
+    _trackEvent(
+      AdTrackingConfig.eventPurchase,
+      params: {
+        'value': amount.toString(),
+        'currency': currency,
+        'plan_type': planType,
+      },
+    );
 
     // TODO: Facebook revenue event
     //   FacebookAppEvents.logPurchase(amount: amount, currency: currency);
@@ -222,6 +236,36 @@ class AnalyticsService {
     //   }
 
     _debugLog('Event: $name${params != null ? ' $params' : ''}');
+    unawaited(_sendFirstPartyEvent(name, params));
+  }
+
+  Future<void> _sendFirstPartyEvent(
+    String name,
+    Map<String, String>? params,
+  ) async {
+    final baseUrl = AppConstants.aiProxyBaseUrl.trim().replaceFirst(
+      RegExp(r'/+$'),
+      '',
+    );
+    final token = AccountService.instance.accessToken;
+    // Events are intentionally sent only for authenticated accounts. This
+    // avoids creating another device fingerprint or silently bypassing the
+    // Worker auth gate for anonymous users.
+    if (baseUrl.isEmpty || token == null || token.trim().isEmpty) return;
+    try {
+      await http
+          .post(
+            Uri.parse('$baseUrl/v1/analytics/events'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ${token.trim()}',
+            },
+            body: jsonEncode({'name': name, 'params': params ?? const {}}),
+          )
+          .timeout(const Duration(seconds: 5));
+    } catch (_) {
+      // Analytics is best-effort and must never affect the user flow.
+    }
   }
 
   void _debugLog(String message) {

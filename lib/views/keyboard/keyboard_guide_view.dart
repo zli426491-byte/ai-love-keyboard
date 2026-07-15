@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:ai_love_keyboard/services/account_service.dart';
 import 'package:ai_love_keyboard/services/analytics_service.dart';
+import 'package:ai_love_keyboard/views/auth/account_view.dart';
 
 class KeyboardGuideView extends StatelessWidget {
   const KeyboardGuideView({super.key});
@@ -19,18 +22,26 @@ class KeyboardGuideView extends StatelessWidget {
   static const _muted = Color(0xFF786873);
   static const _line = Color(0xFFF0DDE7);
 
-  Future<void> _openSettings() async {
+  Future<void> _openSettings(BuildContext context) async {
     try {
       AnalyticsService.instance.trackKeyboardEnabled();
     } catch (_) {}
     final uri = Uri.parse('app-settings:com.ailovekeyboard.app');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
+    } else if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('無法自動開啟設定，請到「設定 → 一般 → 鍵盤 → 鍵盤」手動開啟 LoveKey'),
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final account = context.watch<AccountService>();
+
     return Scaffold(
       backgroundColor: _cream,
       body: SafeArea(
@@ -86,6 +97,16 @@ class KeyboardGuideView extends StatelessWidget {
                 fontWeight: FontWeight.w500,
               ),
             ),
+            const SizedBox(height: 18),
+            _AccountStatusCard(
+              isConfigured: account.isConfigured,
+              isSignedIn: account.isSignedIn,
+              email: account.email,
+              onLogin: () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(builder: (_) => const AccountView()),
+              ),
+            ),
             const SizedBox(height: 22),
             const _KeyboardPreview(),
             const SizedBox(height: 20),
@@ -93,7 +114,7 @@ class KeyboardGuideView extends StatelessWidget {
             const SizedBox(height: 20),
             const _PracticeCard(),
             const SizedBox(height: 20),
-            _SetupCard(onOpenSettings: _openSettings),
+            _SetupCard(onOpenSettings: () => _openSettings(context)),
             const SizedBox(height: 20),
             const _FullAccessCard(),
             const SizedBox(height: 20),
@@ -102,7 +123,7 @@ class KeyboardGuideView extends StatelessWidget {
             SizedBox(
               height: 54,
               child: ElevatedButton.icon(
-                onPressed: _openSettings,
+                onPressed: () => _openSettings(context),
                 icon: const Icon(Icons.settings_rounded),
                 label: const Text('打開 iPhone 設定'),
                 style: ElevatedButton.styleFrom(
@@ -134,6 +155,106 @@ class KeyboardGuideView extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _AccountStatusCard extends StatelessWidget {
+  const _AccountStatusCard({
+    required this.isConfigured,
+    required this.isSignedIn,
+    required this.email,
+    required this.onLogin,
+  });
+
+  final bool isConfigured;
+  final bool isSignedIn;
+  final String? email;
+  final VoidCallback onLogin;
+
+  @override
+  Widget build(BuildContext context) {
+    final ready = isConfigured && isSignedIn;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: ready ? const Color(0xFFF2FFF8) : KeyboardGuideView._card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: ready ? const Color(0xFFBFEBD4) : KeyboardGuideView._line,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: ready ? const Color(0xFFDDF8E9) : KeyboardGuideView._sage,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              ready ? Icons.verified_rounded : Icons.person_rounded,
+              color: ready
+                  ? const Color(0xFF23965B)
+                  : KeyboardGuideView._forest,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  ready ? '帳號已就緒' : '先登入 LoveKey',
+                  style: const TextStyle(
+                    color: KeyboardGuideView._text,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  ready ? (email ?? '鍵盤可以安全驗證會員資格') : '登入後，鍵盤才能驗證會員並生成回覆。',
+                  style: const TextStyle(
+                    color: KeyboardGuideView._muted,
+                    fontSize: 12,
+                    height: 1.35,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (!ready) ...[
+            const SizedBox(width: 10),
+            FilledButton(
+              onPressed: onLogin,
+              style: FilledButton.styleFrom(
+                backgroundColor: KeyboardGuideView._forest,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 11,
+                ),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text(
+                '前往登入',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

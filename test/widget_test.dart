@@ -1,4 +1,5 @@
 import 'package:ai_love_keyboard/services/ai_service.dart';
+import 'package:ai_love_keyboard/services/account_service.dart';
 import 'package:ai_love_keyboard/services/coin_service.dart';
 import 'package:ai_love_keyboard/services/locale_service.dart';
 import 'package:ai_love_keyboard/services/privacy_manager.dart';
@@ -33,6 +34,7 @@ Future<void> _pumpApp(WidgetTester tester, Widget child) async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AiService()),
+        ChangeNotifierProvider.value(value: AccountService.instance),
         ChangeNotifierProvider.value(value: usage),
         ChangeNotifierProvider.value(value: RevenueCatService.instance),
         ChangeNotifierProvider.value(value: coins),
@@ -51,7 +53,6 @@ void main() {
   testWidgets('home tabs and blind box flows are reachable', (tester) async {
     await _pumpApp(tester, const HomeView());
 
-    expect(find.text('體驗戀愛鍵盤'), findsOneWidget);
     expect(find.text('我的鍵盤'), findsOneWidget);
 
     await tester.tap(find.text('盲盒交友').last);
@@ -100,6 +101,8 @@ void main() {
     await _pumpApp(tester, const KeyboardGuideView());
     expect(find.text('鍵盤教學'), findsOneWidget);
     expect(find.textContaining('切到 AI 戀愛鍵盤'), findsWidgets);
+    expect(find.text('先登入 LoveKey'), findsOneWidget);
+    expect(find.text('前往登入'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('只在生成回覆時送出必要文字'), 420);
     expect(find.text('只在生成回覆時送出必要文字'), findsOneWidget);
 

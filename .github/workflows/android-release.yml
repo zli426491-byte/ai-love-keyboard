@@ -3,10 +3,23 @@ name: Android Release
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build-android:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      AI_PROXY_URL: ${{ secrets.AI_PROXY_URL }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+      REVENUECAT_ANDROID_PUBLIC_KEY: ${{ secrets.REVENUECAT_ANDROID_PUBLIC_KEY }}
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
     steps:
       - name: Checkout
@@ -24,14 +37,55 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Configure release signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_KEYSTORE_BASE64" || {
+            echo "Missing ANDROID_KEYSTORE_BASE64 GitHub secret" >&2
+            exit 1
+          }
+          mkdir -p android/app
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/lovekey-release.jks
+          cat > android/key.properties <<EOF
+          storeFile=lovekey-release.jks
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          keyPassword=$ANDROID_KEY_PASSWORD
+          EOF
+
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Validate shared account and billing config
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$AI_PROXY_URL" || { echo "Missing AI_PROXY_URL GitHub secret" >&2; exit 1; }
+          test -n "$SUPABASE_URL" || { echo "Missing SUPABASE_URL GitHub secret" >&2; exit 1; }
+          test -n "$SUPABASE_ANON_KEY" || { echo "Missing SUPABASE_ANON_KEY GitHub secret" >&2; exit 1; }
+          test -n "$GOOGLE_WEB_CLIENT_ID" || { echo "Missing GOOGLE_WEB_CLIENT_ID GitHub secret" >&2; exit 1; }
+          test -n "$REVENUECAT_ANDROID_PUBLIC_KEY" || { echo "Missing REVENUECAT_ANDROID_PUBLIC_KEY GitHub secret" >&2; exit 1; }
+
       - name: Build APK
-        run: flutter build apk --release
+        run: >-
+          flutter build apk --release
+          --build-number="${{ github.run_number }}"
+          --dart-define=AI_PROXY_URL="$AI_PROXY_URL"
+          --dart-define=SUPABASE_URL="$SUPABASE_URL"
+          --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
+          --dart-define=GOOGLE_WEB_CLIENT_ID="$GOOGLE_WEB_CLIENT_ID"
+          --dart-define=REVENUECAT_ANDROID_PUBLIC_KEY="$REVENUECAT_ANDROID_PUBLIC_KEY"
 
       - name: Build AAB
-        run: flutter build appbundle --release
+        run: >-
+          flutter build appbundle --release
+          --build-number="${{ github.run_number }}"
+          --dart-define=AI_PROXY_URL="$AI_PROXY_URL"
+          --dart-define=SUPABASE_URL="$SUPABASE_URL"
+          --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
+          --dart-define=GOOGLE_WEB_CLIENT_ID="$GOOGLE_WEB_CLIENT_ID"
+          --dart-define=REVENUECAT_ANDROID_PUBLIC_KEY="$REVENUECAT_ANDROID_PUBLIC_KEY"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

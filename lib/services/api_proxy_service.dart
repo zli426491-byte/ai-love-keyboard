@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
@@ -5,6 +6,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:ai_love_keyboard/utils/constants.dart';
+import 'package:ai_love_keyboard/services/account_service.dart';
+import 'package:ai_love_keyboard/services/revenuecat_service.dart';
 
 /// Service layer for the backend AI proxy.
 ///
@@ -25,6 +28,7 @@ class ApiProxyService {
 
   /// Max requests per day (hard limit to prevent abuse).
   static const int maxRequestsPerDay = 5000;
+  static const Duration requestTimeout = Duration(seconds: 25);
 
   // ── Init ─────────────────────────────────────────────────────────────
 
@@ -77,10 +81,8 @@ class ApiProxyService {
 
   // ── Request Signing ──────────────────────────────────────────────────
 
-  /// Generate a simple request signature to prevent replay attacks.
-  /// Uses timestamp + nonce to create a unique signature per request.
-  ///
-  /// TODO: Implement HMAC-SHA256 with a shared secret from backend.
+  /// Request metadata is intentionally non-authoritative. The Worker verifies
+  /// RevenueCat entitlements server-side and applies its own rate limits.
   Map<String, String> _generateRequestHeaders() {
     final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
     final nonce = _generateNonce();
@@ -99,10 +101,9 @@ class ApiProxyService {
     return base64Url.encode(bytes);
   }
 
-  /// Simple signature: timestamp + nonce hash.
-  /// TODO: Replace with HMAC-SHA256 using server-provided secret.
+  /// Kept for backwards compatibility with older Worker deployments. This is
+  /// not treated as authentication and must never be used to unlock Pro.
   String _sign(String timestamp, String nonce) {
-    // Placeholder: just concat and base64. Replace with HMAC in production.
     final payload = '$timestamp:$nonce:${_deviceFingerprint ?? ""}';
     return base64Url.encode(utf8.encode(payload));
   }
@@ -117,7 +118,7 @@ class ApiProxyService {
     double temperature = 0.8,
     bool useHeavyModel = false,
     bool responseFormatJson = false,
-    bool isPro = true,
+    bool isPro = false,
   }) async {
     await _ensureDeviceFingerprint();
 
@@ -158,20 +159,50 @@ class ApiProxyService {
       'Content-Type': 'application/json',
       ..._generateRequestHeaders(),
     };
+    final accountToken = AccountService.instance.accessToken;
+    if (accountToken != null && accountToken.trim().isNotEmpty) {
+      headers['Authorization'] = 'Bearer ${accountToken.trim()}';
+    }
+    final revenueCatAppUserId = await RevenueCatService.instance.appUserId;
 
-    return http.post(
-      Uri.parse('$normalizedBase${AppConstants.aiProxyChatPath}'),
-      headers: headers,
-      body: jsonEncode({
-        'user_id': _deviceFingerprint,
-        'system_prompt': systemPrompt,
-        'user_message': userMessage,
-        'max_tokens': maxTokens,
-        'temperature': temperature,
-        'use_heavy_model': useHeavyModel,
-        'is_pro': isPro,
-        if (responseFormatJson) 'response_format': {'type': 'json_object'},
-      }),
-    );
+    final requestBody = <String, dynamic>{
+      'user_id': _deviceFingerprint,
+      'system_prompt': systemPrompt,
+      'user_message': userMessage,
+      'max_tokens': maxTokens,
+      'temperature': temperature,
+      'use_heavy_model': useHeavyModel,
+      'is_pro': isPro,
+      if (responseFormatJson) 'response_format': {'type': 'json_object'},
+    };
+    if (revenueCatAppUserId case final id?) {
+      requestBody['revenuecat_app_user_id'] = id;
+    }
+
+    final uri = Uri.parse('$normalizedBase${AppConstants.aiProxyChatPath}');
+    final response = await _post(uri, headers, requestBody);
+    if (response.statusCode == 401 && AccountService.instance.isSignedIn) {
+      final refreshed = await AccountService.instance.refreshSession();
+      final refreshedToken = AccountService.instance.accessToken;
+      if (refreshed && refreshedToken != null && refreshedToken.isNotEmpty) {
+        headers['Authorization'] = 'Bearer ${refreshedToken.trim()}';
+        return _post(uri, headers, requestBody);
+      }
+    }
+    return response;
+  }
+
+  Future<http.Response> _post(
+    Uri uri,
+    Map<String, String> headers,
+    Map<String, dynamic> body,
+  ) async {
+    try {
+      return await http
+          .post(uri, headers: headers, body: jsonEncode(body))
+          .timeout(requestTimeout);
+    } on TimeoutException {
+      throw Exception('AI 請求逾時，請檢查網路後再試一次');
+    }
   }
 }

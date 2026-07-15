@@ -74,32 +74,17 @@ class AiService extends ChangeNotifier {
   }
 
   // ── Model Tier Tracking ───────────────────────────────────────────────
-  int _heavyModelUsesToday = 0;
-  String _heavyModelLastDate = '';
-
-  /// Returns whether this request may use the heavier backend model.
-  bool _canUseHeavyModel(bool useHeavy) {
-    if (!useHeavy) return false;
-
-    final today = DateTime.now().toIso8601String().substring(0, 10);
-    if (_heavyModelLastDate != today) {
-      _heavyModelUsesToday = 0;
-      _heavyModelLastDate = today;
-    }
-
-    if (_heavyModelUsesToday >= AppConstants.heavyModelDailyLimit) {
-      return false;
-    }
-
-    _heavyModelUsesToday++;
-    return true;
-  }
+  /// The Worker is the authority for heavy-model limits. A client-side
+  /// counter can be reset by restarting or reinstalling the app and would
+  /// therefore create a false sense of protection.
+  bool _canUseHeavyModel(bool useHeavy) => useHeavy;
 
   /// Calls the backend AI proxy and returns the parsed JSON response.
   Future<Map<String, dynamic>> _callGpt(
     String systemPrompt,
     String userMessage, {
     bool useHeavyModel = false,
+    double temperature = 0.8,
   }) async {
     try {
       // Prepend safety prefix to system prompt
@@ -118,7 +103,7 @@ class AiService extends ChangeNotifier {
         systemPrompt: safeSystemPrompt,
         userMessage: sanitizedMessage,
         maxTokens: 1024,
-        temperature: 0.8,
+        temperature: temperature,
         useHeavyModel: _canUseHeavyModel(useHeavyModel),
         responseFormatJson: true,
       );
@@ -201,6 +186,9 @@ class AiService extends ChangeNotifier {
     ChatPersona? persona,
     int? intimacyLevel,
     String? genderPrompt,
+    String? platform,
+    String? goal,
+    String? generationInstruction,
   }) async {
     _setLoading(true);
     _setError(null);
@@ -210,7 +198,12 @@ class AiService extends ChangeNotifier {
         _replies = [
           AiReply(
             id: DateTime.now().microsecondsSinceEpoch.toString(),
-            text: _webPreviewReplyFor(message, style),
+            text: _webPreviewReplyFor(
+              message,
+              style,
+              platform: platform,
+              goal: goal,
+            ),
             style: style,
           ),
         ];
@@ -219,31 +212,56 @@ class AiService extends ChangeNotifier {
       }
 
       final String? personaPrompt = persona?.toPromptString();
-      final String? intimacyPrompt = intimacyLevel != null
-          ? IntimacyLevel.levels[intimacyLevel - 1].promptHint
-          : null;
+      final safeIntimacyLevel = intimacyLevel == null
+          ? null
+          : (intimacyLevel - 1)
+                .clamp(0, IntimacyLevel.levels.length - 1)
+                .toInt();
+      final String? intimacyPrompt = safeIntimacyLevel == null
+          ? null
+          : IntimacyLevel.levels[safeIntimacyLevel].promptHint;
 
       final systemPrompt = PromptTemplates.replyGeneration(
         style.label,
+        platform: platform,
+        goal: goal,
         personaPrompt: personaPrompt,
         intimacyPrompt: intimacyPrompt,
         genderPrompt: genderPrompt,
       );
-      final result = await _callGpt(systemPrompt, '對方的訊息：「$message」');
+      final instruction = generationInstruction?.trim();
+      final userPrompt = instruction == null || instruction.isEmpty
+          ? '對方的訊息：「$message」'
+          : '對方的訊息：「$message」\n重新生成要求：$instruction';
+      final result = await _callGpt(
+        systemPrompt,
+        userPrompt,
+        temperature: 0.65,
+      );
 
-      final repliesList = result['replies'] as List<dynamic>;
+      final rawReplies = result['replies'] ?? result['reply'];
+      final repliesList = rawReplies is List
+          ? rawReplies
+          : rawReplies is String
+          ? <dynamic>[rawReplies]
+          : const <dynamic>[];
       _replies = repliesList
-          .map((r) {
-            if (r is String) {
-              return AiReply(
-                id: DateTime.now().microsecondsSinceEpoch.toString(),
-                text: r.trim(),
-                style: style,
-              );
+          .map((raw) {
+            if (raw is String) return raw.trim();
+            if (raw is Map && raw['text'] is String) {
+              return (raw['text'] as String).trim();
             }
-            return AiReply.fromJson(r as Map<String, dynamic>, style);
+            return '';
           })
-          .where((reply) => reply.text.trim().isNotEmpty)
+          .where(_isUsableReply)
+          .take(1)
+          .map(
+            (text) => AiReply(
+              id: DateTime.now().microsecondsSinceEpoch.toString(),
+              text: text,
+              style: style,
+            ),
+          )
           .toList();
 
       _setLoading(false);
@@ -253,10 +271,17 @@ class AiService extends ChangeNotifier {
       _setLoading(false);
       return [];
     } catch (e) {
-      _setError(e.toString().replaceFirst('Exception: ', ''));
+      _setError(_friendlyError(e));
       _setLoading(false);
       return [];
     }
+  }
+
+  bool _isUsableReply(String text) {
+    final value = text.trim();
+    if (value.isEmpty || value.length > 240) return false;
+    if (value == '回覆內容' || value == 'actual message') return false;
+    return true;
   }
 
   String _proxyErrorMessage(http.Response response) {
@@ -273,6 +298,15 @@ class AiService extends ChangeNotifier {
         return switch (error) {
           'server_not_configured' => 'AI 服務尚未設定，請稍後再試。',
           'quota_exceeded' => '今日免費次數已用完，升級後可繼續使用。',
+          'active_subscription_required' => '此功能需要有效會員，請先完成訂閱或恢復購買。',
+          'auth_required' => '請先登入 LoveKey 帳號。',
+          'auth_invalid' => '登入狀態已失效，請重新登入。',
+          'auth_not_configured' || 'auth_unavailable' => '帳號驗證服務暫時無法使用。',
+          'identity_mismatch' => '帳號身份不一致，請重新登入。',
+          'rate_limited' => '請求太頻繁，稍等一下再試。',
+          'replayed_request' ||
+          'stale_request' ||
+          'invalid_request_metadata' => '請重新操作一次。',
           'missing_message' || 'missing_fields' => '請先貼上對方訊息。',
           'ai_failed' || 'empty_reply' => 'AI 回覆暫時失敗，請稍後再試。',
           _ => 'AI 服務暫時無法使用，請稍後再試。',
@@ -284,12 +318,50 @@ class AiService extends ChangeNotifier {
     return '伺服器錯誤 (${response.statusCode})';
   }
 
-  String _webPreviewReplyFor(String message, ReplyStyle style) {
+  String _friendlyError(Object error) {
+    if (error is ContentBlockedException) {
+      return error.filterResult.reason ?? '內容已被安全過濾器攔截';
+    }
+    if (error is FormatException) return 'AI 回覆格式暫時無法解析，請再試一次';
+    if (error is http.ClientException) return '網路連線失敗，請檢查網路後再試一次';
+    final message = error.toString();
+    if (message.contains('逾時') || message.contains('timeout')) {
+      return 'AI 請求逾時，請稍後再試一次';
+    }
+    if (message.contains('quota_exceeded') || message.contains('額度')) {
+      return '今日免費額度已用完，升級會員即可繼續使用';
+    }
+    if (message.contains('auth_required') || message.contains('登入')) {
+      return '請先登入 LoveKey 帳號';
+    }
+    return 'AI 暫時無法回覆，請稍後再試一次';
+  }
+
+  String _webPreviewReplyFor(
+    String message,
+    ReplyStyle style, {
+    String? platform,
+    String? goal,
+  }) {
     final lower = message.toLowerCase();
     final tired =
-        message.contains('累') || lower.contains('tired') || lower.contains('busy');
+        message.contains('累') ||
+        lower.contains('tired') ||
+        lower.contains('busy');
     final casual =
-        message.contains('隨便') || message.contains('都可以') || lower.contains('whatever');
+        message.contains('隨便') ||
+        message.contains('都可以') ||
+        lower.contains('whatever');
+
+    if (goal == '安慰') {
+      return '聽起來你今天真的不容易，先不用急著回，休息一下再聊。';
+    }
+    if (goal == '道歉') {
+      return '如果我剛剛讓你不舒服，先跟你說聲抱歉，我想聽你怎麼想。';
+    }
+    if (goal == '邀約') {
+      return platform == 'IG' ? '這個可以改天一起去，你哪天比較方便？' : '那找個你方便的時間，一起吃個飯聊聊？';
+    }
 
     if (tired) {
       return switch (style) {
@@ -335,7 +407,7 @@ class AiService extends ChangeNotifier {
     } on ContentBlockedException catch (e) {
       throw Exception(e.filterResult.reason ?? '內容已被安全過濾器攔截');
     } catch (e) {
-      throw Exception(e.toString().replaceFirst('Exception: ', ''));
+      throw Exception(_friendlyError(e));
     }
   }
 
@@ -359,7 +431,7 @@ class AiService extends ChangeNotifier {
       _setLoading(false);
       return null;
     } catch (e) {
-      _setError(e.toString().replaceFirst('Exception: ', ''));
+      _setError(_friendlyError(e));
       _setLoading(false);
       return null;
     }
@@ -391,7 +463,7 @@ class AiService extends ChangeNotifier {
       _setLoading(false);
       return [];
     } catch (e) {
-      _setError(e.toString().replaceFirst('Exception: ', ''));
+      _setError(_friendlyError(e));
       _setLoading(false);
       return [];
     }
@@ -415,7 +487,7 @@ class AiService extends ChangeNotifier {
       _setLoading(false);
       return null;
     } catch (e) {
-      _setError(e.toString().replaceFirst('Exception: ', ''));
+      _setError(_friendlyError(e));
       _setLoading(false);
       return null;
     }
@@ -445,7 +517,7 @@ class AiService extends ChangeNotifier {
       _setLoading(false);
       return null;
     } catch (e) {
-      _setError(e.toString().replaceFirst('Exception: ', ''));
+      _setError(_friendlyError(e));
       _setLoading(false);
       return null;
     }
@@ -470,7 +542,7 @@ class AiService extends ChangeNotifier {
       _setLoading(false);
       return null;
     } catch (e) {
-      _setError(e.toString().replaceFirst('Exception: ', ''));
+      _setError(_friendlyError(e));
       _setLoading(false);
       return null;
     }
@@ -503,7 +575,7 @@ class AiService extends ChangeNotifier {
       _setLoading(false);
       return [];
     } catch (e) {
-      _setError(e.toString().replaceFirst('Exception: ', ''));
+      _setError(_friendlyError(e));
       _setLoading(false);
       return [];
     }
@@ -539,7 +611,7 @@ class AiService extends ChangeNotifier {
       _setLoading(false);
       return [];
     } catch (e) {
-      _setError(e.toString().replaceFirst('Exception: ', ''));
+      _setError(_friendlyError(e));
       _setLoading(false);
       return [];
     }
@@ -564,7 +636,7 @@ class AiService extends ChangeNotifier {
       _setLoading(false);
       return null;
     } catch (e) {
-      _setError(e.toString().replaceFirst('Exception: ', ''));
+      _setError(_friendlyError(e));
       _setLoading(false);
       return null;
     }
@@ -591,7 +663,7 @@ class AiService extends ChangeNotifier {
       _setLoading(false);
       return [];
     } catch (e) {
-      _setError(e.toString().replaceFirst('Exception: ', ''));
+      _setError(_friendlyError(e));
       _setLoading(false);
       return [];
     }
@@ -617,7 +689,7 @@ class AiService extends ChangeNotifier {
       _setLoading(false);
       return null;
     } catch (e) {
-      _setError(e.toString().replaceFirst('Exception: ', ''));
+      _setError(_friendlyError(e));
       _setLoading(false);
       return null;
     }
@@ -645,7 +717,7 @@ class AiService extends ChangeNotifier {
       _setLoading(false);
       return null;
     } catch (e) {
-      _setError(e.toString().replaceFirst('Exception: ', ''));
+      _setError(_friendlyError(e));
       _setLoading(false);
       return null;
     }
@@ -678,7 +750,7 @@ class AiService extends ChangeNotifier {
       _setLoading(false);
       return [];
     } catch (e) {
-      _setError(e.toString().replaceFirst('Exception: ', ''));
+      _setError(_friendlyError(e));
       _setLoading(false);
       return [];
     }

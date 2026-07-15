@@ -7,7 +7,27 @@ account_id = "0ca12458136d4bd68dfd7b1be2769f5d"
 binding = "KV_USAGE"
 id = "a68452c77bfd4c9e9f176a8c9794fa82"
 
+[[durable_objects.bindings]]
+name = "QUOTA_COUNTER"
+class_name = "QuotaCounter"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["QuotaCounter"]
+
 [vars]
 OPENAI_MODEL_LIGHT = "gpt-4o-mini"
 OPENAI_MODEL_HEAVY = "gpt-4.1-mini"
 FREE_DAILY_LIMIT = "3"
+REQUESTS_PER_MINUTE = "30"
+PRO_DAILY_LIMIT = "300"
+PRO_HEAVY_DAILY_LIMIT = "50"
+PRO_REQUESTS_PER_MINUTE = "60"
+IP_REQUESTS_PER_MINUTE = "120"
+FREE_IP_DAILY_LIMIT = "60"
+PRO_IP_DAILY_LIMIT = "1000"
+REQUIRE_ACTIVE_PRO = "true"
+REQUIRE_AUTH = "true"
+REQUIRE_REQUEST_METADATA = "true"
+REVENUECAT_ENTITLEMENT_ID = "pro"
+ADMIN_EMAILS = ""

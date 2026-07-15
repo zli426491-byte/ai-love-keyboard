@@ -1,4 +1,5 @@
 import UIKit
+import Foundation
 
 final class KeyboardViewController: UIInputViewController {
     private enum ReplyStyle: Int, CaseIterable {
@@ -93,9 +94,25 @@ final class KeyboardViewController: UIInputViewController {
     private enum SharedConfig {
         static let appGroupID = "group.com.ailovekeyboard.app"
         static let subscriptionKey = "is_subscribed"
+        static let revenueCatAppUserIDKey = "revenuecat_app_user_id"
+        static let accountAccessTokenKey = "lovekey_account_access_token"
 
         static var isPro: Bool {
             UserDefaults(suiteName: appGroupID)?.bool(forKey: subscriptionKey) ?? false
+        }
+
+        static var revenueCatAppUserID: String? {
+            let value = UserDefaults(suiteName: appGroupID)?
+                .string(forKey: revenueCatAppUserIDKey)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return value?.isEmpty == false ? value : nil
+        }
+
+        static var accountAccessToken: String? {
+            let value = UserDefaults(suiteName: appGroupID)?
+                .string(forKey: accountAccessTokenKey)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return value?.isEmpty == false ? value : nil
         }
     }
 
@@ -130,7 +147,10 @@ final class KeyboardViewController: UIInputViewController {
     private var currentReplies: [String] = []
     private var displayedReplies: [String] = []
     private var selectedStyle: ReplyStyle = .gentle
-    private var selectedMode: KeyboardMode = .invite
+    // A pasted message should start in the general reply mode.  Starting in
+    // invite mode made ordinary messages look like date invitations until the
+    // user manually changed the mode.
+    private var selectedMode: KeyboardMode = .reply
     private var currentMessage = ""
     private var statusMode: StatusMode = .idle
     private var generationIndex = 0
@@ -194,7 +214,7 @@ final class KeyboardViewController: UIInputViewController {
         row.heightAnchor.constraint(equalToConstant: 40).isActive = true
 
         let modeButton = UIButton(type: .system)
-        modeButton.setTitle("開場邀約", for: .normal)
+        modeButton.setTitle(headerModeTitle(), for: .normal)
         modeButton.setImage(UIImage(systemName: "arrow.left.arrow.right"), for: .normal)
         modeButton.semanticContentAttribute = .forceRightToLeft
         modeButton.titleLabel?.font = .systemFont(ofSize: 14.5, weight: .heavy)
@@ -1405,6 +1425,10 @@ final class KeyboardViewController: UIInputViewController {
             finishAIRequest(requestID: requestID, replies: [], errorText: "AI 尚未設定")
             return
         }
+        guard let accessToken = SharedConfig.accountAccessToken else {
+            finishAIRequest(requestID: requestID, replies: [], errorText: "請先開啟 LoveKey 登入")
+            return
+        }
 
         let userID = keyboardUserID()
         var request = URLRequest(url: endpoint)
@@ -1412,8 +1436,19 @@ final class KeyboardViewController: UIInputViewController {
         request.timeoutInterval = 18
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(userID, forHTTPHeaderField: "X-Device-Fingerprint")
+        let timestamp = String(Int(Date().timeIntervalSince1970 * 1000))
+        let nonce = UUID().uuidString
+        let signaturePayload = "\(timestamp):\(nonce):\(userID)"
+        let signature = Data(signaturePayload.utf8)
+            .base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+        request.setValue(timestamp, forHTTPHeaderField: "X-Request-Timestamp")
+        request.setValue(nonce, forHTTPHeaderField: "X-Request-Nonce")
+        request.setValue(signature, forHTTPHeaderField: "X-Request-Signature")
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
 
-        let payload: [String: Any] = [
+        var payload: [String: Any] = [
             "user_id": userID,
             "message": message,
             "user_message": message,
@@ -1421,8 +1456,10 @@ final class KeyboardViewController: UIInputViewController {
             "tone": style.title,
             "mode": mode.title,
             "instruction": instruction ?? "",
-            "is_pro": SharedConfig.isPro
         ]
+        if let appUserID = SharedConfig.revenueCatAppUserID {
+            payload["revenuecat_app_user_id"] = appUserID
+        }
 
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: payload)
@@ -1439,7 +1476,7 @@ final class KeyboardViewController: UIInputViewController {
             if error != nil {
                 errorText = "AI 網路失敗"
             } else if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-                errorText = "AI 服務忙碌"
+                errorText = self.aiRequestErrorText(statusCode: http.statusCode, data: data)
             } else if let data {
                 replies = self.parseAIReplies(from: data)
                 if replies.isEmpty {
@@ -1453,26 +1490,49 @@ final class KeyboardViewController: UIInputViewController {
         }.resume()
     }
 
+    private func aiRequestErrorText(statusCode: Int, data: Data?) -> String {
+        var errorCode: String?
+        if
+            let data,
+            let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        {
+            errorCode = object["error"] as? String
+        }
+
+        switch errorCode {
+        case "auth_required", "invalid_auth", "invalid_token":
+            return "請先開啟 LoveKey 重新登入"
+        case "revenuecat_identity_mismatch":
+            return "請開啟 LoveKey 同步會員"
+        case "active_subscription_required", "quota_exceeded":
+            return "請先開啟 LoveKey 升級 Pro"
+        case "rate_limited":
+            return "請稍候再試"
+        case "server_not_configured":
+            return "AI 服務尚未設定"
+        default:
+            if statusCode == 401 {
+                return "請先開啟 LoveKey 重新登入"
+            }
+            if statusCode == 403 {
+                return "請先開啟 LoveKey 升級 Pro"
+            }
+            if statusCode == 429 {
+                return "請稍候再試"
+            }
+            return "AI 暫時不可用"
+        }
+    }
+
     private func finishAIRequest(requestID: Int, replies: [String], errorText: String?) {
         DispatchQueue.main.async {
             guard requestID == self.generationIndex else { return }
             self.isGenerating = false
 
-            var cleaned = replies
+            let cleaned = replies
                 .map { self.cleanReply($0) }
                 .filter { !$0.isEmpty }
                 .prefix(1)
-
-            if cleaned.isEmpty {
-                cleaned = self.makeReplies(
-                    for: self.selectedStyle,
-                    mode: self.selectedMode,
-                    message: self.currentMessage
-                )
-                .map { self.cleanReply($0) }
-                .filter { !$0.isEmpty }
-                .prefix(1)
-            }
 
             if !cleaned.isEmpty && self.statusMode != .filled {
                 self.currentReplies = Array(cleaned)
@@ -1480,6 +1540,8 @@ final class KeyboardViewController: UIInputViewController {
                 self.statusMode = .ready
             } else if let errorText, self.statusMode != .filled {
                 self.aiErrorText = errorText
+            } else if cleaned.isEmpty && self.statusMode != .filled {
+                self.aiErrorText = "AI 沒有產生可用回覆，請再試一次"
             }
 
             self.renderContent()
@@ -1630,6 +1692,8 @@ final class KeyboardViewController: UIInputViewController {
         return String(text.prefix(limit)) + "..."
     }
 
+    // Deterministic suggestions are reserved for a future explicit offline
+    // mode. They must not silently replace a failed server response.
     private func makeReplies(for style: ReplyStyle, mode: KeyboardMode, message: String) -> [String] {
         let text = message.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {

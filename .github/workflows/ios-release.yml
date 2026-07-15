@@ -5,6 +5,13 @@ on:
     branches: [master]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-release-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-ios:
     runs-on: macos-26
@@ -47,11 +54,55 @@ jobs:
       - name: Validate RevenueCat release config
         env:
           REVENUECAT_IOS_PUBLIC_KEY: ${{ secrets.REVENUECAT_IOS_PUBLIC_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+          GOOGLE_IOS_CLIENT_ID: ${{ secrets.GOOGLE_IOS_CLIENT_ID }}
+          GOOGLE_IOS_REVERSED_CLIENT_ID: ${{ secrets.GOOGLE_IOS_REVERSED_CLIENT_ID }}
         run: |
           if [ -z "$REVENUECAT_IOS_PUBLIC_KEY" ]; then
             echo "REVENUECAT_IOS_PUBLIC_KEY secret is empty; configure the LoveKey RevenueCat app before uploading a build."
             exit 1
           fi
+          test -n "$SUPABASE_URL" || {
+            echo "Missing SUPABASE_URL GitHub secret" >&2
+            exit 1
+          }
+          test -n "$SUPABASE_ANON_KEY" || {
+            echo "Missing SUPABASE_ANON_KEY GitHub secret" >&2
+            exit 1
+          }
+          test -n "$GOOGLE_WEB_CLIENT_ID" || {
+            echo "Missing GOOGLE_WEB_CLIENT_ID GitHub secret" >&2
+            exit 1
+          }
+          test -n "$GOOGLE_IOS_CLIENT_ID" || {
+            echo "Missing GOOGLE_IOS_CLIENT_ID GitHub secret" >&2
+            exit 1
+          }
+          test -n "$GOOGLE_IOS_REVERSED_CLIENT_ID" || {
+            echo "Missing GOOGLE_IOS_REVERSED_CLIENT_ID GitHub secret" >&2
+            exit 1
+          }
+
+      - name: Inject Google iOS callback scheme
+        env:
+          GOOGLE_IOS_REVERSED_CLIENT_ID: ${{ secrets.GOOGLE_IOS_REVERSED_CLIENT_ID }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          value = os.environ.get("GOOGLE_IOS_REVERSED_CLIENT_ID", "").strip()
+          if not value:
+              raise SystemExit("GOOGLE_IOS_REVERSED_CLIENT_ID secret is empty")
+          path = Path("ios/Runner/Info.plist")
+          text = path.read_text(encoding="utf-8")
+          text = text.replace("__GOOGLE_IOS_REVERSED_CLIENT_ID__", value)
+          if "__GOOGLE_IOS_REVERSED_CLIENT_ID__" in text:
+              raise SystemExit("Google iOS callback placeholder was not replaced")
+          path.write_text(text, encoding="utf-8")
+          PY
 
       - name: Setup App Store Connect API Key
         run: |
@@ -107,6 +158,10 @@ jobs:
         env:
           AI_PROXY_URL: ${{ secrets.AI_PROXY_URL }}
           REVENUECAT_IOS_PUBLIC_KEY: ${{ secrets.REVENUECAT_IOS_PUBLIC_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+          GOOGLE_IOS_CLIENT_ID: ${{ secrets.GOOGLE_IOS_CLIENT_ID }}
           FACEBOOK_APP_ID: ${{ secrets.FACEBOOK_APP_ID }}
           ADJUST_APP_TOKEN: ${{ secrets.ADJUST_APP_TOKEN }}
           ADJUST_ENVIRONMENT: ${{ secrets.ADJUST_ENVIRONMENT || 'production' }}
@@ -116,6 +171,10 @@ jobs:
             --release \
             --dart-define=AI_PROXY_URL="$AI_PROXY_URL" \
             --dart-define=REVENUECAT_IOS_PUBLIC_KEY="$REVENUECAT_IOS_PUBLIC_KEY" \
+            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+            --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
+            --dart-define=GOOGLE_WEB_CLIENT_ID="$GOOGLE_WEB_CLIENT_ID" \
+            --dart-define=GOOGLE_IOS_CLIENT_ID="$GOOGLE_IOS_CLIENT_ID" \
             --dart-define=FACEBOOK_APP_ID="$FACEBOOK_APP_ID" \
             --dart-define=ADJUST_APP_TOKEN="$ADJUST_APP_TOKEN" \
             --dart-define=ADJUST_ENVIRONMENT="$ADJUST_ENVIRONMENT" \
