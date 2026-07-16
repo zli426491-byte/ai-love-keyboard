@@ -1,211 +1,92 @@
-# LoveKey iOS QA Report
+# LoveKey iOS QA 歷史報告（2026-07-15 Windows 階段）
 
-## Summary
+> 本檔保存第一輪 Windows QA 歷史。最新 Simulator 與實機抽查結果請看 IOS_QA_REPORT_2026-07-16.md。
 
-| Field | Result |
+## 摘要
+
+| 項目 | 當時結果 |
 | --- | --- |
-| QA date | 2026-07-15 (Asia/Taipei) |
-| Branch | `qa/ios-autonomous-qa` |
-| Worktree | `C:\Users\AsusGaming\Documents\New project\.worktrees\lovekey-ios-qa` |
-| Source version | `1.0.4+2` from `pubspec.yaml` |
-| Latest documented TestFlight build | Build 55, VALID, Internal Testing |
+| QA 日期 | 2026-07-15 |
+| 分支 | qa/ios-autonomous-qa |
 | Host | Windows 11 |
-| Flutter / Dart | Flutter 3.41.7 / Dart 3.11.5 |
-| macOS / Xcode / CocoaPods | Not available |
-| Severity totals found in this cycle | P0: 0, P1: 0, P2: 8, P3: 0 |
-| Fix status | 8 fixed with regression coverage |
+| Flutter／Dart | Flutter 3.41.7／Dart 3.11.5 |
+| flutter analyze | 通過，0 問題 |
+| Flutter tests | 修正後 25/25 通過 |
+| 對話測試 | 14/14 通過，mock／靜態模式 |
+| UI／Widget | 修正後 9/9 通過 |
+| 當時 iOS Simulator | 未執行 |
+| 當時發現 | P0：0、P1：0、P2：8、P3：0 |
+| 修正 | 8 項均已修復並新增回歸測試 |
 
-`未執行 iOS Simulator 測試`
+## 當時實際執行
 
-No iOS Simulator, Xcode, CocoaPods, real login, sandbox purchase, or live AI request was executed on this Windows host. The integration smoke source exists, but neither attempted local device could launch it. The result is therefore a code and Flutter-test gate, not a complete iOS release certification.
+- flutter pub get：通過。
+- flutter analyze --no-pub：通過。
+- flutter test --no-pub：修正後通過。
+- scripts/dialogue_eval.sh：14/14。
+- scripts/ui_audit.sh：修正後 9/9。
+- flutter build web --release --no-pub：通過。
+- Windows integration test：因 Visual Studio 缺少 ATL/MFC header atlstr.h，未啟動。
+- Chrome integration test：Flutter 不支援以該命令在 Web device 執行。
+- Windows 主機沒有 Xcode，因此當時未執行 iOS Simulator。
 
-## Commands Actually Executed
+## 八項 P2 修正
 
-| Command / activity | Actual result |
-| --- | --- |
-| `flutter pub get` | Passed |
-| `flutter analyze --no-pub` | Passed, 0 issues |
-| `flutter test --no-pub` | Passed after fixes; 25/25 tests |
-| `scripts/dialogue_eval.sh` | Passed; 14/14 dialogue tests, mock/static mode |
-| `scripts/ui_audit.sh` | Passed after fixes; 9/9 UI/widget tests |
-| `scripts/ios_qa.sh` | Flutter checks passed, then reported `未執行 iOS Simulator 測試` |
-| `flutter build web --release --no-pub` | Web artifacts produced under `build/web` |
-| Local browser render | Privacy gate loaded; Flutter Web canvas used only as supplemental visual inspection |
-| `flutter build ios --simulator` | Not executable on Windows |
-| Xcode build / CocoaPods | Not executed; tools unavailable |
-| `integration_test/app_smoke_test.dart -d windows` | Attempted; app build failed before launch because Visual Studio ATL header `atlstr.h` is missing |
-| `integration_test/app_smoke_test.dart -d chrome` | Attempted; Flutter reported that Web devices are not supported for this integration-test command |
+### QA-AI-001：AI 回應防禦性解析
 
-## Bug Records
+- 問題：直接索引 choices[0]，外部格式異常時可能產生不一致 runtime error。
+- 修正：逐層驗證 choices、message、content，並支援 structured text block。
+- 測試：ai_response_quality_test.dart。
+- 狀態：已修復。
 
-### QA-AI-001 - Defensive AI response parsing
+### QA-AI-002：阻擋模型／模板痕跡
 
-- **Severity:** P2
-- **Location:** AI proxy response parsing
-- **Test device:** Windows Dart VM / Flutter test runner
-- **iOS version:** N/A
-- **App build:** source `1.0.4+2`
-- **Precondition:** Proxy returns an empty `choices` array, missing `message`, non-string content, or invalid JSON.
-- **Reproduction:** Feed each malformed payload to the response parser tests.
-- **Expected:** Deterministic `FormatException` handled by the existing user-facing error path.
-- **Actual before fix:** Direct indexing and casting could throw shape-dependent runtime errors.
-- **Screenshot:** N/A; non-visual defect.
-- **Log:** Reproduced with failing parser unit cases before implementation.
-- **Root cause:** `body['choices'][0]['message']['content'] as String` trusted an external response shape.
-- **Modified files:** `lib/services/ai_service.dart`, `lib/services/ai_response_parser.dart`.
-- **Fix:** Validate every response layer, support structured text blocks, and reject empty or malformed content.
-- **Regression test:** `test/dialogue/ai_response_quality_test.dart`.
-- **Result after fix:** All malformed response cases pass with deterministic failures.
-- **Commit:** Current `qa/ios-autonomous-qa` QA commit.
-- **Status:** Fixed.
+- 問題：非空且長度合格的 placeholder、JSON、code fence 或模型說明可能被當成可發送回覆。
+- 修正：新增集中式 ReplyQualityValidator。
+- 測試：ai_response_quality_test.dart。
+- 狀態：已修復。
 
-### QA-AI-002 - Reject model/template artifacts as replies
+### QA-UI-001：320px 首頁底部導覽 overflow
 
-- **Severity:** P2
-- **Location:** Generated reply selection
-- **Test device:** Windows Dart VM / Flutter test runner
-- **iOS version:** N/A
-- **App build:** source `1.0.4+2`
-- **Precondition:** Model returns labels, placeholders, JSON wrappers, code fences, or text such as `以下是高情商的回覆`.
-- **Reproduction:** Pass artifact samples through the old reply usability rule.
-- **Expected:** Artifact is rejected and never shown as a sendable reply.
-- **Actual before fix:** Any non-empty text shorter than 240 characters was accepted except two exact placeholders.
-- **Screenshot:** N/A; rule defect reproduced in unit tests.
-- **Log:** Artifact rejection cases initially failed before the validator existed.
-- **Root cause:** Reply validation checked only length and two exact values.
-- **Modified files:** `lib/services/ai_service.dart`, `lib/services/reply_quality_validator.dart`.
-- **Fix:** Central validator rejects wrappers, placeholders, code/JSON artifacts, and common meta-answer prefixes.
-- **Regression test:** `test/dialogue/ai_response_quality_test.dart`.
-- **Result after fix:** Artifact and wrapper cases are rejected; natural replies remain accepted.
-- **Commit:** Current `qa/ios-autonomous-qa` QA commit.
-- **Status:** Fixed.
+- 修正：導覽項目改用 Expanded 平均分配。
+- 測試：iPhone SE viewport。
+- 狀態：已修復。
 
-### QA-UI-001 - Bottom navigation overflow on 320px width
+### QA-UI-002：onboarding 大字體 overflow
 
-- **Severity:** P2
-- **Location:** Home bottom navigation
-- **Test device:** Flutter widget viewport 320x568
-- **iOS version:** N/A
-- **App build:** source `1.0.4+2`
-- **Precondition:** Open Home on compact width.
-- **Reproduction:** Pump `HomeView` at 320x568.
-- **Expected:** Four navigation targets fit and remain tappable.
-- **Actual before fix:** `RenderFlex overflowed by 16 pixels on the right`.
-- **Screenshot:** Not captured; deterministic RenderFlex log is the retained evidence.
-- **Log:** 16px right overflow in the first UI test run.
-- **Root cause:** Four fixed 74px items plus container spacing exceeded the available width.
-- **Modified files:** `lib/views/home/home_view.dart`.
-- **Fix:** Allocate each navigation item with `Expanded`.
-- **Regression test:** `home remains usable on an iPhone SE-sized viewport`.
-- **Result after fix:** Test passes with no Flutter exception.
-- **Commit:** Current `qa/ios-autonomous-qa` QA commit.
-- **Status:** Fixed.
+- 修正：文字使用 Expanded、單行及 ellipsis。
+- 測試：320x568、text scale 1.3。
+- 狀態：已修復。
 
-### QA-UI-002 - Onboarding keyboard choice overflow with large text
+### QA-UI-003：小高度 Paywall 內容不可存取
 
-- **Severity:** P2
-- **Location:** Onboarding keyboard selector
-- **Test device:** Flutter widget viewport 320x568, text scale 1.3
-- **iOS version:** N/A
-- **App build:** source `1.0.4+2`
-- **Precondition:** Compact phone and larger system text.
-- **Reproduction:** Advance the onboarding widget under the stated viewport and scale.
-- **Expected:** Choice labels remain inside their row.
-- **Actual before fix:** RenderFlex right overflows of 111px and 75px.
-- **Screenshot:** Not captured; deterministic RenderFlex log is the retained evidence.
-- **Log:** 111px / 75px right overflow in the first UI test run.
-- **Root cause:** Choice label had unconstrained intrinsic width.
-- **Modified files:** `lib/views/onboarding/onboarding_view.dart`.
-- **Fix:** Wrap label in `Expanded`, limit to one line, and ellipsize.
-- **Regression test:** `onboarding remains readable with larger text`.
-- **Result after fix:** Test passes with no Flutter exception.
-- **Commit:** Current `qa/ios-autonomous-qa` QA commit.
-- **Status:** Fixed.
+- 修正：Paywall 改為可捲動並保留安全區。
+- 狀態：已修復。
 
-### QA-UI-003 - Paywall content inaccessible on compact height
+### QA-UI-004：會員卡垂直 overflow
 
-- **Severity:** P2
-- **Location:** Paywall sheet
-- **Test device:** Flutter widget viewport 320x568
-- **iOS version:** N/A
-- **App build:** source `1.0.4+2`
-- **Precondition:** Open paywall on compact height.
-- **Reproduction:** Pump `PaywallView` aligned to the bottom.
-- **Expected:** Plans, purchase state, restore action, and legal copy are reachable.
-- **Actual before fix:** `RenderFlex overflowed by 269 pixels on the bottom`.
-- **Screenshot:** Not captured; deterministic RenderFlex log is the retained evidence.
-- **Log:** 269px bottom overflow in the first UI test run.
-- **Root cause:** Non-scrollable content exceeded the sheet height.
-- **Modified files:** `lib/views/paywall/paywall_view.dart`.
-- **Fix:** Add a bounded, scrollable paywall body without changing purchase logic.
-- **Regression test:** `paywall shows a stable non-store preview state`.
-- **Result after fix:** Compact paywall test passes; Web preview clearly avoids fake RevenueCat state.
-- **Commit:** Current `qa/ios-autonomous-qa` QA commit.
-- **Status:** Fixed.
+- 修正：調整卡片約束與內容排版。
+- 狀態：已修復。
 
-### QA-UI-004 - Membership card vertical overflow
+### QA-UI-005：個人頁選單橫向 overflow
 
-- **Severity:** P2
-- **Location:** Profile membership card
-- **Test device:** Flutter widget viewport 320x568, text scale 1.3
-- **iOS version:** N/A
-- **App build:** source `1.0.4+2`
-- **Precondition:** Navigate to profile on compact width with larger text.
-- **Reproduction:** Tap the profile tab in the responsive home test.
-- **Expected:** Membership label, allowance, and upgrade button fit.
-- **Actual before fix:** `RenderFlex overflowed by 18 pixels on the bottom`.
-- **Screenshot:** Not captured; deterministic RenderFlex log is the retained evidence.
-- **Log:** 18px bottom overflow in the second UI test run.
-- **Root cause:** Fixed height combined with large text, spacing, and button padding.
-- **Modified files:** `lib/views/home/home_view.dart`.
-- **Fix:** Tighten existing spacing and type sizes and allow the allowance label two lines.
-- **Regression test:** Compact Home/Profile path in `responsive_smoke_test.dart`.
-- **Result after fix:** Test passes with no Flutter exception.
-- **Commit:** Current `qa/ios-autonomous-qa` QA commit.
-- **Status:** Fixed.
+- 修正：調整可用寬度與文字約束。
+- 狀態：已修復。
 
-### QA-UI-005 - Profile menu row horizontal overflow
+### QA-UI-006：首次隱私權提示 overflow
 
-- **Severity:** P2
-- **Location:** Profile menu rows
-- **Test device:** Flutter widget viewport 320x568, text scale 1.3
-- **iOS version:** N/A
-- **App build:** source `1.0.4+2`
-- **Precondition:** Profile page with long title/trailing value.
-- **Reproduction:** Render the compact profile path.
-- **Expected:** Title, trailing value, and chevron coexist.
-- **Actual before fix:** `RenderFlex overflowed by 13 pixels on the right`.
-- **Screenshot:** Not captured; deterministic RenderFlex log is the retained evidence.
-- **Log:** 13px right overflow in the second UI test run.
-- **Root cause:** Unconstrained title plus spacer consumed width needed by trailing content.
-- **Modified files:** `lib/views/home/home_view.dart`.
-- **Fix:** Make title flexible with a two-line ellipsis.
-- **Regression test:** Compact Home/Profile path in `responsive_smoke_test.dart`.
-- **Result after fix:** Test passes with no Flutter exception.
-- **Commit:** Current `qa/ios-autonomous-qa` QA commit.
-- **Status:** Fixed.
+- 修正：內容可捲動，按鈕保持可見。
+- 狀態：已修復。
 
-### QA-UI-006 - First-run privacy notice overflow
+## 後續更新
 
-- **Severity:** P2
-- **Location:** First-run privacy gate
-- **Test device:** Flutter widget viewport 320x568, text scale 1.3
-- **iOS version:** N/A
-- **App build:** source `1.0.4+2`
-- **Precondition:** Privacy policy has not been accepted.
-- **Reproduction:** Pump `PrivacyNoticeDialog` on a compact viewport.
-- **Expected:** Notice remains inside the screen and all content is reachable.
-- **Actual before fix:** `RenderFlex overflowed by 303 pixels on the bottom`.
-- **Screenshot:** Supplemental Flutter Web inspection showed clipped content; widget log is authoritative.
-- **Log:** 303px bottom overflow in the failing regression test.
-- **Root cause:** Long fixed dialog column had no scroll container.
-- **Modified files:** `lib/views/components/privacy_notice_dialog.dart`.
-- **Fix:** Add safe dialog insets and a scrollable body; consent behavior is unchanged.
-- **Regression test:** `privacy notice fits a compact phone viewport`.
-- **Result after fix:** Test passes at 320x568 and text scale 1.3.
-- **Commit:** Current `qa/ios-autonomous-qa` QA commit.
-- **Status:** Fixed.
+2026-07-16 已在 Codemagic 真正執行 iOS 26.4.1 Simulator：
 
-## Release Interpretation
+- Flutter 27/27。
+- 對話 14/14。
+- UI／Widget 11/11。
+- iOS Integration 1/1。
+- Simulator build、install、launch 成功。
+- LoveKeyboard Extension 版本繼承問題已修復。
 
-The local code gate is green. This does not prove the native keyboard extension, social login providers, RevenueCat sandbox purchases, or restore flows work on iOS. Those are explicitly blocked until a Mac and physical TestFlight device are used.
+因此本檔中「未執行 iOS Simulator」只代表 2026-07-15 的 Windows 階段，不代表目前狀態。

@@ -1,89 +1,57 @@
-# LoveKey Dialogue Evaluation Report
+# LoveKey 對話邏輯評估報告
 
-## Scope And Honesty Boundary
+## 評估範圍與誠實邊界
 
-- Evaluation date: 2026-07-15.
-- Mode: `mock_static` plus `mock_static_human_review`.
-- Live OpenAI/proxy requests: **0**.
-- Real model/version: **not evaluated**.
-- The fixed outputs are QA fixtures, not evidence that a production model achieved the same score.
+本報告涵蓋 prompt contract、回應 JSON parser、回覆品質規則及固定案例。自動化案例使用 mock／靜態輸出，不會呼叫正式 OpenAI API，也不能代替真實模型線上品質驗收。
 
-## Dataset
+## 資料集
 
-The complete inputs and outputs are stored in:
+- 50 組繁體中文固定案例。
+- 涵蓋接話、破冰、邀約、安撫、自訂、短句、長句、emoji、特殊符號、拒答與錯誤格式。
+- 每組案例均有目標、禁止內容、預期語氣與語意評分。
 
-- `test/fixtures/dialogue_cases.json`
-- `test/fixtures/dialogue_semantic_scores.json`
+## 評估方法
 
-The dataset contains exactly 50 stable cases (`D001` through `D050`) and covers all 20 required categories:
+### 確定性規則
 
-1. Normal input
-2. Insufficient data
-3. Contradictory input
-4. Negation
-5. Long context
-6. Multi-turn context
-7. Repeated question
-8. Similar names
-9. Gender/title variation
-10. Date/time
-11. Number/amount
-12. Emoji/special symbols
-13. Empty/very short input
-14. Very long input
-15. API timeout
-16. Empty API response
-17. Malformed API response
-18. Network loss
-19. Model refusal
-20. Sensitive/high-risk content
+- 回覆不可為空。
+- 不可包含 placeholder、JSON wrapper、code fence 或模型說明文字。
+- 不可出現「高情商的回覆」「AI 建議如下」等模板痕跡。
+- 長度必須適合直接填入聊天 App。
+- parser 必須能處理正常字串與 structured text block。
+- API 結構缺漏、空 choices、錯誤型別時必須產生可預期錯誤。
 
-## Evaluation Method
+### 七維語意規則
 
-### A. Deterministic Rules
+固定案例依自然度、關聯性、語氣、可延續性、簡潔度、安全性及可直接發送性評分。mock 結果只能證明規則與案例資料一致。
 
-Tests verify fixture structure, category coverage, length limits, forbidden wrappers, placeholder text, code/JSON artifacts, prompt contracts, and malformed response handling.
+## 自動化結果
 
-Result: **50/50 fixture cases passed deterministic checks (100%)**.
-
-### B. Semantic Rubric
-
-Each static answer was reviewed and stored with 1-5 scores for:
-
-- Relevance
-- Logic
-- Context consistency
-- Grounding in supplied user information
-- Natural language
-- LoveKey tone
-- Safety
-
-Failure threshold: any of the first four scores below 4, or a serious safety defect.
-
-Result: **50/50 static fixture answers met the stored rubric threshold (100%)**.
-
-This is a fixture quality rate. A live-model pass rate is **N/A** because no paid API call was made.
-
-## Automated Results
-
-| Suite | Result |
+| 項目 | 結果 |
 | --- | --- |
-| `test/dialogue/ai_response_quality_test.dart` | 9/9 passed |
-| `test/dialogue/dialogue_fixture_test.dart` | 5/5 passed |
-| `scripts/dialogue_eval.sh` | 14/14 passed |
+| 對話專項測試 | 14/14 通過 |
+| 固定案例數 | 50 |
+| parser 正常／錯誤格式 | 通過 |
+| 模板與模型痕跡阻擋 | 通過 |
+| prompt contract | 通過 |
+| 正式模型線上測試 | 尚未執行 |
 
-## Problems Found And Fixed
+## 已修復問題
 
-1. External response JSON was trusted too early. Missing/empty `choices`, invalid content types, structured text blocks, and invalid JSON now receive deterministic parsing behavior.
-2. Model meta-text such as `以下是高情商的回覆`, placeholders, fenced code, and raw JSON could pass the old length-only usability check. These are now rejected.
+1. API 回應 parser 原本直接索引 choices[0]，遇到格式異常可能產生不一致 runtime error；現已逐層驗證。
+2. 原規則只檢查非空與長度，可能接受 placeholder、JSON、code fence 或模型說明；現已集中由 ReplyQualityValidator 阻擋。
+3. structured content text block 原本可能無法正確合併；現已支援。
 
-## Remaining AI Risks
+## 剩餘風險
 
-- The production model can still produce culturally awkward or contextually poor responses that static fixtures cannot predict.
-- Timeout, network loss, and refusal are mocked at the parser/contract level, not injected through a live proxy.
-- No cross-locale evaluation was performed; this cycle validates Traditional Chinese fixtures only.
-- No longitudinal learning or user feedback loop was tested.
+- 真實模型仍可能產生文化語境不自然、太油、過度承諾或上下文誤判。
+- 不同國家語言需要各自測試，不能直接用繁中通過率代表全球品質。
+- 鍵盤輸入的聊天上下文可能不足，應記錄被拒絕與重試比例。
+- mock 案例無法驗證正式 endpoint 的延遲、逾時、額度與拒答行為。
 
-## Required Live Follow-up
+## 上線前真實測試
 
-Run the same 50 prompts against a non-production test endpoint with the deployed model/version recorded, then have a second reviewer score blind outputs. Do not expose secrets in fixtures or CI logs.
+- 使用嚴格預算的測試 endpoint。
+- 每個模式至少測 20 組真實輸入。
+- 記錄模型、版本、輸入、輸出、延遲、錯誤與人工評分。
+- 真實回覆通過率未達門檻時，不開始全球買量。

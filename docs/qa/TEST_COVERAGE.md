@@ -1,44 +1,36 @@
-# LoveKey Test Coverage Matrix
+# LoveKey 測試覆蓋矩陣
 
-Legend: **PASS** actually executed, **MOCK** deterministic non-production simulation, **BLOCKED** not executed, **CI** prepared for macOS CI.
-
-| Feature | Test type | Status | Evidence |
+| 功能 | 測試方式 | 狀態 | 說明 |
 | --- | --- | --- | --- |
-| Dependency resolution | Flutter command | PASS | `flutter pub get` |
-| Static analysis | Analyzer | PASS | 0 issues |
-| Existing unit/widget tests | Flutter test | PASS | Full suite 25/25 |
-| Focused UI audit | Widget | PASS | 9/9 via `scripts/ui_audit.sh` |
-| AI response parsing | Unit | PASS | 9 parser/quality tests |
-| 50 dialogue cases | Fixture/rule | MOCK | 50/50 rule pass |
-| Semantic dialogue rubric | Stored human review | MOCK | 50/50 threshold pass |
-| Live deployed AI model | End-to-end | BLOCKED | No paid/test API endpoint used |
-| Compact Home/Profile | Widget | PASS | 320x568 regression |
-| Onboarding large text | Widget | PASS | 320x568, 1.3x |
-| Keyboard guide copy | Widget | PASS | Current one-reply flow asserted |
-| Paywall compact layout | Widget | PASS | Scroll and preview state asserted |
-| Privacy notice compact layout | Widget | PASS | 320x568, 1.3x |
-| Account UI state | Widget | PASS | Configured/unavailable branches |
-| Local core navigation | Integration test source | BLOCKED locally / CI | Windows build lacks `atlstr.h`; Web device unsupported by command |
-| iOS Simulator build | Native build | CI / BLOCKED locally | `.github/workflows/ios-qa.yml` |
-| iOS Simulator launch | Integration | CI / BLOCKED locally | macOS/Xcode required |
-| Email registration/login | Live backend | BLOCKED | Test Supabase account/environment required |
-| Google login/cancel | Native provider | BLOCKED | iOS device/provider session required |
-| Apple login/cancel | Native provider | BLOCKED | iOS device/provider session required |
-| Session expiry/restart | Live backend | BLOCKED | Test backend and native app required |
-| Keyboard paste/generate/fill | Native extension | BLOCKED | Physical TestFlight device required |
-| LINE/IG/iMessage compatibility | Native extension | BLOCKED | Physical TestFlight device required |
-| Weekly/yearly/lifetime display | RevenueCat source/config docs | PARTIAL | Real device still required |
-| Purchase/cancel/fail/pending | Sandbox store | BLOCKED | Apple Sandbox/StoreKit required |
-| Restore/reinstall/entitlement | Sandbox store | BLOCKED | Apple Sandbox/StoreKit required |
-| Dark mode/VoiceOver/Safe Area | Native UI | BLOCKED | iOS Simulator/device required |
+| Flutter 靜態分析 | flutter analyze | 通過 | 0 問題 |
+| Flutter 單元／Widget | flutter test | 通過 | 27/27 |
+| 對話 parser／品質 | dialogue_eval | 通過 | 14/14，mock／靜態模式 |
+| UI 響應式／Widget | ui_audit | 通過 | 11/11 |
+| iOS Simulator build | Codemagic | 通過 | iOS 26.4.1 |
+| Simulator 安裝／啟動 | simctl | 通過 | 一般 App 可正常顯示 |
+| iOS 核心 Integration | Flutter Integration Test | 通過 | 1/1 |
+| BrowserStack 實機安裝／冷啟動 | iPhone 15 Pro Max／iOS 17.3 | 基本通過 | 免費時段只測到 onboarding |
+| iOS 鍵盤加入／完整取用 | 實體 TestFlight | 未驗證 | 需要實體 iPhone |
+| LINE／IG／iMessage 複製生成填入 | 實體 TestFlight | 未驗證 | 發布 P0 |
+| Email／Google／Apple 登入 | 實體 TestFlight | 未驗證 | 發布 P0 |
+| 週／年／永久當地價格 | Apple Sandbox | 未驗證 | 發布 P0 |
+| 購買／取消／恢復／重裝 | Apple Sandbox | 未驗證 | 發布 P0 |
+| 真實模型品質 | 測試 endpoint | 未驗證 | mock 不等於正式模型 |
+| 斷網／慢網／逾時 | 實體／代理錯誤注入 | 未驗證 | 發布 P0 |
+| 大字體 | Widget + 實體 | 部分通過 | Widget 已覆蓋，原生仍需實機 |
+| 深色模式 | Simulator 截圖 | 未通過產品要求 | 目前固定 Brightness.light |
+| VoiceOver | 實體／Simulator | 未驗證 | 發布前建議 |
+| Android 內部測試 | Play Console | 已發布 | 正式版仍受商家帳戶與封閉測試阻塞 |
 
-## Permanent Automation Added
+## 永久自動化
 
-- `scripts/ios_qa.sh`
-- `scripts/dialogue_eval.sh`
-- `scripts/ui_audit.sh`
-- `.github/workflows/ios-qa.yml`
-- `.agents/skills/lovekey-ios-qa/SKILL.md`
-- `AGENTS.md`
+- scripts/dialogue_eval.sh：對話邏輯。
+- scripts/ui_audit.sh：響應式與 Widget UI。
+- scripts/ios_qa.sh：macOS／iOS QA。
+- scripts/codemagic_ios_simulator_qa.sh：Codemagic Simulator、Integration、截圖與 artifacts。
+- .github/workflows/ios-qa.yml：GitHub iOS QA。
+- Codemagic workflow lovekey-ios-simulator-qa：每日或手動執行。
 
-The workflow fails on analyzer, test, build, or integration failures and uploads `build/qa/` plus `docs/qa/`. It does not use `continue-on-error` for core gates.
+## 目前覆蓋解讀
+
+自動化已能阻擋 parser、明顯模板回覆、Widget overflow、Simulator build／install 及基本導覽回歸。第三方鍵盤、完整取用、host app 填入、社交登入及付款生命週期仍只能靠 TestFlight 實機驗收，不能用 build 成功代替。

@@ -17,3 +17,4 @@ Use this skill from the LoveKey repository root.
 8. Keep live API/model checks separate from `mock_static` dialogue checks. Never present mock output as a live-model pass.
 9. Update `docs/qa/` with commands, evidence, severities, fixes, blocked items, and TestFlight readiness.
 10. Commit the reviewed QA changes to the current QA branch; do not merge automatically.
+11. 所有人類可讀報告與執行摘要必須使用繁體中文；英文只保留指令、API 欄位、程式識別碼與平台原始狀態。

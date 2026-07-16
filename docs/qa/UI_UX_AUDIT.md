@@ -1,49 +1,44 @@
-# LoveKey UI / UX Audit
+# LoveKey UI／UX 檢查報告
 
-## Executed Coverage
+## 已執行覆蓋
 
-| Area | Viewport / condition | Result |
-| --- | --- | --- |
-| Home and bottom navigation | 320x568 | Passed after fix |
-| Profile membership/menu | 320x568, text scale 1.3 | Passed after fixes |
-| Onboarding | 320x568, text scale 1.3 | Passed after fix |
-| Current one-reply keyboard guide | 320x568, text scale 1.3 | Passed |
-| Paywall preview | 320x568 | Passed after fix |
-| Account state | 320x568, text scale 1.3 | Passed |
-| First-run privacy notice | 320x568, text scale 1.3 | Passed after fix |
-| Standard test harness | 430x932 | Passed |
-| Flutter Web render | Local browser smoke | Loaded; supplemental only |
+- iPhone SE 尺寸首頁與底部導覽。
+- onboarding 鍵盤選項與大字體。
+- 鍵盤新版「每次生成一則」教學文案。
+- Paywall 在小高度裝置的捲動。
+- 帳號頁狀態。
+- 設定頁所有操作項目。
+- 首次啟動隱私權提示。
+- Codemagic iOS 26.4.1 Simulator 正常 App 截圖。
 
-## Defects Reproduced
+UI／Widget 專項結果：11/11 通過。
 
-- Bottom nav: 16px right overflow.
-- Onboarding choices: 111px and 75px right overflow.
-- Paywall: 269px bottom overflow.
-- Membership card: 18px bottom overflow.
-- Profile menu: 13px right overflow.
-- Privacy notice: 303px bottom overflow.
+## 已重現並修復
 
-All six UI defects were fixed with constrained/flexible/scroll behavior and now have regression coverage in `test/ui/responsive_smoke_test.dart`.
+1. 320px 寬度底部導覽右側 overflow：改用 Expanded 分配。
+2. onboarding 大字體選項 overflow：文字使用 Expanded、單行與 ellipsis。
+3. 小高度 Paywall 內容無法完整存取：改為可捲動。
+4. 會員卡垂直 overflow：調整約束與內容排版。
+5. 個人頁選單橫向 overflow：調整可用寬度。
+6. 首次隱私權提示在小裝置 overflow：增加可捲動與安全間距。
+7. 設定頁互動卡片缺少 Material ancestor：加入 Material 並補回歸測試。
 
-## Design Boundary
+## 設計邊界
 
-No broad visual redesign, brand change, color replacement, navigation rewrite, or paywall logic change was made. Fixes reuse existing tokens and widgets and are limited to layout resilience.
+本輪只修正客觀的 overflow、clipping、捲動、可點擊性與狀態顯示，不改品牌、主導覽、定價或主觀視覺方向。
 
-## State Review
+## 狀態檢查
 
-- **Loading:** Paywall retains its loading indicator; real RevenueCat timing was not exercised.
-- **Error:** Web paywall explicitly identifies itself as a preview and does not display a fake RevenueCat failure.
-- **Disabled:** Purchase and restore actions remain disabled where the native store is unavailable.
-- **Empty/unavailable:** Account screen test accepts either configured fields or a clear unavailable state.
-- **Large text:** Onboarding, profile, and privacy gate have targeted 1.3x coverage.
+- Paywall 在非商店／測試環境有明確「產品尚未載入」狀態。
+- 帳號頁能顯示已設定或不可用狀態。
+- 鍵盤教學已描述「複製、切鍵盤、選模式／語氣、生成一則、填入」流程。
+- 隱私權提示可在小畫面閱讀與同意。
 
-## Not Verified On This Host
+## 尚未驗證
 
-- Native iOS Safe Area, notch, Dynamic Island, and keyboard occlusion.
-- Dark mode rendering on iOS.
-- VoiceOver traversal and native accessibility labels.
-- Actual keyboard extension height and layout in LINE, Instagram, or iMessage.
-- Minimum supported iOS and latest iOS on Simulator/physical devices.
-- Before/after screenshots from an iOS device.
-
-Flutter Web screenshots are not used as native iOS pass evidence because the canvas renderer and browser viewport are not equivalent to UIKit/keyboard-extension rendering.
+- 實體 iPhone 上的第三方鍵盤高度、閃爍與 host app 遮擋。
+- LINE、Instagram、iMessage 的真實填入體驗。
+- VoiceOver 原生順序與標籤。
+- Dynamic Type 極大字級。
+- 真正深色主題；目前系統深色下仍使用淺色設計。
+- iPad 各方向與分割畫面。
