@@ -95,7 +95,11 @@ echo "== Install iOS pods and build simulator app =="
 if [[ -f ios/Podfile ]]; then
   (cd ios && pod install)
 fi
+APP_PATH="$ROOT/build/ios/iphonesimulator/Runner.app"
+NORMAL_APP_PATH="$ROOT/build/ios/iphonesimulator/Runner-normal.app"
 flutter build ios --simulator --debug
+rm -rf "$NORMAL_APP_PATH"
+ditto "$APP_PATH" "$NORMAL_APP_PATH"
 
 echo "== Select newest available iOS runtime and an iPhone device type =="
 RUNTIME_ID="$(xcrun simctl list runtimes available -j | python3 -c '
@@ -145,10 +149,11 @@ echo "== Core iOS integration test =="
 flutter test integration_test/app_smoke_test.dart -d "$SIMULATOR_ID" --reporter expanded \
   | tee "$QA_DIR/ios-integration-test.log"
 
-APP_PATH="$ROOT/build/ios/iphonesimulator/Runner.app"
 BUNDLE_ID="com.ailovekeyboard.app"
 xcrun simctl terminate "$SIMULATOR_ID" "$BUNDLE_ID" >/dev/null 2>&1 || true
-xcrun simctl install "$SIMULATOR_ID" "$APP_PATH"
+# The integration test rebuilds Runner.app with its test entrypoint. Reinstall
+# the preserved production entrypoint before collecting launch screenshots.
+xcrun simctl install "$SIMULATOR_ID" "$NORMAL_APP_PATH"
 xcrun simctl launch "$SIMULATOR_ID" "$BUNDLE_ID" | tee "$QA_DIR/simulator-launch.log"
 sleep 5
 xcrun simctl io "$SIMULATOR_ID" screenshot "$QA_DIR/home-light.png"
