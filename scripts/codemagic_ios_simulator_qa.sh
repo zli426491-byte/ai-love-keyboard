@@ -96,7 +96,7 @@ if [[ -f ios/Podfile ]]; then
   (cd ios && pod install)
 fi
 APP_PATH="$ROOT/build/ios/iphonesimulator/Runner.app"
-NORMAL_APP_PATH="$ROOT/build/ios/iphonesimulator/Runner-normal.app"
+NORMAL_APP_PATH="${TMPDIR:-/tmp}/LoveKey-QA-Runner.app"
 flutter build ios --simulator --debug
 rm -rf "$NORMAL_APP_PATH"
 ditto "$APP_PATH" "$NORMAL_APP_PATH"
