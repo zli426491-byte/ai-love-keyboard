@@ -14,6 +14,7 @@
 | LINE／IG／iMessage 複製生成填入 | 實體 TestFlight | 未驗證 | 發布 P0 |
 | Email／Google／Apple 登入 | 實體 TestFlight | 未驗證 | 發布 P0 |
 | 週／年／永久當地價格 | Apple Sandbox | 未驗證 | 發布 P0 |
+| RevenueCat LoveKey offering 契約 | 唯讀 API + Python 單元測試 | 4／4 通過；三商品齊全 | 發布 gate |
 | 購買／取消／恢復／重裝 | Apple Sandbox | 未驗證 | 發布 P0 |
 | 真實模型品質 | 測試 endpoint | 未驗證 | mock 不等於正式模型 |
 | 斷網／慢網／逾時 | 實體／代理錯誤注入 | 未驗證 | 發布 P0 |

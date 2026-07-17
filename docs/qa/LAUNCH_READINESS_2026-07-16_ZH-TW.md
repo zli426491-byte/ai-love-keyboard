@@ -21,6 +21,7 @@ LoveKey 的公開版 1.0.2 已在 App Store 銷售，但準備開始收費與買
 | Demo 帳號 | 未填，且標記不需要 | 若核心功能必須登入，這裡必須改為需要並提供有效測試帳號 |
 | 商店截圖 | 繁中有 5 張 iPhone、1 張 iPad | 其他 11 個語系目前沒有本地化截圖 |
 | App 描述與版本更新說明 | 12 個語系已於 2026-07-17 更新並回讀驗證 | 已完成；送審前人工抽查商店顯示 |
+| RevenueCat iOS 設定 | LoveKey 金鑰、default offering、`pro` entitlement 與週／年／永久商品已核對 | 雲端設定已修正；仍需新 Build 的 Sandbox 實測 |
 
 Apple 規則重點：
 
@@ -33,7 +34,7 @@ Apple 規則重點：
 - Build 56 的確已在 TestFlight 內部測試，不是「尚未出現在 TestFlight」。
 - Build 56 不是 Build 55 的後續修正版；兩者來自平行分支。
 - Build 56 鍵盤擴充沒有送正式 Proxy 所需的 timestamp、nonce、signature 與登入 token，AI 請求會被 `401 request_metadata_required` 擋下。
-- 完整 QA 驗證的是 commit `68804aad1d0555ffbda98532aa74b5b5a320e14c`，目前尚未上傳 TestFlight。
+- 完整 QA 最新驗證的是 commit `6c34c645f592d71376e4b8bc2123b04a9af23bb5`，GitHub macOS Run `29549179365` 已通過，目前尚未上傳 TestFlight。
 - 最終驗收目標應改為從完整 QA 程式線產生 Build 57。完整證據見 [Build 55／56 專項稽核](TESTFLIGHT_BUILD_55_56_AUDIT_2026-07-17_ZH-TW.md)。
 
 ## P0：送出 iOS 1.0.4 前一定要完成
@@ -62,6 +63,10 @@ Apple 規則重點：
 
 ### 3. RevenueCat 與 Apple Sandbox
 
+- [x] GitHub iOS 公開金鑰改為 LoveKey，而不是 Cleanup App。
+- [x] default offering 包含 LoveKey 週、年、永久三項商品。
+- [x] `pro` entitlement 綁定 LoveKey 週、年、永久三項商品。
+- [x] iOS release 加入 RevenueCat offering 自動預檢。
 - [ ] Paywall 正確載入週、年、永久及當地貨幣價格。
 - [ ] 使用 Sandbox 完成一筆週訂閱。
 - [ ] 購買後 pro 權益立即解鎖。
@@ -116,7 +121,7 @@ Apple 規則重點：
 
 ## 建議執行順序
 
-1. 今天：整理完整 QA 程式線並產生 Build 57；Build 56 不進行最終驗收。
+1. 今天：完成 RevenueCat 與 release gate 修正，經批准合併發布工作流後產生 Build 57；Build 56 不進行最終驗收。
 2. 同步：建立 App Review demo 帳號並填寫審核操作備註；12 個語系更新說明已完成。
 3. 驗收全通過：把 1.0.4 與三項 IAP 一起送 Apple 審核。
 4. 審核等待期間：接 Analytics／Meta 歸因、準備原創素材與停損規則。
@@ -127,8 +132,8 @@ Apple 規則重點：
 
 | 階段 | 現在是否通過 |
 | --- | --- |
-| 程式靜態與自動測試 | 通過 |
-| Codemagic iOS Simulator | 通過 |
+| 程式靜態與自動測試 | 通過；Flutter 29／29、對話 14／14、UI 11／11、RevenueCat 預檢 4／4 |
+| GitHub macOS iOS Simulator | 通過；iPhone 17 Pro／iOS 26.2，Run 29549179365 |
 | BrowserStack 基本實機啟動 | 通過 |
 | 實體 iPhone 第三方鍵盤 | 未通過 |
 | Sandbox 付款與恢復購買 | 未通過 |

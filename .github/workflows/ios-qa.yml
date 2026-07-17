@@ -6,7 +6,8 @@ on:
     branches: [main, master]
   workflow_dispatch:
   schedule:
-    - cron: '35 18 * * *'
+    # 18:00 UTC = 02:00 Asia/Taipei (next calendar day).
+    - cron: '0 18 * * *'
 
 permissions:
   contents: read
@@ -32,6 +33,22 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: RevenueCat release configuration checks
+        env:
+          REVENUECAT_IOS_PUBLIC_KEY: ${{ secrets.REVENUECAT_IOS_PUBLIC_KEY }}
+        run: |
+          set -o pipefail
+          mkdir -p build/qa
+          python3 -m unittest tools.tests.test_check_revenuecat_offering \
+            2>&1 | tee build/qa/revenuecat-unit-test.log
+          if [ -n "$REVENUECAT_IOS_PUBLIC_KEY" ]; then
+            python3 tools/check_revenuecat_offering.py \
+              2>&1 | tee build/qa/revenuecat-offering.log
+          else
+            echo "GitHub Secret 不可用，本次只執行 RevenueCat 單元測試。" \
+              | tee build/qa/revenuecat-offering.log
+          fi
 
       - name: Record environment
         run: |

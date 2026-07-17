@@ -19,7 +19,7 @@
 - GitHub Actions iPhone 17 Pro／iOS 26.2 Simulator build、啟動與 Integration Test 通過（Run 29548206130）。
 - BrowserStack iPhone 15 Pro Max／iOS 17.3 完成安裝、冷啟動與進入 onboarding。
 
-最新完整自動化結果對應 commit `b2b5d65e5906cf47f29636230f37c3083247c8bb`，不是 Build 55 或 Build 56 的精確二進位檔。此程式線仍需產生新的 TestFlight Build 57 才能做最終實機驗收。
+最新完整自動化結果對應 commit `6c34c645f592d71376e4b8bc2123b04a9af23bb5`，GitHub macOS Run `29549179365` 已通過，但它不是 Build 55 或 Build 56 的精確二進位檔。RevenueCat 的 GitHub iOS 金鑰已修正為 LoveKey，release 亦新增週／年／永久商品預檢。此程式線仍需產生新的 TestFlight Build 57 才能做最終實機驗收。
 
 ## 實體 iPhone 退出清單
 
