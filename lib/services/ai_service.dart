@@ -283,10 +283,12 @@ class AiService extends ChangeNotifier {
       if (error is String && error.trim().isNotEmpty) {
         return switch (error) {
           'server_not_configured' => 'AI 服務尚未設定，請稍後再試。',
-          'quota_exceeded' => '今日免費次數已用完，升級後可繼續使用。',
+          'quota_exceeded' => '今日 AI 使用額度已達上限，請明天再試。',
           'active_subscription_required' => '此功能需要有效會員，請先完成訂閱或恢復購買。',
           'auth_required' => '請先登入 LoveKey 帳號。',
-          'auth_invalid' => '登入狀態已失效，請重新登入。',
+          'auth_invalid' ||
+          'invalid_auth' ||
+          'invalid_token' => '登入狀態已失效，請重新登入。',
           'auth_not_configured' || 'auth_unavailable' => '帳號驗證服務暫時無法使用。',
           'identity_mismatch' => '帳號身份不一致，請重新登入。',
           'rate_limited' => '請求太頻繁，稍等一下再試。',
@@ -315,7 +317,7 @@ class AiService extends ChangeNotifier {
       return 'AI 請求逾時，請稍後再試一次';
     }
     if (message.contains('quota_exceeded') || message.contains('額度')) {
-      return '今日免費額度已用完，升級會員即可繼續使用';
+      return '今日 AI 使用額度已達上限，請明天再試';
     }
     if (message.contains('auth_required') || message.contains('登入')) {
       return '請先登入 LoveKey 帳號';

@@ -1405,6 +1405,22 @@ final class KeyboardViewController: UIInputViewController {
             return
         }
 
+        guard SharedConfig.accountAccessToken != nil else {
+            currentReplies = []
+            isGenerating = false
+            aiErrorText = "請先開啟 LoveKey 登入"
+            renderContent()
+            return
+        }
+
+        guard SharedConfig.isPro else {
+            currentReplies = []
+            isGenerating = false
+            aiErrorText = "請開啟 LoveKey 升級或同步 Pro"
+            renderContent()
+            return
+        }
+
         let requestID = generationIndex
         currentReplies = []
         isGenerating = true
@@ -1500,12 +1516,14 @@ final class KeyboardViewController: UIInputViewController {
         }
 
         switch errorCode {
-        case "auth_required", "invalid_auth", "invalid_token":
+        case "auth_required", "auth_invalid", "invalid_auth", "invalid_token":
             return "請先開啟 LoveKey 重新登入"
-        case "revenuecat_identity_mismatch":
+        case "identity_mismatch", "revenuecat_identity_mismatch":
             return "請開啟 LoveKey 同步會員"
-        case "active_subscription_required", "quota_exceeded":
+        case "active_subscription_required":
             return "請先開啟 LoveKey 升級 Pro"
+        case "quota_exceeded":
+            return "今日 AI 使用額度已達上限"
         case "rate_limited":
             return "請稍候再試"
         case "server_not_configured":

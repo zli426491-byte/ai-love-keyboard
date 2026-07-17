@@ -1183,7 +1183,7 @@ class _UsageSummary extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           Text(
-            subscribed ? 'Pro 已解鎖無限回覆' : '今日剩餘免費回覆 $remainingFree 次',
+            subscribed ? 'Pro 已啟用 · 高額度回覆' : '升級 Pro 使用 AI 回覆',
             style: TextStyle(
               color: color,
               fontSize: 13,
@@ -3462,7 +3462,7 @@ class _MembershipCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    subscribed ? '會員' : '非會員',
+                    subscribed ? 'Pro 會員' : '尚未開通',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 24,
@@ -3471,7 +3471,7 @@ class _MembershipCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    subscribed ? '已解鎖所有回覆' : '今日還可回覆 $remainingFree 次',
+                    subscribed ? 'AI 回覆與所有模式已解鎖' : '升級後即可使用 AI 回覆',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(

@@ -56,7 +56,7 @@ class SettingsView extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        usage.isSubscribed ? 'Pro 會員' : '免費版',
+                        usage.isSubscribed ? 'Pro 會員' : '尚未開通 Pro',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -68,8 +68,8 @@ class SettingsView extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         usage.isSubscribed
-                            ? '享受無限 AI 功能'
-                            : '今日剩餘免費回覆 ${usage.remainingFree} 次',
+                            ? 'AI 回覆與所有模式已解鎖'
+                            : '升級後即可使用 AI 回覆',
                         style: TextStyle(
                           fontSize: 13,
                           color: usage.isSubscribed

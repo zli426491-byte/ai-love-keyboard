@@ -165,7 +165,7 @@ class _PaywallViewState extends State<PaywallView> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '解鎖鍵盤 AI 回覆、所有情境模式與不限次生成。付款透過 ${isAndroid ? 'Google Play' : 'App Store'} 完成，價格會依所在地自動顯示。',
+                  '解鎖鍵盤 AI 回覆、所有情境模式與 Pro 高額度生成。付款透過 ${isAndroid ? 'Google Play' : 'App Store'} 完成，價格會依所在地自動顯示。',
                   style: TextStyle(
                     color: _muted,
                     fontSize: 14,
