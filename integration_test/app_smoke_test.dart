@@ -13,6 +13,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
+  Future<void> pumpUi(WidgetTester tester) async {
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+  }
+
   testWidgets('core navigation and local input smoke test', (tester) async {
     SharedPreferences.setMockInitialValues({
       'coin_balance': 20,
@@ -36,7 +41,7 @@ void main() {
         child: const MaterialApp(home: HomeView()),
       ),
     );
-    await tester.pumpAndSettle();
+    await pumpUi(tester);
 
     expect(find.text('我的鍵盤'), findsOneWidget);
     final composer = find.byType(TextField).first;
@@ -44,15 +49,15 @@ void main() {
     expect(find.text('哈哈'), findsOneWidget);
 
     await tester.tap(find.text('盲盒交友').last);
-    await tester.pumpAndSettle();
+    await pumpUi(tester);
     expect(find.text('交友盲盒'), findsWidgets);
 
     await tester.tap(find.text('我的').last);
-    await tester.pumpAndSettle();
+    await pumpUi(tester);
     expect(find.text('鍵盤使用教學'), findsOneWidget);
 
     await tester.tap(find.text('首頁').last);
-    await tester.pumpAndSettle();
+    await pumpUi(tester);
     expect(find.text('我的鍵盤'), findsOneWidget);
   });
 }
