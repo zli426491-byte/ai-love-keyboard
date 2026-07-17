@@ -15,13 +15,13 @@ class OnboardingView extends StatefulWidget {
 }
 
 class _OnboardingViewState extends State<OnboardingView> {
-  static const _bg = Color(0xFFFFF5F8);
+  static const _bg = Color(0xFF21161F);
   static const _card = Color(0xFFFFFCFE);
   static const _text = Color(0xFF201722);
   static const _muted = Color(0xFF786873);
-  static const _line = Color(0xFFF0DDE7);
-  static const _pink = Color(0xFFFF6B9D);
-  static const _purple = Color(0xFFC147E9);
+  static const _line = Color(0xFFEADAE2);
+  static const _pink = Color(0xFFFF6F8F);
+  static const _purple = Color(0xFFD34879);
   static const _softPink = Color(0xFFFFEAF2);
 
   final _pageController = PageController();
@@ -71,74 +71,83 @@ class _OnboardingViewState extends State<OnboardingView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _bg,
-      body: Stack(
-        children: [
-          SafeArea(
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (i) => setState(() => _currentPage = i),
-              children: [
-                _StepPage(
-                  step: 'STEP 1',
-                  title: '長按對方訊息\n點「複製」',
-                  mock: const _CopyMessageMock(),
-                ),
-                _StepPage(
-                  step: 'STEP 2',
-                  title: '長按地球圖示\n切到 LoveKey',
-                  mock: const _SwitchKeyboardMock(),
-                  footer: _SettingsHint(onTap: _openSettings),
-                ),
-                const _StepPage(
-                  step: 'STEP 3',
-                  title: '選語氣\n按填入',
-                  mock: _FillReplyMock(),
-                ),
-              ],
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1D141B), Color(0xFF3B2333), Color(0xFF21161F)],
           ),
-          Positioned(
-            top: MediaQuery.paddingOf(context).top + 10,
-            right: 18,
-            child: TextButton(
-              onPressed: _completeOnboarding,
-              style: TextButton.styleFrom(
-                foregroundColor: _muted,
-                textStyle: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
+        ),
+        child: Stack(
+          children: [
+            SafeArea(
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (i) => setState(() => _currentPage = i),
+                children: [
+                  _StepPage(
+                    step: 'STEP 1',
+                    title: '長按對方訊息\n點「複製」',
+                    mock: const _CopyMessageMock(),
+                  ),
+                  _StepPage(
+                    step: 'STEP 2',
+                    title: '長按地球圖示\n切到 LoveKey',
+                    mock: const _SwitchKeyboardMock(),
+                    footer: _SettingsHint(onTap: _openSettings),
+                  ),
+                  const _StepPage(
+                    step: 'STEP 3',
+                    title: '選語氣\n按填入',
+                    mock: _FillReplyMock(),
+                  ),
+                ],
               ),
-              child: const Text('跳過'),
             ),
-          ),
-          Positioned(
-            left: 24,
-            right: 24,
-            bottom: MediaQuery.paddingOf(context).bottom + 20,
-            child: Column(
-              children: [
-                _GradientButton(
-                  label: _currentPage == 2 ? '開始使用' : '下一步',
-                  onTap: _nextPage,
-                ),
-                const SizedBox(height: 18),
-                SmoothPageIndicator(
-                  controller: _pageController,
-                  count: 3,
-                  effect: const ExpandingDotsEffect(
-                    dotHeight: 8,
-                    dotWidth: 8,
-                    expansionFactor: 3,
-                    spacing: 7,
-                    dotColor: _line,
-                    activeDotColor: _pink,
+            Positioned(
+              top: MediaQuery.paddingOf(context).top + 10,
+              right: 18,
+              child: TextButton(
+                onPressed: _completeOnboarding,
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFFD3BEC9),
+                  textStyle: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              ],
+                child: const Text('跳過'),
+              ),
             ),
-          ),
-        ],
+            Positioned(
+              left: 24,
+              right: 24,
+              bottom: MediaQuery.paddingOf(context).bottom + 20,
+              child: Column(
+                children: [
+                  _GradientButton(
+                    label: _currentPage == 2 ? '開始使用' : '下一步',
+                    onTap: _nextPage,
+                  ),
+                  const SizedBox(height: 18),
+                  SmoothPageIndicator(
+                    controller: _pageController,
+                    count: 3,
+                    effect: const ExpandingDotsEffect(
+                      dotHeight: 8,
+                      dotWidth: 8,
+                      expansionFactor: 3,
+                      spacing: 7,
+                      dotColor: _line,
+                      activeDotColor: _pink,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -161,18 +170,41 @@ class _StepPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(24, 58, 24, 142),
+      padding: const EdgeInsets.fromLTRB(24, 54, 24, 142),
       children: [
-        const SizedBox(height: 4),
-        mock
-            .animate()
-            .fadeIn(duration: 360.ms)
-            .slideY(begin: 0.06, duration: 420.ms, curve: Curves.easeOutCubic),
+        const Row(
+          children: [
+            SizedBox(
+              width: 38,
+              height: 38,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: _OnboardingViewState._pink,
+                  borderRadius: BorderRadius.all(Radius.circular(13)),
+                ),
+                child: Icon(
+                  Icons.favorite_rounded,
+                  color: _OnboardingViewState._text,
+                  size: 21,
+                ),
+              ),
+            ),
+            SizedBox(width: 10),
+            Text(
+              'LoveKey',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 19,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 34),
         Text(
           step,
           style: const TextStyle(
-            color: _OnboardingViewState._purple,
+            color: _OnboardingViewState._pink,
             fontSize: 12,
             fontWeight: FontWeight.w900,
             letterSpacing: 0,
@@ -182,14 +214,19 @@ class _StepPage extends StatelessWidget {
         Text(
           title,
           style: const TextStyle(
-            color: _OnboardingViewState._text,
-            fontSize: 32,
+            color: Colors.white,
+            fontSize: 34,
             height: 1.12,
             fontWeight: FontWeight.w900,
             letterSpacing: 0,
           ),
         ),
-        if (footer != null) ...[const SizedBox(height: 20), footer!],
+        const SizedBox(height: 26),
+        mock
+            .animate()
+            .fadeIn(duration: 360.ms)
+            .slideY(begin: 0.06, duration: 420.ms, curve: Curves.easeOutCubic),
+        if (footer != null) ...[const SizedBox(height: 18), footer!],
       ],
     );
   }
@@ -611,7 +648,7 @@ class _SettingsHint extends StatelessWidget {
         const Text(
           '還沒新增鍵盤？',
           style: TextStyle(
-            color: _OnboardingViewState._muted,
+            color: Color(0xFFD4C0CB),
             fontSize: 14,
             fontWeight: FontWeight.w700,
             letterSpacing: 0,
@@ -620,7 +657,7 @@ class _SettingsHint extends StatelessWidget {
         TextButton(
           onPressed: onTap,
           style: TextButton.styleFrom(
-            foregroundColor: _OnboardingViewState._purple,
+            foregroundColor: _OnboardingViewState._pink,
             padding: const EdgeInsets.symmetric(horizontal: 8),
             textStyle: const TextStyle(
               fontSize: 14,
@@ -651,7 +688,7 @@ class _GradientButton extends StatelessWidget {
           gradient: const LinearGradient(
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
-            colors: [_OnboardingViewState._pink, _OnboardingViewState._purple],
+            colors: [Color(0xFFFF6F8F), Color(0xFFFF9A86)],
           ),
           borderRadius: BorderRadius.circular(18),
           boxShadow: [

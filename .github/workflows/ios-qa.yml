@@ -98,6 +98,7 @@ jobs:
           xcrun simctl bootstatus "$SIMULATOR_ID" -b
 
       - name: iOS integration smoke test
+        timeout-minutes: 20
         run: |
           set -o pipefail
           flutter test integration_test/app_smoke_test.dart \

@@ -27,7 +27,7 @@ void main() {
 
     await tester.tap(find.text('我的').last);
     await tester.pumpAndSettle();
-    expect(find.text('設定語言'), findsOneWidget);
+    expect(find.text('語言與系統設定'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
