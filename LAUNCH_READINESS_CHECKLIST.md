@@ -1,32 +1,42 @@
 # LoveKey 上線前驗收清單
 
-> 更新日期：2026-07-15
+> 更新日期：2026-07-17
 > 目的：判斷 AI 戀愛鍵盤是否可以正式上架收費、開始買量。
 > 結論規則：所有 P0 必須通過；P1 至少不能影響購買、AI 回覆、鍵盤啟用與審核。
+> 完整最新狀態：docs/qa/LAUNCH_READINESS_2026-07-16_ZH-TW.md
 
 ## 目前結論
 
-暫定狀態：不建議直接正式賣。iOS Build 55 與 Android versionCode 7 已進入內部驗收。
+暫定狀態：不可直接開始收費買量。iOS Build 56 雖已進入內部 TestFlight，但它是較舊程式線的回歸版本；最終驗收目標改為從完整 QA 程式線產生 Build 57。Android versionCode 7 已進入內部驗收。
 
 主要原因：
-- iOS 鍵盤 extension 必須用 TestFlight 實機驗證，Web/Flutter test 無法覆蓋。
+- Codemagic iOS Simulator、安裝與 Integration Test 已通過，但第三方鍵盤 extension 仍必須用 TestFlight 實機驗證。
 - RevenueCat iOS 商品設定已核對，但仍必須在 TestFlight 沙盒完成真實購買、恢復購買、Pro 解鎖驗證。
 - Google Play 商家帳戶尚未設定，Android 週／年／永久商品目前無法建立。
 - Google Play 正式版仍需 12 名封閉測試人員連續參加至少 14 天。
 
 ## 已完成的自動檢查
 
-- [x] `flutter analyze`：通過。
-- [x] `flutter test`：通過。
+- [x] `flutter analyze`：通過，0 問題。
+- [x] `flutter test`：27/27 通過。
+- [x] 對話邏輯測試：14/14 通過。
+- [x] UI／Widget 專項：11/11 通過。
+- [x] Codemagic iOS 26.4.1 Simulator build、安裝、啟動：通過。
+- [x] iOS Integration Test：1/1 通過。
 - [x] `flutter build web --release`：通過。
 - [x] App 端未在 `lib/`、`ios/` 搜到 OpenAI `sk-` 私鑰。
 - [x] AI 主 App 走 backend proxy：`AI_PROXY_URL`。
 - [x] iOS 鍵盤 extension 沒硬編 OpenAI key。
 - [x] GitHub iOS workflow 有 build 前注入 `AI_PROXY_URL` 到鍵盤 extension 的步驟。
+- [x] iOS Release 已改為只能人工觸發，文件 push 不再自動產生 TestFlight Build。
+- [x] iOS Release 上傳前強制執行完整 QA、P0 鍵盤契約與 IPA metadata 檢查。
 - [x] RevenueCat iOS Public SDK Key 已設定。
 - [x] RevenueCat `pro` 已綁定週、年、永久三個 App Store 商品。
 - [x] Supabase Email、Google、Apple provider 已啟用。
-- [x] TestFlight Build 55 已加入 Internal Testing。
+- [x] TestFlight Build 56 已加入 Internal Testing，但已判定不可作為最終驗收版本。
+- [x] App Store 1.0.4 目前仍綁定 Build 55，Build 狀態 VALID。
+- [ ] 從完整 QA commit 產生 Build 57，通過實體 iPhone 與 Apple Sandbox 驗收後再改綁 1.0.4。
+- [x] 週、年、永久三項 Apple 商品均為 READY_TO_SUBMIT。
 - [x] Google Play `versionCode 7` 已發布到內部測試。
 - [x] 首頁 / 盲盒 / Paywall 相關 UI 可 Web build。
 
@@ -127,7 +137,7 @@
 
 ## 下一次 TestFlight 驗收順序
 
-1. 安裝最新 TestFlight。
+1. 只安裝明確指定的 Build 57；不要以 Build 56 驗收。
 2. 開 App，走完整 onboarding。
 3. 打開鍵盤教學，跳 iPhone 設定啟用鍵盤與完整取用。
 4. 在 LINE 複製一句對方訊息。

@@ -471,15 +471,19 @@ class _KeyboardChoice extends StatelessWidget {
                 : _OnboardingViewState._muted,
           ),
           const SizedBox(width: 10),
-          Text(
-            label,
-            style: TextStyle(
-              color: active
-                  ? _OnboardingViewState._purple
-                  : _OnboardingViewState._text,
-              fontSize: 14,
-              fontWeight: active ? FontWeight.w900 : FontWeight.w700,
-              letterSpacing: 0,
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: active
+                    ? _OnboardingViewState._purple
+                    : _OnboardingViewState._text,
+                fontSize: 14,
+                fontWeight: active ? FontWeight.w900 : FontWeight.w700,
+                letterSpacing: 0,
+              ),
             ),
           ),
         ],
