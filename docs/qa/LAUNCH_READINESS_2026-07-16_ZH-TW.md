@@ -13,7 +13,7 @@ LoveKey 的公開版 1.0.2 已在 App Store 銷售，但準備開始收費與買
 | 公開 App Store 版本 | 1.0.2，READY_FOR_SALE | 已在線，但不是目前準備營運的新版本 |
 | 新版本 | 1.0.4，PREPARE_FOR_SUBMISSION | 尚未加入送審 submission |
 | 1.0.4 綁定 Build | Build 55，VALID | P0 產品基線，但不是完整 QA 所測的精確 commit |
-| TestFlight 最新 Build | Build 56，VALID／IN_BETA_TESTING | 內部測試可見，但由較舊 master 文件 commit 自動產生，核心 AI 鍵盤與正式 Proxy 不相容 |
+| TestFlight 最新 Build | Build 57，VALID，已加入 Internal Testing | 完整 QA 與正式 IPA 驗證均通過，是目前指定實機驗收版本 |
 | 週訂閱 | com.ailovekeyboard.pro.weekly，READY_TO_SUBMIT | 資料齊，但尚未送 Apple 審核 |
 | 年訂閱 | com.ailovekeyboard.pro.yearly，READY_TO_SUBMIT | 資料齊，但尚未送 Apple 審核 |
 | 永久會員 | com.ailovekeyboard.pro.lifetime，READY_TO_SUBMIT | 資料齊，但尚未送 Apple 審核 |
@@ -34,14 +34,22 @@ Apple 規則重點：
 - Build 56 的確已在 TestFlight 內部測試，不是「尚未出現在 TestFlight」。
 - Build 56 不是 Build 55 的後續修正版；兩者來自平行分支。
 - Build 56 鍵盤擴充沒有送正式 Proxy 所需的 timestamp、nonce、signature 與登入 token，AI 請求會被 `401 request_metadata_required` 擋下。
-- 完整 QA 最新驗證的是 commit `6c34c645f592d71376e4b8bc2123b04a9af23bb5`，GitHub macOS Run `29549179365` 已通過，目前尚未上傳 TestFlight。
-- 最終驗收目標應改為從完整 QA 程式線產生 Build 57。完整證據見 [Build 55／56 專項稽核](TESTFLIGHT_BUILD_55_56_AUDIT_2026-07-17_ZH-TW.md)。
+- Build 56 不再作為驗收版本。完整證據見 [Build 55／56 專項稽核](TESTFLIGHT_BUILD_55_56_AUDIT_2026-07-17_ZH-TW.md)。
+
+### 2026-07-17 Build 57 結果
+
+- Build 57 對應完整 QA commit `66bd55feffe83231e7f5f7bc413db2cb0a96db29`。
+- GitHub macOS QA Run `29550621933` 與 Release Run `29551119177` 全部通過。
+- App Store Connect API 已確認 Build 57 為 `VALID` 且已加入 `Internal Testing`。
+- 正式 IPA 的主 App／鍵盤擴充 Bundle ID、版本與 Build 號已驗證一致。
+- 尚未執行真實 iPhone 第三方鍵盤與 Apple Sandbox 付款，因此目前仍不可送審或開始付費買量。
 
 ## P0：送出 iOS 1.0.4 前一定要完成
 
 ### 1. 實體 iPhone 鍵盤流程
 
-- [ ] 從完整 QA 程式線產生並由 TestFlight 全新安裝 Build 57；不要以 Build 56 驗收。
+- [x] 從完整 QA 程式線產生 Build 57，通過 Apple 處理並加入內部 TestFlight。
+- [ ] 在實體 iPhone 從 TestFlight 全新安裝 Build 57；不要以 Build 56 驗收。
 - [ ] 走完隱私權與 onboarding。
 - [ ] 從教學頁跳到 iPhone 設定。
 - [ ] 加入 LoveKey 鍵盤並開啟「允許完整取用」。
@@ -121,9 +129,9 @@ Apple 規則重點：
 
 ## 建議執行順序
 
-1. 今天：完成 RevenueCat 與 release gate 修正，經批准合併發布工作流後產生 Build 57；Build 56 不進行最終驗收。
+1. 今天：在實體 iPhone 全新安裝 Build 57，完成鍵盤、登入與 Apple Sandbox 驗收；Build 56 不進行最終驗收。
 2. 同步：建立 App Review demo 帳號並填寫審核操作備註；12 個語系更新說明已完成。
-3. 驗收全通過：把 1.0.4 與三項 IAP 一起送 Apple 審核。
+3. 驗收全通過：人工核准發布流程 Pull Request，把 1.0.4 改綁 Build 57，並與三項 IAP 一起送 Apple 審核。
 4. 審核等待期間：接 Analytics／Meta 歸因、準備原創素材與停損規則。
 5. Apple 通過後：先小額驗證，不直接放大預算。
 6. Android：立即開始 12 人／14 天封閉測試，因為這是不可壓縮的日曆時間。
@@ -133,7 +141,8 @@ Apple 規則重點：
 | 階段 | 現在是否通過 |
 | --- | --- |
 | 程式靜態與自動測試 | 通過；Flutter 29／29、對話 14／14、UI 11／11、RevenueCat 預檢 4／4 |
-| GitHub macOS iOS Simulator | 通過；iPhone 17 Pro／iOS 26.2，Run 29549179365 |
+| GitHub macOS iOS Simulator | 通過；iPhone 17 Pro／iOS 26.2，Run 29550621933 |
+| TestFlight 發布候選 | Build 57，VALID，已加入 Internal Testing；Release Run 29551119177 |
 | BrowserStack 基本實機啟動 | 通過 |
 | 實體 iPhone 第三方鍵盤 | 未通過 |
 | Sandbox 付款與恢復購買 | 未通過 |

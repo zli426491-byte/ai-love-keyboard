@@ -8,6 +8,7 @@
 - CI artifacts 已保存並可下載。
 - RevenueCat GitHub iOS 金鑰已由 Cleanup App 更正為 LoveKey，default offering 與 `pro` entitlement 的週／年／永久三項商品已唯讀驗證。
 - iOS release 已加入 RevenueCat 商品預檢，未來金鑰指錯專案或缺商品會在上傳前停止。
+- Build 57 已通過完整 macOS QA、正式簽章、IPA metadata 驗證與 Apple 處理，並已加入內部 TestFlight 群組。
 
 因此，「沒有 Mac 所以完全無法執行 iOS Simulator」已不是目前阻塞。
 
@@ -50,7 +51,7 @@
 - 12 個語系的 App 描述與版本更新說明已於 2026-07-17 填寫並回讀驗證。
 - 週、年、永久 IAP 均為 READY_TO_SUBMIT，必須與 1.0.4 第一次一起送審。
 - 需確認隱私權標籤、審核 demo 帳號、審核操作步驟、合約、稅務與銀行資料。
-- 完整 QA 分支的 release workflow 尚未合併至預設發布線；不得用舊 `master` workflow 產生下一個 Build。
+- 完整 QA 分支已安全產生 Build 57，但 release workflow 尚未合併至預設發布線；在 Pull Request 人工核准前，不得用舊 `master` workflow 產生下一個 Build。
 
 ## B-007：Android 正式發布資格
 

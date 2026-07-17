@@ -2,7 +2,7 @@
 
 ## 判定
 
-**Build 56 可以在內部 TestFlight 看到與下載，但不能作為最終驗收版本。**
+**Build 57 已通過完整自動化 QA、正式 IPA 檢查與 Apple 處理，可作為最終實機驗收候選版本。**
 
 **在下列實機清單通過前，不可送 App Store 1.0.4，也不可開始付費買量。**
 
@@ -19,12 +19,14 @@
 - GitHub Actions iPhone 17 Pro／iOS 26.2 Simulator build、啟動與 Integration Test 通過（Run 29548206130）。
 - BrowserStack iPhone 15 Pro Max／iOS 17.3 完成安裝、冷啟動與進入 onboarding。
 
-最新完整自動化結果對應 commit `6c34c645f592d71376e4b8bc2123b04a9af23bb5`，GitHub macOS Run `29549179365` 已通過，但它不是 Build 55 或 Build 56 的精確二進位檔。RevenueCat 的 GitHub iOS 金鑰已修正為 LoveKey，release 亦新增週／年／永久商品預檢。此程式線仍需產生新的 TestFlight Build 57 才能做最終實機驗收。
+最新完整自動化與 Build 57 均對應 commit `66bd55feffe83231e7f5f7bc413db2cb0a96db29`。GitHub macOS QA Run `29550621933` 與 Release Run `29551119177` 均已通過。RevenueCat 的 GitHub iOS 金鑰已修正為 LoveKey，release 亦通過週／年／永久商品唯讀預檢。App Store Connect API 已確認 Build 57 為 `VALID` 且已加入 `Internal Testing`。
 
 ## 實體 iPhone 退出清單
 
 以下項目必須以完整 QA 程式線產生的 Build 57 或後續明確指定版本完成：
 
+- [x] 產生、簽章、驗證並上傳 Build 57。
+- [x] App Store Connect 處理完成，Build 57 為 `VALID` 且已加入內部測試群組。
 - [ ] 從 TestFlight 全新安裝。
 - [ ] 接受隱私權提示，完成並重跑 onboarding。
 - [ ] 加入 LoveKey 鍵盤並開啟「允許完整取用」。
@@ -47,10 +49,9 @@
 
 2026-07-16 App Store Connect API 唯讀查詢結果：
 
-- Build 55：VALID，已綁定 App Store 1.0.4；屬 P0 產品基線，但不是完整 QA 所測的精確 commit。
-- Build 56：VALID／IN_BETA_TESTING，內部測試可見；它由較舊 `master` 文件 commit 自動產生，不是 Build 55 的後續修正版。
-- Build 56 鍵盤擴充缺少正式 Proxy 所需的 metadata 與登入 token，核心 AI 請求會被拒絕，不可用於最終驗收或送審。
-- 完整 QA commit：`68804aad1d0555ffbda98532aa74b5b5a320e14c`，尚未上傳 TestFlight。
+- Build 57：VALID，已加入 `Internal Testing`；來源為完整 QA commit `66bd55feffe83231e7f5f7bc413db2cb0a96db29`，是目前唯一指定的最終驗收候選版本。
+- Build 55：VALID，仍綁定 App Store 1.0.4；在 Build 57 實機驗收完成前不更換。
+- Build 56：VALID，內部測試可見；它由較舊 `master` 文件 commit 自動產生，核心 AI 鍵盤與正式 Proxy 不相容，不可用於最終驗收或送審。
 - App Store 1.0.4：PREPARE_FOR_SUBMISSION。
 - 公開版本：1.0.2，READY_FOR_SALE。
 - 週、年、永久商品：READY_TO_SUBMIT，尚未送審。
