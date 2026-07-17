@@ -12,8 +12,8 @@ LoveKey 的公開版 1.0.2 已在 App Store 銷售，但準備開始收費與買
 | --- | --- | --- |
 | 公開 App Store 版本 | 1.0.2，READY_FOR_SALE | 已在線，但不是目前準備營運的新版本 |
 | 新版本 | 1.0.4，PREPARE_FOR_SUBMISSION | 尚未加入送審 submission |
-| 1.0.4 綁定 Build | Build 55，VALID | 正確的 P0 實機驗收 build |
-| 最新上傳 Build | Build 56，VALID | 由 master 的文件發布 commit 觸發，未綁定 1.0.4；不可取代 Build 55 驗收 |
+| 1.0.4 綁定 Build | Build 55，VALID | P0 產品基線，但不是完整 QA 所測的精確 commit |
+| TestFlight 最新 Build | Build 56，VALID／IN_BETA_TESTING | 內部測試可見，但由較舊 master 文件 commit 自動產生，核心 AI 鍵盤與正式 Proxy 不相容 |
 | 週訂閱 | com.ailovekeyboard.pro.weekly，READY_TO_SUBMIT | 資料齊，但尚未送 Apple 審核 |
 | 年訂閱 | com.ailovekeyboard.pro.yearly，READY_TO_SUBMIT | 資料齊，但尚未送 Apple 審核 |
 | 永久會員 | com.ailovekeyboard.pro.lifetime，READY_TO_SUBMIT | 資料齊，但尚未送 Apple 審核 |
@@ -28,11 +28,19 @@ Apple 規則重點：
 - TestFlight 下載的 App 會使用沙盒付款環境，不會產生真實扣款。
 - 若某些功能必須登入，App Review 資訊應提供可用 demo 帳號及特殊設定步驟。
 
+### 2026-07-17 Build 56 更正
+
+- Build 56 的確已在 TestFlight 內部測試，不是「尚未出現在 TestFlight」。
+- Build 56 不是 Build 55 的後續修正版；兩者來自平行分支。
+- Build 56 鍵盤擴充沒有送正式 Proxy 所需的 timestamp、nonce、signature 與登入 token，AI 請求會被 `401 request_metadata_required` 擋下。
+- 完整 QA 驗證的是 commit `68804aad1d0555ffbda98532aa74b5b5a320e14c`，目前尚未上傳 TestFlight。
+- 最終驗收目標應改為從完整 QA 程式線產生 Build 57。完整證據見 [Build 55／56 專項稽核](TESTFLIGHT_BUILD_55_56_AUDIT_2026-07-17_ZH-TW.md)。
+
 ## P0：送出 iOS 1.0.4 前一定要完成
 
 ### 1. 實體 iPhone 鍵盤流程
 
-- [ ] 從 TestFlight 安裝 Build 55。
+- [ ] 從完整 QA 程式線產生並由 TestFlight 全新安裝 Build 57；不要以 Build 56 驗收。
 - [ ] 走完隱私權與 onboarding。
 - [ ] 從教學頁跳到 iPhone 設定。
 - [ ] 加入 LoveKey 鍵盤並開啟「允許完整取用」。
@@ -107,7 +115,7 @@ Apple 規則重點：
 
 ## 建議執行順序
 
-1. 今天：用實體 iPhone 完成 Build 55 的鍵盤、登入、付款與恢復購買驗收。
+1. 今天：整理完整 QA 程式線並產生 Build 57；Build 56 不進行最終驗收。
 2. 同步：補 12 個語系更新說明與 App Review demo 帳號／操作備註。
 3. 驗收全通過：把 1.0.4 與三項 IAP 一起送 Apple 審核。
 4. 審核等待期間：接 Analytics／Meta 歸因、準備原創素材與停損規則。

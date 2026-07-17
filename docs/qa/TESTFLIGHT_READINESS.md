@@ -2,7 +2,7 @@
 
 ## 判定
 
-**可以繼續內部 TestFlight 實機驗收。**
+**Build 56 可以在內部 TestFlight 看到與下載，但不能作為最終驗收版本。**
 
 **在下列實機清單通過前，不可送 App Store 1.0.4，也不可開始付費買量。**
 
@@ -18,9 +18,11 @@
 - iOS Integration Test：1/1 通過。
 - BrowserStack iPhone 15 Pro Max／iOS 17.3 完成安裝、冷啟動與進入 onboarding。
 
+上述完整自動化結果對應 commit `68804aad1d0555ffbda98532aa74b5b5a320e14c`，不是 Build 55 或 Build 56 的精確二進位檔。此 commit 仍需產生新的 TestFlight Build 57 才能做最終實機驗收。
+
 ## 實體 iPhone 退出清單
 
-以下項目必須以 Build 55 或後續明確指定的驗收 build 完成：
+以下項目必須以完整 QA 程式線產生的 Build 57 或後續明確指定版本完成：
 
 - [ ] 從 TestFlight 全新安裝。
 - [ ] 接受隱私權提示，完成並重跑 onboarding。
@@ -44,8 +46,10 @@
 
 2026-07-16 App Store Connect API 唯讀查詢結果：
 
-- Build 55：VALID，已綁定 App Store 1.0.4。
-- Build 56：VALID，但不是目前 1.0.4 綁定 build。
+- Build 55：VALID，已綁定 App Store 1.0.4；屬 P0 產品基線，但不是完整 QA 所測的精確 commit。
+- Build 56：VALID／IN_BETA_TESTING，內部測試可見；它由較舊 `master` 文件 commit 自動產生，不是 Build 55 的後續修正版。
+- Build 56 鍵盤擴充缺少正式 Proxy 所需的 metadata 與登入 token，核心 AI 請求會被拒絕，不可用於最終驗收或送審。
+- 完整 QA commit：`68804aad1d0555ffbda98532aa74b5b5a320e14c`，尚未上傳 TestFlight。
 - App Store 1.0.4：PREPARE_FOR_SUBMISSION。
 - 公開版本：1.0.2，READY_FOR_SALE。
 - 週、年、永久商品：READY_TO_SUBMIT，尚未送審。
@@ -53,3 +57,5 @@
 ## 收費準備判定
 
 Paywall UI 已通過 Flutter 測試，但當地價格、購買、取消、恢復購買與權益持久化仍需要 Apple Sandbox 實機證據。未完成前，不可用廣告導入付費流量。
+
+完整版本來源、IPA 與 Proxy 相容性證據見 [Build 55／56 專項稽核](TESTFLIGHT_BUILD_55_56_AUDIT_2026-07-17_ZH-TW.md)。
