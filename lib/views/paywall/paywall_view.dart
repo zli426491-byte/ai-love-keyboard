@@ -19,9 +19,9 @@ class _PaywallViewState extends State<PaywallView> {
   static const _ink = Color(0xFFFFF7FB);
   static const _muted = Color(0xFFC9B8CA);
   static const _line = Color(0x33FFFFFF);
-  static const _pink = Color(0xFFFF4F8B);
-  static const _violet = Color(0xFFC147E9);
-  static const _gold = Color(0xFFFFD37A);
+  static const _pink = Color(0xFFFF6F8F);
+  static const _violet = Color(0xFFFF9A86);
+  static const _gold = Color(0xFFFFC5D3);
 
   int _selectedIndex = 1;
 
@@ -113,13 +113,13 @@ class _PaywallViewState extends State<PaywallView> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF211620), Color(0xFF170F18), Color(0xFF2B1430)],
+          colors: [Color(0xFF1D141B), Color(0xFF291923), Color(0xFF3B2333)],
         ),
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       child: SafeArea(
         top: false,
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -139,15 +139,44 @@ class _PaywallViewState extends State<PaywallView> {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  const Expanded(
-                    child: Text(
-                      'LoveKey Pro',
-                      style: TextStyle(
-                        color: _ink,
-                        fontSize: 31,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.8,
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.10),
                       ),
+                    ),
+                    child: const Icon(
+                      Icons.favorite_rounded,
+                      color: _pink,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'LoveKey Pro',
+                          style: TextStyle(
+                            color: _ink,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        Text(
+                          '讓每次回覆更有把握',
+                          style: TextStyle(
+                            color: _muted,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   IconButton(
@@ -170,10 +199,25 @@ class _PaywallViewState extends State<PaywallView> {
                 ),
               ),
               const SizedBox(height: 18),
-              const _FeatureRow(text: '鍵盤內直接生成一則可貼上的回覆'),
-              const _FeatureRow(text: '接話、破冰、邀約、安撫、自訂模式'),
-              const _FeatureRow(text: '依語氣調整：溫柔、幽默、曖昧、深情'),
-              const SizedBox(height: 14),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                child: const Column(
+                  children: [
+                    _FeatureRow(text: '鍵盤內直接生成一則可貼上的回覆'),
+                    _FeatureRow(text: '接話、破冰、邀約、安撫、自訂模式'),
+                    _FeatureRow(text: '依語氣調整：溫柔、幽默、曖昧、深情'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
               ...List.generate(plans.length, (index) {
                 final plan = plans[index];
                 return Padding(
@@ -220,7 +264,7 @@ class _PaywallViewState extends State<PaywallView> {
                       borderRadius: BorderRadius.circular(22),
                       boxShadow: const [
                         BoxShadow(
-                          color: Color(0x55EC4899),
+                          color: Color(0x45FF6F8F),
                           blurRadius: 24,
                           offset: Offset(0, 12),
                         ),
@@ -332,8 +376,8 @@ class _PlanCard extends StatelessWidget {
           ),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? _PaywallViewState._ink : _PaywallViewState._line,
-            width: selected ? 1.6 : 1,
+            color: selected ? _PaywallViewState._pink : _PaywallViewState._line,
+            width: selected ? 1.8 : 1,
           ),
           boxShadow: [
             if (selected)

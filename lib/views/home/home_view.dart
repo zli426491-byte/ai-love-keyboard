@@ -20,7 +20,9 @@ import 'package:ai_love_keyboard/views/reply/reply_cards_view.dart';
 import 'package:ai_love_keyboard/views/settings/settings_view.dart';
 
 class HomeView extends StatefulWidget {
-  const HomeView({super.key});
+  const HomeView({super.key, this.initialTab = 0});
+
+  final int initialTab;
 
   @override
   State<HomeView> createState() => _HomeViewState();
@@ -34,7 +36,7 @@ class _HomeViewState extends State<HomeView> {
   static const _peach = Color(0xFFFFE4EC);
 
   final _messageController = TextEditingController();
-  int _tabIndex = 0;
+  late int _tabIndex;
   ReplyStyle _selectedStyle = ReplyStyle.warm;
   String _selectedGoal = '自然接話';
 
@@ -49,6 +51,12 @@ class _HomeViewState extends State<HomeView> {
     _KeyboardTone('😘', '撒嬌', ReplyStyle.cute),
     _KeyboardTone('🍷', '氛圍文學', ReplyStyle.contrast),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _tabIndex = widget.initialTab;
+  }
 
   @override
   void dispose() {
@@ -300,8 +308,8 @@ class _HomeViewState extends State<HomeView> {
         child: pages[_tabIndex],
       ),
       bottomNavigationBar: _AppBottomNav(
-        currentIndex: _tabIndex,
-        onTap: (index) => setState(() => _tabIndex = index),
+        currentIndex: _tabIndex == 3 ? 1 : 0,
+        onTap: (index) => setState(() => _tabIndex = index == 0 ? 0 : 3),
       ),
     );
   }
@@ -342,14 +350,14 @@ class _HomeTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return _PinkShell(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 34, 24, 128),
+        padding: const EdgeInsets.fromLTRB(22, 28, 22, 112),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _HomeHeader(onPaywall: onPaywall),
-            const SizedBox(height: 8),
-            const _IntimacyHero(percent: 30),
-            const SizedBox(height: 10),
+            const SizedBox(height: 22),
+            const _HomeIntro(),
+            const SizedBox(height: 16),
             _MessageComposer(
               controller: messageController,
               goal: selectedGoal,
@@ -359,11 +367,20 @@ class _HomeTab extends StatelessWidget {
             _MainCtaButton(loading: loading, onTap: onGenerate),
             const SizedBox(height: 10),
             _UsageSummary(subscribed: subscribed, remainingFree: remainingFree),
-            const SizedBox(height: 18),
+            const SizedBox(height: 26),
+            const Text(
+              '快速工具',
+              style: TextStyle(
+                color: _HomeViewState._ink,
+                fontSize: 21,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 12),
             _FeatureGrid(onPaywall: onPaywall, onRewrite: onRewrite),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             _BlindBanner(onTap: onBlindBox),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             Row(
               children: [
                 const Text(
@@ -623,38 +640,73 @@ class _ProfileTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return _PinkShell(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 94, 24, 128),
+        padding: const EdgeInsets.fromLTRB(22, 48, 22, 112),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const Text(
+              '我的',
+              style: TextStyle(
+                color: _HomeViewState._ink,
+                fontSize: 34,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.6,
+              ),
+            ),
+            const SizedBox(height: 22),
             const _ProfileHeader(),
-            const SizedBox(height: 28),
+            const SizedBox(height: 22),
             _MembershipCard(
               subscribed: subscribed,
               remainingFree: remainingFree,
               onTap: onPaywall,
             ),
-            const SizedBox(height: 34),
+            const SizedBox(height: 22),
             _MenuSection(
               children: [
-                _MenuRow(title: '設定語言', trailing: '繁體中文', onTap: onSettings),
+                _MenuRow(
+                  title: '語言與系統設定',
+                  trailing: '繁體中文',
+                  icon: Icons.language_rounded,
+                  onTap: onSettings,
+                ),
               ],
             ),
-            const SizedBox(height: 14),
-            _MenuSection(
-              children: [_MenuRow(title: '鍵盤使用教學', onTap: onKeyboardGuide)],
-            ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             _MenuSection(
               children: [
-                _MenuRow(title: '反饋建議', onTap: onFeedback),
-                _MenuRow(title: '關於我們', onTap: onAbout),
+                _MenuRow(
+                  title: '鍵盤設定與教學',
+                  icon: Icons.keyboard_alt_rounded,
+                  onTap: onKeyboardGuide,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _MenuSection(
+              children: [
+                _MenuRow(
+                  title: '反饋建議',
+                  icon: Icons.chat_bubble_outline_rounded,
+                  onTap: onFeedback,
+                ),
+                _MenuRow(
+                  title: '關於 LoveKey',
+                  icon: Icons.favorite_outline_rounded,
+                  onTap: onAbout,
+                ),
                 _MenuRow(
                   title: '商務合作',
                   trailing: 'zli426491@gmail.com',
+                  icon: Icons.mail_outline_rounded,
                   copy: true,
                   onTap: onCopyEmail,
                 ),
-                _MenuRow(title: '五星好評，鼓勵一下⭐', onTap: onReview),
+                _MenuRow(
+                  title: '為 LoveKey 評分',
+                  icon: Icons.star_outline_rounded,
+                  onTap: onReview,
+                ),
               ],
             ),
           ],
@@ -858,177 +910,146 @@ class _HomeHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(999),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-            child: Container(
-              height: 38,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.50),
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.70)),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0DFF5C82),
-                    blurRadius: 18,
-                    offset: Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 9,
-                    height: 9,
-                    decoration: const BoxDecoration(
-                      color: _HomeViewState._hotPink,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'LoveKey',
-                    style: TextStyle(
-                      color: _HomeViewState._ink,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                ],
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: _HomeViewState._ink,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: const Icon(
+            Icons.favorite_rounded,
+            color: Color(0xFFFF7A9A),
+            size: 22,
+          ),
+        ),
+        const SizedBox(width: 11),
+        const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'LoveKey',
+              style: TextStyle(
+                color: _HomeViewState._ink,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.4,
               ),
             ),
-          ),
+            Text(
+              'AI 戀愛鍵盤',
+              style: TextStyle(
+                color: _HomeViewState._muted,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
         ),
         const Spacer(),
         GestureDetector(
           onTap: onPaywall,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(19),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.76),
-                  borderRadius: BorderRadius.circular(19),
-                  border: Border.all(color: Colors.white),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x14FF4F78),
-                      blurRadius: 20,
-                      offset: Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [Color(0xFFFFE7B5), Color(0x00FFE7B5)],
-                        ),
-                      ),
-                    ),
-                    const Icon(
-                      Icons.workspace_premium_rounded,
-                      color: _HomeViewState._hotPink,
-                      size: 28,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _IntimacyHero extends StatelessWidget {
-  final int percent;
-
-  const _IntimacyHero({required this.percent});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        children: [
-          Text(
-            '$percent%',
-            style: const TextStyle(
-              color: Color(0xFF24212A),
-              fontSize: 52,
-              height: 0.95,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -1.2,
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            '聊天親密度',
-            style: TextStyle(
-              color: Color(0xFF7D6D75),
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: 220,
-            height: 156,
-            child: _GlossyHeart(percent: percent),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GlossyHeart extends StatelessWidget {
-  final int percent;
-
-  const _GlossyHeart({required this.percent});
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        const Positioned.fill(child: CustomPaint(painter: _HeartGlowPainter())),
-        Positioned(
-          bottom: 2,
           child: Container(
-            width: 150,
-            height: 24,
+            height: 40,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(999),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x2A8D3B5A),
-                  blurRadius: 30,
-                  spreadRadius: 3,
+              color: Colors.white.withValues(alpha: 0.88),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFFFD5E0)),
+            ),
+            child: const Row(
+              children: [
+                Icon(
+                  Icons.workspace_premium_rounded,
+                  color: _HomeViewState._hotPink,
+                  size: 19,
+                ),
+                SizedBox(width: 6),
+                Text(
+                  'PRO',
+                  style: TextStyle(
+                    color: _HomeViewState._ink,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ],
             ),
           ),
         ),
-        SizedBox(
-          width: 170,
-          height: 146,
-          child: CustomPaint(painter: _HeartGaugePainter(percent / 100)),
-        ),
       ],
+    );
+  }
+}
+
+class _HomeIntro extends StatelessWidget {
+  const _HomeIntro();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(22, 22, 18, 22),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF2B1B28), Color(0xFF4A2538)],
+        ),
+        borderRadius: BorderRadius.circular(26),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x24241827),
+            blurRadius: 24,
+            offset: Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '一句訊息，\n回得更自然',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 27,
+                    height: 1.08,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                SizedBox(height: 10),
+                Text(
+                  '貼上對方的話，選擇目的，\n生成一則能直接使用的回覆。',
+                  style: TextStyle(
+                    color: Color(0xFFD8C7D1),
+                    fontSize: 13,
+                    height: 1.45,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: 76,
+            height: 76,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+            ),
+            child: const Icon(
+              Icons.forum_rounded,
+              color: Color(0xFFFF7A9A),
+              size: 34,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -3335,87 +3356,50 @@ class _ProfileHeader extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 100,
-          height: 100,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFFB5C4FF), Color(0xFF8C9CFF)],
-            ),
-            shape: BoxShape.circle,
+          width: 72,
+          height: 72,
+          decoration: BoxDecoration(
+            color: _HomeViewState._ink,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x20241827),
+                blurRadius: 18,
+                offset: Offset(0, 10),
+              ),
+            ],
           ),
-          child: const Center(
-            child: Text('🐻', style: TextStyle(fontSize: 54)),
+          child: const Icon(
+            Icons.favorite_rounded,
+            color: Color(0xFFFF7A9A),
+            size: 34,
           ),
         ),
-        const SizedBox(width: 20),
-        Expanded(
+        const SizedBox(width: 16),
+        const Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                '遊客 69ec487e554ce',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              Text(
+                'LoveKey 使用者',
                 style: TextStyle(
                   color: _HomeViewState._ink,
-                  fontSize: 24,
+                  fontSize: 21,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF6D83FF),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: const Text(
-                      '♂ 18',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFE6F0),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: const Text(
-                      'ID:795684',
-                      style: TextStyle(
-                        color: _HomeViewState._pink,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                  const Icon(
-                    Icons.copy_rounded,
-                    color: _HomeViewState._pink,
-                    size: 20,
-                  ),
-                ],
+              SizedBox(height: 6),
+              Text(
+                '管理帳號、鍵盤與會員狀態',
+                style: TextStyle(
+                  color: _HomeViewState._muted,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ],
           ),
         ),
-        const Icon(Icons.chevron_right_rounded, color: Color(0xFFB0AAB0)),
       ],
     );
   }
@@ -3437,20 +3421,20 @@ class _MembershipCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 106,
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        height: 126,
+        padding: const EdgeInsets.symmetric(horizontal: 22),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: subscribed
-                ? const [Color(0xFFFF467C), Color(0xFFB248E8)]
-                : const [Color(0xFFFFA6C5), Color(0xFFE4D3FF)],
+                ? const [Color(0xFF43273B), Color(0xFF2A1B28)]
+                : const [Color(0xFF2B1B28), Color(0xFF513144)],
           ),
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(26),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x22FF467C),
-              blurRadius: 22,
-              offset: Offset(0, 12),
+              color: Color(0x28241827),
+              blurRadius: 24,
+              offset: Offset(0, 14),
             ),
           ],
         ),
@@ -3462,19 +3446,19 @@ class _MembershipCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    subscribed ? '會員' : '非會員',
+                    subscribed ? 'LoveKey Pro' : '免費方案',
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 26,
+                      fontSize: 23,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    subscribed ? '已解鎖所有回覆' : '今日還可回覆 $remainingFree 次',
+                    subscribed ? '已解鎖不限次 AI 回覆' : '今日還可生成 $remainingFree 次',
                     style: const TextStyle(
-                      color: Color(0xF2FFFFFF),
-                      fontSize: 15,
+                      color: Color(0xFFDCCAD4),
+                      fontSize: 14,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -3484,13 +3468,15 @@ class _MembershipCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.88),
+                color: subscribed
+                    ? Colors.white.withValues(alpha: 0.10)
+                    : const Color(0xFFFF6F8F),
                 borderRadius: BorderRadius.circular(999),
               ),
               child: Text(
-                subscribed ? '會員' : '升級 Pro',
-                style: const TextStyle(
-                  color: _HomeViewState._ink,
+                subscribed ? '已開通' : '升級',
+                style: TextStyle(
+                  color: subscribed ? Colors.white : _HomeViewState._ink,
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
                 ),
@@ -3513,9 +3499,16 @@ class _MenuSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.82),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFF0DDE7)),
+        color: Colors.white.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0E5C3446),
+            blurRadius: 18,
+            offset: Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(children: children),
     );
@@ -3525,6 +3518,7 @@ class _MenuSection extends StatelessWidget {
 class _MenuRow extends StatelessWidget {
   final String title;
   final String? trailing;
+  final IconData? icon;
   final bool copy;
   final VoidCallback onTap;
 
@@ -3532,6 +3526,7 @@ class _MenuRow extends StatelessWidget {
     required this.title,
     required this.onTap,
     this.trailing,
+    this.icon,
     this.copy = false,
   });
 
@@ -3539,16 +3534,28 @@ class _MenuRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(18),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
         child: Row(
           children: [
+            if (icon != null) ...[
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFEDF2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, size: 19, color: _HomeViewState._pink),
+              ),
+              const SizedBox(width: 12),
+            ],
             Text(
               title,
               style: const TextStyle(
                 color: _HomeViewState._ink,
-                fontSize: 20,
+                fontSize: 16,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -3562,7 +3569,7 @@ class _MenuRow extends StatelessWidget {
                   textAlign: TextAlign.right,
                   style: const TextStyle(
                     color: _HomeViewState._muted,
-                    fontSize: 18,
+                    fontSize: 13,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -3587,9 +3594,7 @@ class _AppBottomNav extends StatelessWidget {
 
   static const _items = [
     _NavItem('首頁', Icons.home_rounded),
-    _NavItem('盲盒交友', Icons.help_rounded),
-    _NavItem('消息', Icons.chat_bubble_rounded),
-    _NavItem('我的', Icons.face_rounded),
+    _NavItem('我的', Icons.person_rounded),
   ];
 
   @override
@@ -3597,16 +3602,16 @@ class _AppBottomNav extends StatelessWidget {
     return SafeArea(
       top: false,
       child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
-            height: 80,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            height: 76,
+            padding: const EdgeInsets.fromLTRB(20, 9, 20, 10),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.82),
+              color: Colors.white.withValues(alpha: 0.92),
               borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(32),
+                top: Radius.circular(26),
               ),
               border: Border(
                 top: BorderSide(color: Colors.white.withValues(alpha: 0.82)),
@@ -3620,53 +3625,47 @@ class _AppBottomNav extends StatelessWidget {
               ],
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: List.generate(_items.length, (index) {
                 final item = _items[index];
                 final selected = index == currentIndex;
-                return GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => onTap(index),
-                  child: SizedBox(
-                    width: 74,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          width: 34,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            color: selected
-                                ? _HomeViewState._hotPink.withValues(
-                                    alpha: 0.12,
-                                  )
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(13),
-                          ),
-                          child: Icon(
+                return Expanded(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => onTap(index),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      height: 52,
+                      margin: const EdgeInsets.symmetric(horizontal: 6),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? _HomeViewState._ink
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
                             item.icon,
                             color: selected
-                                ? _HomeViewState._hotPink
-                                : const Color(0xFFC8BEC9),
-                            size: 26,
+                                ? const Color(0xFFFF7A9A)
+                                : const Color(0xFFAAA0A8),
+                            size: 23,
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          item.label,
-                          maxLines: 1,
-                          style: TextStyle(
-                            color: selected
-                                ? _HomeViewState._hotPink
-                                : const Color(0xFF9B8F9B),
-                            fontSize: 12,
-                            fontWeight: selected
-                                ? FontWeight.w900
-                                : FontWeight.w800,
+                          const SizedBox(width: 8),
+                          Text(
+                            item.label,
+                            maxLines: 1,
+                            style: TextStyle(
+                              color: selected
+                                  ? Colors.white
+                                  : const Color(0xFF9B8F9B),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 );

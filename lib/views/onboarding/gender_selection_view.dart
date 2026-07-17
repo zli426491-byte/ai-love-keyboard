@@ -1,13 +1,9 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:ai_love_keyboard/models/user_gender.dart';
-import 'package:ai_love_keyboard/utils/app_theme.dart';
 import 'package:ai_love_keyboard/utils/constants.dart';
-import 'package:ai_love_keyboard/views/components/particle_background.dart';
 import 'package:ai_love_keyboard/views/onboarding/onboarding_view.dart';
 
 class GenderSelectionView extends StatefulWidget {
@@ -18,6 +14,11 @@ class GenderSelectionView extends StatefulWidget {
 }
 
 class _GenderSelectionViewState extends State<GenderSelectionView> {
+  static const _ink = Color(0xFF241827);
+  static const _paper = Color(0xFFFFF9FB);
+  static const _muted = Color(0xFFCDBBC5);
+  static const _rose = Color(0xFFFF6F8F);
+
   UserGender? _selected;
 
   Future<void> _confirm() async {
@@ -37,234 +38,257 @@ class _GenderSelectionViewState extends State<GenderSelectionView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgDark,
-      body: Stack(
-        children: [
-          // ── Background gradient glow ────────────────────────────
-          Positioned(
-            top: -80,
-            left: 0,
-            right: 0,
-            height: 300,
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment.topCenter,
-                  radius: 1.5,
-                  colors: [
-                    Color(0x40AB47BC),
-                    Color(0x20FF80AB),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
+      backgroundColor: _ink,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1D141B), Color(0xFF35202E), Color(0xFF241827)],
           ),
-
-          // ── Floating particles ──────────────────────────────────
-          const ParticleBackground(particleCount: 20),
-
-          // ── Main content ────────────────────────────────────────
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Column(
-                children: [
-                  const Spacer(flex: 2),
-                  // Title
-                  const Text(
-                    '你的身份是？',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ).animate().fadeIn(duration: 600.ms).slideY(begin: -0.2),
-                  const SizedBox(height: 12),
-                  Text(
-                    'AI 會根據你的身份調整回覆風格',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white.withValues(alpha: 0.6),
-                    ),
-                  ).animate().fadeIn(delay: 200.ms, duration: 600.ms),
-                  const Spacer(flex: 2),
-                  // Gender cards
-                  Row(
-                    children: UserGender.values.map((gender) {
-                      final isSelected = _selected == gender;
-                      return Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _selected = gender),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            margin:
-                                const EdgeInsets.symmetric(horizontal: 8),
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 32),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(24),
-                              color: Colors.white.withValues(
-                                  alpha: isSelected ? 0.1 : 0.05),
-                              border: Border.all(
-                                color: isSelected
-                                    ? AppTheme.accent
-                                        .withValues(alpha: 0.6)
-                                    : Colors.white
-                                        .withValues(alpha: 0.1),
-                                width: isSelected ? 2 : 1,
-                              ),
-                              boxShadow: isSelected
-                                  ? [
-                                      BoxShadow(
-                                        color: AppTheme.accent
-                                            .withValues(alpha: 0.3),
-                                        blurRadius: 20,
-                                        spreadRadius: 2,
-                                      ),
-                                      BoxShadow(
-                                        color: AppTheme.primary
-                                            .withValues(alpha: 0.2),
-                                        blurRadius: 30,
-                                        spreadRadius: 4,
-                                      ),
-                                    ]
-                                  : null,
+        ),
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const _GenderBrand(),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 7,
                             ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(24),
-                              child: BackdropFilter(
-                                filter: ImageFilter.blur(
-                                    sigmaX: 10, sigmaY: 10),
-                                child: Column(
-                                  children: [
-                                    // Checkmark for selected
-                                    if (isSelected)
-                                      Container(
-                                        width: 28,
-                                        height: 28,
-                                        margin: const EdgeInsets.only(
-                                            bottom: 8),
-                                        decoration: BoxDecoration(
-                                          gradient:
-                                              AppTheme.romanticGradient,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.check_rounded,
-                                          color: Colors.white,
-                                          size: 18,
-                                        ),
-                                      )
-                                          .animate()
-                                          .scale(
-                                              begin:
-                                                  const Offset(0, 0))
-                                          .fadeIn()
-                                    else
-                                      const SizedBox(height: 36),
-                                    Text(
-                                      gender.emoji,
-                                      style:
-                                          const TextStyle(fontSize: 64),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      gender.label,
-                                      style: TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                        color: isSelected
-                                            ? Colors.white
-                                            : Colors.white
-                                                .withValues(alpha: 0.6),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      gender.description,
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: isSelected
-                                            ? Colors.white
-                                                .withValues(alpha: 0.8)
-                                            : Colors.white
-                                                .withValues(alpha: 0.4),
-                                      ),
-                                    ),
-                                  ],
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.10),
+                              ),
+                            ),
+                            child: const Text(
+                              '個人化你的 AI 回覆',
+                              style: TextStyle(
+                                color: _rose,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          const Text(
+                            '先告訴我們\n你想和誰聊天',
+                            style: TextStyle(
+                              color: _paper,
+                              fontSize: 36,
+                              height: 1.12,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'LoveKey 只用這項選擇調整語氣，不會公開顯示。',
+                            style: TextStyle(
+                              color: _muted,
+                              fontSize: 15,
+                              height: 1.45,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 28),
+                          Row(
+                            children: UserGender.values.map((gender) {
+                              final selected = _selected == gender;
+                              return Expanded(
+                                child: Padding(
+                                  padding: EdgeInsets.only(
+                                    right: gender == UserGender.male ? 7 : 0,
+                                    left: gender == UserGender.female ? 7 : 0,
+                                  ),
+                                  child: _GenderCard(
+                                    gender: gender,
+                                    selected: selected,
+                                    onTap: () =>
+                                        setState(() => _selected = gender),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          const Spacer(),
+                          AnimatedOpacity(
+                            opacity: _selected == null ? 0.45 : 1,
+                            duration: const Duration(milliseconds: 180),
+                            child: SizedBox(
+                              width: double.infinity,
+                              height: 58,
+                              child: FilledButton(
+                                onPressed: _selected == null ? null : _confirm,
+                                style: FilledButton.styleFrom(
+                                  disabledBackgroundColor: Colors.white,
+                                  backgroundColor: _rose,
+                                  foregroundColor: _ink,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                ),
+                                child: const Text(
+                                  '繼續設定鍵盤',
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w900,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ).animate().fadeIn(
-                              delay: Duration(
-                                  milliseconds:
-                                      gender == UserGender.male
-                                          ? 400
-                                          : 600),
-                              duration: 500.ms,
-                            ).slideY(begin: 0.3),
-                      );
-                    }).toList(),
-                  ),
-                  const Spacer(flex: 2),
-                  // Confirm button
-                  AnimatedOpacity(
-                    opacity: _selected != null ? 1.0 : 0.4,
-                    duration: const Duration(milliseconds: 300),
-                    child: GestureDetector(
-                      onTap: _selected != null ? _confirm : null,
-                      child: Container(
-                        width: double.infinity,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          gradient: _selected != null
-                              ? const LinearGradient(
-                                  colors: [
-                                    Color(0xFFEC4899),
-                                    Color(0xFFAB47BC),
-                                  ],
-                                  begin: Alignment.centerLeft,
-                                  end: Alignment.centerRight,
-                                )
-                              : null,
-                          color: _selected == null
-                              ? Colors.white.withValues(alpha: 0.1)
-                              : null,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: _selected != null
-                              ? [
-                                  BoxShadow(
-                                    color: const Color(0xFFEC4899)
-                                        .withValues(alpha: 0.4),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 6),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: const Center(
-                          child: Text(
-                            '繼續',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
+                        ],
                       ),
                     ),
                   ),
-                  const Spacer(),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
-        ],
+        ),
       ),
     );
+  }
+}
+
+class _GenderBrand extends StatelessWidget {
+  const _GenderBrand();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      children: [
+        SizedBox(
+          width: 38,
+          height: 38,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: _GenderSelectionViewState._rose,
+              borderRadius: BorderRadius.all(Radius.circular(13)),
+            ),
+            child: Icon(
+              Icons.favorite_rounded,
+              color: _GenderSelectionViewState._ink,
+              size: 21,
+            ),
+          ),
+        ),
+        SizedBox(width: 10),
+        Text(
+          'LoveKey',
+          style: TextStyle(
+            color: _GenderSelectionViewState._paper,
+            fontSize: 19,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GenderCard extends StatelessWidget {
+  final UserGender gender;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _GenderCard({
+    required this.gender,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = gender == UserGender.male
+        ? Icons.male_rounded
+        : Icons.female_rounded;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        height: 214,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: selected
+              ? _GenderSelectionViewState._paper
+              : Colors.white.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: selected
+                ? _GenderSelectionViewState._rose
+                : Colors.white.withValues(alpha: 0.12),
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? const Color(0xFFFFE5EC)
+                        : Colors.white.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(17),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: _GenderSelectionViewState._rose,
+                    size: 28,
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  selected ? Icons.check_circle_rounded : Icons.circle_outlined,
+                  color: selected
+                      ? _GenderSelectionViewState._rose
+                      : Colors.white.withValues(alpha: 0.30),
+                  size: 23,
+                ),
+              ],
+            ),
+            const Spacer(),
+            Text(
+              gender.label,
+              style: TextStyle(
+                color: selected
+                    ? _GenderSelectionViewState._ink
+                    : _GenderSelectionViewState._paper,
+                fontSize: 23,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              gender.description,
+              style: TextStyle(
+                color: selected
+                    ? const Color(0xFF786873)
+                    : _GenderSelectionViewState._muted,
+                fontSize: 13,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ).animate().fadeIn(duration: 320.ms).slideY(begin: 0.08);
   }
 }

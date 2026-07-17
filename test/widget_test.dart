@@ -7,15 +7,21 @@ import 'package:ai_love_keyboard/services/revenuecat_service.dart';
 import 'package:ai_love_keyboard/services/usage_service.dart';
 import 'package:ai_love_keyboard/views/home/home_view.dart';
 import 'package:ai_love_keyboard/views/keyboard/keyboard_guide_view.dart';
+import 'package:ai_love_keyboard/views/onboarding/gender_selection_view.dart';
 import 'package:ai_love_keyboard/views/onboarding/onboarding_view.dart';
+import 'package:ai_love_keyboard/views/paywall/paywall_view.dart';
 import 'package:ai_love_keyboard/views/settings/settings_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-Future<void> _pumpApp(WidgetTester tester, Widget child) async {
-  await tester.binding.setSurfaceSize(const Size(430, 932));
+Future<void> _pumpApp(
+  WidgetTester tester,
+  Widget child, {
+  Size surfaceSize = const Size(430, 932),
+}) async {
+  await tester.binding.setSurfaceSize(surfaceSize);
 
   SharedPreferences.setMockInitialValues({
     'coin_balance': 20,
@@ -71,22 +77,21 @@ void main() {
     expect(find.text('抽到一個盲盒'), findsOneWidget);
   });
 
-  testWidgets('messages and profile actions have visible destinations', (
+  testWidgets('simplified home and profile actions have visible destinations', (
     tester,
   ) async {
     await _pumpApp(tester, const HomeView());
 
-    await tester.tap(find.text('消息').last);
-    await tester.pumpAndSettle();
-    expect(find.text('鍵盤已更新'), findsOneWidget);
-    expect(find.text('可以放入一則匿名訊息，也可以花 10 金幣抽一個盲盒。'), findsOneWidget);
+    expect(find.text('一句訊息，\n回得更自然'), findsOneWidget);
+    expect(find.text('快速工具'), findsOneWidget);
 
     await tester.tap(find.text('我的').last);
     await tester.pumpAndSettle();
-    expect(find.text('設定語言'), findsOneWidget);
+    expect(find.text('LoveKey 使用者'), findsOneWidget);
+    expect(find.text('語言與系統設定'), findsOneWidget);
     expect(find.text('反饋建議'), findsOneWidget);
 
-    await tester.tap(find.text('關於我們'));
+    await tester.tap(find.text('關於 LoveKey'));
     await tester.pumpAndSettle();
     expect(find.text('LoveKey'), findsWidgets);
   });
@@ -111,5 +116,27 @@ void main() {
     await tester.scrollUntilVisible(find.text('為 App 評分'), 500);
     expect(find.text('為 App 評分'), findsOneWidget);
     expect(find.text('分享給朋友'), findsOneWidget);
+  });
+
+  testWidgets('new entry and paywall layouts fit compact phones', (
+    tester,
+  ) async {
+    await _pumpApp(
+      tester,
+      const GenderSelectionView(),
+      surfaceSize: const Size(320, 568),
+    );
+    expect(find.text('先告訴我們\n你想和誰聊天'), findsOneWidget);
+    expect(find.text('繼續設定鍵盤'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await _pumpApp(
+      tester,
+      const PaywallView(),
+      surfaceSize: const Size(320, 568),
+    );
+    expect(find.text('LoveKey Pro'), findsOneWidget);
+    expect(find.text('恢復購買'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }
