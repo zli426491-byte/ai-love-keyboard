@@ -72,7 +72,7 @@
 
 1. 將 App Store 1.0.4 改綁 Build 57。
 2. 將週、年、永久三項 IAP 與 1.0.4 一起加入同一個送審項目。
-3. 填入 App Review demo 帳號與鍵盤操作步驟。
+3. 建立 App Review demo 帳號，並依 [App Review 備註草稿](../app-store/APP_REVIEW_NOTES_1.0.4_ZH-TW.md) 填入帳號與鍵盤操作步驟。
 4. 人工核准並合併發布流程 Pull Request。
 5. 送 Apple 審核。
 
