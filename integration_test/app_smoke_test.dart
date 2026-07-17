@@ -47,12 +47,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('交友盲盒'), findsWidgets);
 
-    await tester.tap(find.text('消息').last);
-    await tester.pumpAndSettle();
-    expect(find.text('鍵盤已更新'), findsOneWidget);
-
     await tester.tap(find.text('我的').last);
     await tester.pumpAndSettle();
     expect(find.text('鍵盤使用教學'), findsOneWidget);
+
+    await tester.tap(find.text('首頁').last);
+    await tester.pumpAndSettle();
+    expect(find.text('我的鍵盤'), findsOneWidget);
   });
 }
