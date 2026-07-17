@@ -89,6 +89,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('LoveKey 使用者'), findsOneWidget);
     expect(find.text('語言與系統設定'), findsOneWidget);
+    expect(find.text('鍵盤設定與教學'), findsOneWidget);
     expect(find.text('反饋建議'), findsOneWidget);
 
     await tester.tap(find.text('關於 LoveKey'));

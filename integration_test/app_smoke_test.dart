@@ -54,7 +54,7 @@ void main() {
 
     await tester.tap(find.text('我的').last);
     await pumpUi(tester);
-    expect(find.text('鍵盤使用教學'), findsOneWidget);
+    expect(find.text('鍵盤設定與教學'), findsOneWidget);
 
     await tester.tap(find.text('首頁').last);
     await pumpUi(tester);
