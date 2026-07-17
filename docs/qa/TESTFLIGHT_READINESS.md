@@ -10,15 +10,16 @@
 
 - Flutter dependencies 可正常解析。
 - flutter analyze：0 問題。
-- Flutter 單元／Widget 測試：27/27 通過。
+- Flutter 單元／Widget 測試：29/29 通過。
 - 對話邏輯：14/14 通過，明確標記為 mock／靜態模式。
 - 50 組繁體中文固定對話案例涵蓋必要情境。
 - UI／Widget 專項：11/11 通過。
 - Codemagic iOS 26.4.1 Simulator build、安裝、啟動成功。
 - iOS Integration Test：1/1 通過。
+- GitHub Actions iPhone 17 Pro／iOS 26.2 Simulator build、啟動與 Integration Test 通過（Run 29548206130）。
 - BrowserStack iPhone 15 Pro Max／iOS 17.3 完成安裝、冷啟動與進入 onboarding。
 
-上述完整自動化結果對應 commit `68804aad1d0555ffbda98532aa74b5b5a320e14c`，不是 Build 55 或 Build 56 的精確二進位檔。此 commit 仍需產生新的 TestFlight Build 57 才能做最終實機驗收。
+最新完整自動化結果對應 commit `b2b5d65e5906cf47f29636230f37c3083247c8bb`，不是 Build 55 或 Build 56 的精確二進位檔。此程式線仍需產生新的 TestFlight Build 57 才能做最終實機驗收。
 
 ## 實體 iPhone 退出清單
 

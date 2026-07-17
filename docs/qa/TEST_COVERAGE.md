@@ -3,12 +3,12 @@
 | 功能 | 測試方式 | 狀態 | 說明 |
 | --- | --- | --- | --- |
 | Flutter 靜態分析 | flutter analyze | 通過 | 0 問題 |
-| Flutter 單元／Widget | flutter test | 通過 | 27/27 |
+| Flutter 單元／Widget | flutter test | 通過 | 29/29 |
 | 對話 parser／品質 | dialogue_eval | 通過 | 14/14，mock／靜態模式 |
 | UI 響應式／Widget | ui_audit | 通過 | 11/11 |
-| iOS Simulator build | Codemagic | 通過 | iOS 26.4.1 |
+| iOS Simulator build | Codemagic／GitHub Actions | 通過 | iOS 26.4.1；GitHub iOS 26.2 |
 | Simulator 安裝／啟動 | simctl | 通過 | 一般 App 可正常顯示 |
-| iOS 核心 Integration | Flutter Integration Test | 通過 | 1/1 |
+| iOS 核心 Integration | Flutter Integration Test | 通過 | 1/1；GitHub Run 29548206130 |
 | BrowserStack 實機安裝／冷啟動 | iPhone 15 Pro Max／iOS 17.3 | 基本通過 | 免費時段只測到 onboarding |
 | iOS 鍵盤加入／完整取用 | 實體 TestFlight | 未驗證 | 需要實體 iPhone |
 | LINE／IG／iMessage 複製生成填入 | 實體 TestFlight | 未驗證 | 發布 P0 |
