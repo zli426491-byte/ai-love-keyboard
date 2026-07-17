@@ -1,0 +1,115 @@
+name: LoveKey iOS QA
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+  schedule:
+    # 18:00 UTC = 02:00 Asia/Taipei (next calendar day).
+    - cron: '0 18 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios-qa:
+    runs-on: macos-26
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: RevenueCat release configuration checks
+        env:
+          REVENUECAT_IOS_PUBLIC_KEY: ${{ secrets.REVENUECAT_IOS_PUBLIC_KEY }}
+        run: |
+          set -o pipefail
+          mkdir -p build/qa
+          python3 -m unittest tools.tests.test_check_revenuecat_offering \
+            2>&1 | tee build/qa/revenuecat-unit-test.log
+          if [ -n "$REVENUECAT_IOS_PUBLIC_KEY" ]; then
+            python3 tools/check_revenuecat_offering.py \
+              2>&1 | tee build/qa/revenuecat-offering.log
+          else
+            echo "GitHub Secret 不可用，本次只執行 RevenueCat 單元測試。" \
+              | tee build/qa/revenuecat-offering.log
+          fi
+
+      - name: Record environment
+        run: |
+          mkdir -p build/qa
+          flutter --version | tee build/qa/environment.log
+          xcodebuild -version | tee -a build/qa/environment.log
+          xcrun simctl list devices available | tee -a build/qa/environment.log
+
+      - name: Analyze
+        run: |
+          set -o pipefail
+          flutter analyze --no-pub 2>&1 | tee build/qa/analyze.log
+
+      - name: Flutter unit and widget tests
+        run: |
+          set -o pipefail
+          flutter test --no-pub --reporter expanded 2>&1 | tee build/qa/flutter-test.log
+
+      - name: Dialogue rule evaluation
+        run: FLUTTER_BIN=flutter bash scripts/dialogue_eval.sh
+
+      - name: UI audit tests
+        run: FLUTTER_BIN=flutter bash scripts/ui_audit.sh
+
+      - name: Build iOS Simulator app
+        run: |
+          set -o pipefail
+          flutter build ios --simulator --debug 2>&1 | tee build/qa/ios-simulator-build.log
+
+      - name: Boot iPhone Simulator
+        id: simulator
+        run: |
+          SIMULATOR_ID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          data = json.load(sys.stdin)
+          for runtime, devices in data.get("devices", {}).items():
+              if "iOS" not in runtime:
+                  continue
+              for device in devices:
+                  if device.get("isAvailable") and device.get("name", "").startswith("iPhone"):
+                      print(device["udid"])
+                      raise SystemExit(0)
+          raise SystemExit(1)
+          ')
+          echo "udid=$SIMULATOR_ID" >> "$GITHUB_OUTPUT"
+          xcrun simctl boot "$SIMULATOR_ID" 2>/dev/null || true
+          xcrun simctl bootstatus "$SIMULATOR_ID" -b
+
+      - name: iOS integration smoke test
+        run: |
+          set -o pipefail
+          flutter test integration_test/app_smoke_test.dart \
+            -d "${{ steps.simulator.outputs.udid }}" \
+            --reporter expanded 2>&1 | tee build/qa/integration-test.log
+
+      - name: Upload QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lovekey-ios-qa-${{ github.run_id }}
+          if-no-files-found: warn
+          path: |
+            build/qa/
+            docs/qa/

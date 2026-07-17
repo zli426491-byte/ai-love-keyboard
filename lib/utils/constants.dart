@@ -64,6 +64,14 @@ class AppConstants {
   static const String proEntitlementId = 'pro';
   static const bool reviewFreeMode = false;
 
+  // Production uses a paid-only Worker. A separate staging build can opt in
+  // to the limited free tier without making the release UI promise access
+  // that the production backend will reject.
+  static const bool allowFreeTier = bool.fromEnvironment(
+    'ALLOW_FREE_TIER',
+    defaultValue: false,
+  );
+
   // ── Free Tier ─────────────────────────────────────────────────────────
   static const int freeDailyLimit = 3;
 

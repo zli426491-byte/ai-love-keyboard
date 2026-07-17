@@ -56,7 +56,7 @@ class SettingsView extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        usage.isSubscribed ? 'Pro 會員' : '免費版',
+                        usage.isSubscribed ? 'Pro 會員' : '尚未開通 Pro',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -68,8 +68,8 @@ class SettingsView extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         usage.isSubscribed
-                            ? '享受無限 AI 功能'
-                            : '今日剩餘免費回覆 ${usage.remainingFree} 次',
+                            ? 'AI 回覆與所有模式已解鎖'
+                            : '升級後即可使用 AI 回覆',
                         style: TextStyle(
                           fontSize: 13,
                           color: usage.isSubscribed
@@ -332,15 +332,17 @@ class SettingsView extends StatelessWidget {
           _SectionHeader(title: '隱私設定'),
           Consumer<PrivacyManager>(
             builder: (context, privacy, _) {
-              return Container(
-                padding: const EdgeInsets.all(AppTheme.spacingMd),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardTheme.color ?? Colors.white,
+              return Material(
+                color: Theme.of(context).cardTheme.color ?? Colors.white,
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                  border: Border.all(color: Colors.grey.shade200),
+                  side: BorderSide(color: Colors.grey.shade200),
                 ),
-                child: Column(
-                  children: [
+                clipBehavior: Clip.antiAlias,
+                child: Padding(
+                  padding: const EdgeInsets.all(AppTheme.spacingMd),
+                  child: Column(
+                    children: [
                     SwitchListTile(
                       title: const Text(
                         '自動移除個人資訊',
@@ -428,7 +430,8 @@ class SettingsView extends StatelessWidget {
                         'https://zli426491-byte.github.io/ai-love-keyboard/',
                       ),
                     ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             },
@@ -441,15 +444,17 @@ class SettingsView extends StatelessWidget {
           Consumer<PrivacyManager>(
             builder: (context, privacy, _) {
               final isStrict = privacy.filterLevel == 'strict';
-              return Container(
-                padding: const EdgeInsets.all(AppTheme.spacingMd),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardTheme.color ?? Colors.white,
+              return Material(
+                color: Theme.of(context).cardTheme.color ?? Colors.white,
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                  border: Border.all(color: Colors.grey.shade200),
+                  side: BorderSide(color: Colors.grey.shade200),
                 ),
-                child: Column(
-                  children: [
+                clipBehavior: Clip.antiAlias,
+                child: Padding(
+                  padding: const EdgeInsets.all(AppTheme.spacingMd),
+                  child: Column(
+                    children: [
                     ListTile(
                       leading: const Icon(
                         Icons.shield_outlined,
@@ -511,7 +516,8 @@ class SettingsView extends StatelessWidget {
                         'https://zli426491-byte.github.io/ai-love-keyboard/guidelines.html',
                       ),
                     ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             },

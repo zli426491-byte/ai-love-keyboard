@@ -96,13 +96,13 @@ void main() {
     expect(find.text('LoveKey'), findsWidgets);
   });
 
-  testWidgets('onboarding, keyboard guide, and settings render key copy', (
-    tester,
-  ) async {
+  testWidgets('onboarding renders key copy', (tester) async {
     await _pumpApp(tester, const OnboardingView());
     expect(find.textContaining('長按對方訊息'), findsOneWidget);
     expect(find.text('下一步'), findsOneWidget);
+  });
 
+  testWidgets('keyboard guide renders key copy', (tester) async {
     await _pumpApp(tester, const KeyboardGuideView());
     expect(find.text('鍵盤教學'), findsOneWidget);
     expect(find.textContaining('切到 AI 戀愛鍵盤'), findsWidgets);
@@ -110,11 +110,14 @@ void main() {
     expect(find.text('前往登入'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('只在生成回覆時送出必要文字'), 420);
     expect(find.text('只在生成回覆時送出必要文字'), findsOneWidget);
+  });
 
+  testWidgets('settings renders key copy', (tester) async {
     await _pumpApp(tester, const SettingsView());
     expect(find.text('鍵盤設定'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('為 App 評分'), 500);
     expect(find.text('為 App 評分'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('分享給朋友'), 200);
     expect(find.text('分享給朋友'), findsOneWidget);
   });
 

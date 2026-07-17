@@ -11,31 +11,6 @@ class UsageIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<UsageService>(
       builder: (context, usage, _) {
-        if (usage.canUse) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              gradient: AppTheme.accentGradient,
-              borderRadius: BorderRadius.circular(AppTheme.radiusFull),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.check_circle_rounded, size: 16, color: Colors.white),
-                SizedBox(width: 4),
-                Text(
-                  'FREE',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
         if (usage.isSubscribed) {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -61,17 +36,29 @@ class UsageIndicator extends StatelessWidget {
           );
         }
 
-        final remaining = usage.remainingFree;
-        const total = 3;
-        final ratio = remaining / total;
-
-        Color barColor;
-        if (ratio > 0.5) {
-          barColor = AppTheme.success;
-        } else if (ratio > 0) {
-          barColor = AppTheme.warning;
-        } else {
-          barColor = AppTheme.error;
+        if (usage.canUseForFree) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              gradient: AppTheme.accentGradient,
+              borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.check_circle_rounded, size: 16, color: Colors.white),
+                SizedBox(width: 4),
+                Text(
+                  '試用',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          );
         }
 
         return Container(
@@ -83,26 +70,15 @@ class UsageIndicator extends StatelessWidget {
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
-            children: [
+            children: const [
+              Icon(Icons.lock_rounded, size: 15, color: AppTheme.primary),
+              SizedBox(width: 5),
               Text(
-                '今日剩餘 $remaining/$total 次',
+                '需 Pro 會員',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: barColor,
-                ),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 48,
-                height: 6,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(3),
-                  child: LinearProgressIndicator(
-                    value: ratio,
-                    backgroundColor: Colors.grey.shade200,
-                    valueColor: AlwaysStoppedAnimation<Color>(barColor),
-                  ),
+                  color: AppTheme.primary,
                 ),
               ),
             ],

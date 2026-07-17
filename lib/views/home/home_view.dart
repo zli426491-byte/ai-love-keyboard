@@ -908,76 +908,93 @@ class _HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: _HomeViewState._ink,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: const Icon(
-            Icons.favorite_rounded,
-            color: Color(0xFFFF7A9A),
-            size: 22,
-          ),
-        ),
-        const SizedBox(width: 11),
-        const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 300;
+        return Row(
           children: [
-            Text(
-              'LoveKey',
-              style: TextStyle(
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
                 color: _HomeViewState._ink,
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -0.4,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(
+                Icons.favorite_rounded,
+                color: Color(0xFFFF7A9A),
+                size: 22,
               ),
             ),
-            Text(
-              'AI 戀愛鍵盤',
-              style: TextStyle(
-                color: _HomeViewState._muted,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
+            const SizedBox(width: 11),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'LoveKey',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: _HomeViewState._ink,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.4,
+                    ),
+                  ),
+                  Text(
+                    'AI 戀愛鍵盤',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: _HomeViewState._muted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Tooltip(
+              message: '升級 LoveKey Pro',
+              child: GestureDetector(
+                onTap: onPaywall,
+                child: Container(
+                  height: 40,
+                  padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 14),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.88),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFFFD5E0)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.workspace_premium_rounded,
+                        color: _HomeViewState._hotPink,
+                        size: 19,
+                      ),
+                      if (!compact) ...const [
+                        SizedBox(width: 6),
+                        Text(
+                          'PRO',
+                          style: TextStyle(
+                            color: _HomeViewState._ink,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
-        ),
-        const Spacer(),
-        GestureDetector(
-          onTap: onPaywall,
-          child: Container(
-            height: 40,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.88),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFFFD5E0)),
-            ),
-            child: const Row(
-              children: [
-                Icon(
-                  Icons.workspace_premium_rounded,
-                  color: _HomeViewState._hotPink,
-                  size: 19,
-                ),
-                SizedBox(width: 6),
-                Text(
-                  'PRO',
-                  style: TextStyle(
-                    color: _HomeViewState._ink,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 }
@@ -1204,7 +1221,7 @@ class _UsageSummary extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           Text(
-            subscribed ? 'Pro 已解鎖無限回覆' : '今日剩餘免費回覆 $remainingFree 次',
+            subscribed ? 'Pro 已啟用 · 高額度回覆' : '升級 Pro 使用 AI 回覆',
             style: TextStyle(
               color: color,
               fontSize: 13,
@@ -3453,12 +3470,15 @@ class _MembershipCard extends StatelessWidget {
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Text(
-                    subscribed ? '已解鎖不限次 AI 回覆' : '今日還可生成 $remainingFree 次',
+                    subscribed ? 'Pro 高額度 AI 回覆已啟用' : '升級後即可使用 AI 回覆',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Color(0xFFDCCAD4),
                       fontSize: 14,
+                      height: 1.25,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -3466,7 +3486,7 @@ class _MembershipCard extends StatelessWidget {
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
               decoration: BoxDecoration(
                 color: subscribed
                     ? Colors.white.withValues(alpha: 0.10)
@@ -3551,15 +3571,18 @@ class _MenuRow extends StatelessWidget {
               ),
               const SizedBox(width: 12),
             ],
-            Text(
-              title,
-              style: const TextStyle(
-                color: _HomeViewState._ink,
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: _HomeViewState._ink,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
-            const Spacer(),
             if (trailing != null)
               Flexible(
                 child: Text(

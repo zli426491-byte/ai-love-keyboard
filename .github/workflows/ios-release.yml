@@ -1,23 +1,37 @@
 name: iOS Release
 
 on:
-  push:
-    branches: [master]
   workflow_dispatch:
+    inputs:
+      confirmation:
+        description: '輸入 UPLOAD_TESTFLIGHT 才會執行發布'
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
   group: ios-release-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build-ios:
     runs-on: macos-26
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     steps:
+      - name: Confirm intentional TestFlight release
+        env:
+          RELEASE_CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          if [ "$RELEASE_CONFIRMATION" != "UPLOAD_TESTFLIGHT" ]; then
+            echo "Release confirmation did not match UPLOAD_TESTFLIGHT." >&2
+            exit 1
+          fi
+          echo "Release ref: $GITHUB_REF_NAME"
+          echo "Release commit: $GITHUB_SHA"
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -29,6 +43,41 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Verify RevenueCat LoveKey offering
+        env:
+          REVENUECAT_IOS_PUBLIC_KEY: ${{ secrets.REVENUECAT_IOS_PUBLIC_KEY }}
+        run: |
+          python3 -m unittest tools.tests.test_check_revenuecat_offering
+          python3 tools/check_revenuecat_offering.py
+
+      - name: Validate P0 release invariants
+        run: |
+          test -f lib/services/account_service.dart || {
+            echo "Missing authenticated account service; refusing to publish a regressed build." >&2
+            exit 1
+          }
+          grep -q 'X-Request-Signature' ios/LoveKeyboard/KeyboardViewController.swift || {
+            echo "Keyboard request signature metadata is missing." >&2
+            exit 1
+          }
+          grep -q 'Authorization' ios/LoveKeyboard/KeyboardViewController.swift || {
+            echo "Keyboard authorization header is missing." >&2
+            exit 1
+          }
+          if grep -R -n -E 'sk-(proj-)?[A-Za-z0-9_-]{20,}' lib ios; then
+            echo "Potential OpenAI secret found in client source." >&2
+            exit 1
+          fi
+
+      - name: Full Flutter and iOS Simulator QA gate
+        env:
+          REQUIRE_IOS: '1'
+          RUN_INTEGRATION: '1'
+        run: |
+          bash scripts/ios_qa.sh
+          FLUTTER_BIN=flutter bash scripts/dialogue_eval.sh
+          FLUTTER_BIN=flutter bash scripts/ui_audit.sh
 
       - name: Inject runtime AI proxy config
         env:
@@ -181,6 +230,67 @@ jobs:
             --dart-define=TIKTOK_PIXEL_ID="$TIKTOK_PIXEL_ID" \
             --export-options-plist=ios/ExportOptions.generated.plist
 
+      - name: Validate IPA app and keyboard metadata
+        run: |
+          python3 - <<'PY'
+          import glob
+          import plistlib
+          import zipfile
+          from pathlib import Path
+
+          ipa_paths = glob.glob("build/ios/ipa/*.ipa")
+          if len(ipa_paths) != 1:
+              raise SystemExit(f"Expected one IPA, found {len(ipa_paths)}")
+
+          ipa_path = Path(ipa_paths[0])
+          with zipfile.ZipFile(ipa_path) as archive:
+              names = archive.namelist()
+              app_plists = [
+                  name for name in names
+                  if name.startswith("Payload/")
+                  and name.count("/") == 2
+                  and name.endswith(".app/Info.plist")
+              ]
+              extension_plists = [
+                  name for name in names
+                  if "/PlugIns/" in name and name.endswith(".appex/Info.plist")
+              ]
+              if len(app_plists) != 1 or len(extension_plists) != 1:
+                  raise SystemExit(
+                      "Expected exactly one app and one keyboard extension plist"
+                  )
+
+              app = plistlib.loads(archive.read(app_plists[0]))
+              extension = plistlib.loads(archive.read(extension_plists[0]))
+              expected = {
+                  "app": "com.ailovekeyboard.app",
+                  "extension": "com.ailovekeyboard.app.keyboard",
+              }
+              if app.get("CFBundleIdentifier") != expected["app"]:
+                  raise SystemExit("Unexpected app bundle identifier")
+              if extension.get("CFBundleIdentifier") != expected["extension"]:
+                  raise SystemExit("Unexpected keyboard bundle identifier")
+
+              for key in ("CFBundleShortVersionString", "CFBundleVersion"):
+                  if app.get(key) != extension.get(key):
+                      raise SystemExit(f"App and keyboard {key} do not match")
+
+              for name in names:
+                  if not name.endswith("/") and b"__AI_PROXY_URL__" in archive.read(name):
+                      raise SystemExit(f"AI proxy placeholder remains in {name}")
+
+          report = (
+              f"ipa={ipa_path.name}\n"
+              f"version={app['CFBundleShortVersionString']}\n"
+              f"build={app['CFBundleVersion']}\n"
+              f"app_bundle={app['CFBundleIdentifier']}\n"
+              f"keyboard_bundle={extension['CFBundleIdentifier']}\n"
+          )
+          Path("build/qa").mkdir(parents=True, exist_ok=True)
+          Path("build/qa/ipa-metadata.txt").write_text(report, encoding="utf-8")
+          print(report)
+          PY
+
       - name: Upload to TestFlight
         env:
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
@@ -199,3 +309,11 @@ jobs:
         with:
           name: ios-ipa
           path: build/ios/ipa/*.ipa
+
+      - name: Upload release QA evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-release-qa-${{ github.run_id }}
+          if-no-files-found: warn
+          path: build/qa/

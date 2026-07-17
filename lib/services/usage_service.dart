@@ -16,12 +16,15 @@ class UsageService extends ChangeNotifier with WidgetsBindingObserver {
   bool _refreshInFlight = false;
 
   int get usedToday => _usedToday;
-  int get remainingFree => (AppConstants.freeDailyLimit - _usedToday).clamp(
-    0,
-    AppConstants.freeDailyLimit,
-  );
+  int get remainingFree => AppConstants.allowFreeTier
+      ? (AppConstants.freeDailyLimit - _usedToday).clamp(
+          0,
+          AppConstants.freeDailyLimit,
+        )
+      : 0;
   bool get canUseForFree =>
-      AppConstants.reviewFreeMode || _usedToday < AppConstants.freeDailyLimit;
+      AppConstants.allowFreeTier &&
+      (AppConstants.reviewFreeMode || _usedToday < AppConstants.freeDailyLimit);
   bool get isSubscribed => _isSubscribed;
   bool get canUse =>
       AppConstants.reviewFreeMode || _isSubscribed || canUseForFree;
@@ -77,7 +80,7 @@ class UsageService extends ChangeNotifier with WidgetsBindingObserver {
     if (!canUse) return false;
     if (AppConstants.reviewFreeMode) return true;
 
-    if (!_isSubscribed) {
+    if (AppConstants.allowFreeTier && !_isSubscribed) {
       _usedToday++;
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(AppConstants.prefDailyUsageCount, _usedToday);
