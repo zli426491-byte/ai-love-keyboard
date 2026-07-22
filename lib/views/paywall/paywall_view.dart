@@ -101,12 +101,14 @@ class _PaywallViewState extends State<PaywallView> {
       ),
       child: SafeArea(
         top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               Align(
                 alignment: Alignment.center,
                 child: Container(
@@ -244,7 +246,8 @@ class _PaywallViewState extends State<PaywallView> {
                   ),
                 ),
               ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
